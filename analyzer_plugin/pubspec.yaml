@@ -1,0 +1,21 @@
+name: secdart_analyzer_plugin
+description: A plugin for the Dart Analyzer containing a gradual security typing static analysis.
+version: 0.0.1
+
+environment:
+  sdk: '>=1.20.1 <2.0.0'
+
+dependencies:
+  analyzer: '^0.30.0'
+  plugin: '^0.2.0'
+  analyzer_plugin:
+    path: ../../angular_analyzer_plugin/deps/sdk/pkg/analyzer_plugin
+  analysis_server:
+    path: ../../angular_analyzer_plugin/deps/sdk/pkg/analysis_server
+
+
+dependency_overrides:
+  analyzer:
+    path: ../../angular_analyzer_plugin/deps/sdk/pkg/analyzer
+dev_dependencies:
+  test: ^0.12.0
