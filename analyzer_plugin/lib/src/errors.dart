@@ -45,7 +45,7 @@ class SecurityTypeError{
 
   }
 
-  static AnalysisError getExplicitFlowError(Expression expr, DartType from,DartType to){
+  static AnalysisError getExplicitFlowError(AstNode expr, DartType from,DartType to){
     var errorCode = SecurityErrorCode.EXPLICIT_FLOW;
     return toAnalysisError(expr,errorCode,null);
 
@@ -140,5 +140,18 @@ class SecurityErrorCode extends ErrorCode{
   @override
   ErrorType get type => ErrorType.STATIC_WARNING;//new ErrorType("SECURITY_ERROR_TYPE",1000,ErrorSeverity.ERROR);
 }
+class ImplementationErrorCode extends ErrorCode{
+  ImplementationErrorCode(String name, String message) : super(name, message);
 
+  static const SecurityErrorCode UNSUPPORTED_DART_FEATURE=
+  const SecurityErrorCode(
+      'UNSUPPORTED_DART_FEATURE', '{0} is not supported by the security analyzer');
+
+  @override
+  ErrorSeverity get errorSeverity => ErrorSeverity.ERROR;
+
+
+  @override
+  ErrorType get type => ErrorType.STATIC_WARNING;
+}
   

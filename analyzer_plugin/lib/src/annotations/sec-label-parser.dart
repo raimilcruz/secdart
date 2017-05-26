@@ -17,7 +17,13 @@ abstract class SecAnnotationParser{
 }
 
 class FlatLatticeParser extends SecAnnotationParser{
+  bool intervalMode;
+
   static const String FUNCTION_LATENT_LABEL = "latent";
+
+  FlatLatticeParser([bool intervalMode = false]){
+    this.intervalMode = intervalMode;
+  }
 
   @override
   parseFunctionLabel(Annotation n) {
@@ -51,7 +57,7 @@ class FlatLatticeParser extends SecAnnotationParser{
       case 'bot':
         return new BotLabel();
       case 'dynl':
-        return new DynamicLabel();
+        return this.dynamicLabel;
       default:
         throw new ArgumentError(
             "Annotation does not represent a label for me!");
@@ -68,7 +74,7 @@ class FlatLatticeParser extends SecAnnotationParser{
       case 'bot':
         return new BotLabel();
       case 'dynl':
-        return new DynamicLabel();
+        return this.dynamicLabel;
       default:
         throw new ArgumentError("String does not represent a label for me!");
     }
@@ -76,6 +82,8 @@ class FlatLatticeParser extends SecAnnotationParser{
 
   @override
   get dynamicLabel {
+    if(intervalMode)
+      return new IntervalLabel(new BotLabel(),new TopLabel());
     return new DynamicLabel();
   }
 

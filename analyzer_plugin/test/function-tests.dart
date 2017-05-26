@@ -2,6 +2,7 @@
 // Contains test for global functions with gradual security typing annotations
 //
 
+import 'package:secdart_analyzer_plugin/src/helpers/resource_helper.dart';
 import 'package:test/test.dart';
 import 'package:analyzer/file_system/file_system.dart';
 import 'package:analyzer/file_system/memory_file_system.dart';

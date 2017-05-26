@@ -5,11 +5,7 @@ Current state:
     - We need to ensure our security analysis takes place only on well-typed dart programs
 
 TODO:
-- Find the way to the AnalyzerDriver recognizes the lattice annotations. I am thinking in two ways:
-	- Adding the definitions of the annotations as a "built-in" source for the AnalyzerDriver (e.g. similar to what angular analyzer plugin does)
-	- Creating a seperated package (that should not be analyzed) with the definitions for label annotations
-- Incorporate the current state of the security analysis
-    - ie. global functions + binary expression + if expression + local variable declaracion
+- Separate analysis in different phases (e.g. detection of sec-syntactic errors, unsupported features, semantic checks)
 - Design how to exclude some files from the analysis
     - e.g. test files
 - Design how to recognize custom settings from the analysis_options.yaml file.

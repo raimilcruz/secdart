@@ -1,0 +1,6 @@
+name: secdart
+description: A package with annotations to specify security label for Dart elements
+version: 0.0.1
+
+environment:
+  sdk: '>=1.20.1 <2.0.0'

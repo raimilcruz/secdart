@@ -2,6 +2,7 @@ import 'annotations/sec-label-parser.dart';
 import 'errors.dart';
 import 'gs-typesystem.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/src/dart/analysis/file_state.dart';
 import 'package:analyzer/src/generated/resolver.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/src/generated/error.dart';
@@ -31,6 +32,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   //The implementation of the security type system
   final GradualSecurityTypeSystem secTypeSystem;
   final AnalysisErrorListener reporter;
+  final bool intervalMode;
 
   /**
    * The parser used to get label from annotation
@@ -54,9 +56,18 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   ExecutableElement _enclosingFunction;
   FunctionDeclaration _enclosingFunctionDeclaration;
 
-  SecurityVisitor(this.secTypeSystem, this.reporter) {
+  SecurityVisitor(this.secTypeSystem, this.reporter,[bool this.intervalMode = false]) {
     //TODO: Change for LibraryScope
     _secScope = new NestedSecurityScope(new EmptySecurityScope<SecurityType>());
+  }
+
+  bool visitCompilationUnit(CompilationUnit node) {
+    try {
+      node.visitChildren(this);
+    } on SecDartException catch(e){
+      reportError(SecurityTypeError.toAnalysisError(node,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.getMessage()]));
+    }
+    return null;
   }
 
   @override
@@ -98,6 +109,8 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     _secScope = currentScope;
     return result;
   }
+
+
 
   @override
   bool visitFormalParameterList(FormalParameterList node) {
@@ -145,7 +158,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     var beginLabel = functionSecType.beginLabel;
     var endlabel = functionSecType.endLabel;
     //check the pc is enough high to invoke the funciton
-    if(!(_pc.join(endlabel).lestThan(beginLabel))){
+    if(!(_pc.join(endlabel).lessOrEqThan(beginLabel))){
       reportError(SecurityTypeError.getBadFunctionCall(node));
       return false;
     }
@@ -196,7 +209,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
         initializer.accept(this);
         var initializerSecType = _getSecurityType(initializer);
         initializer.setProperty(SEC_TYPE_PROPERTY,initializerSecType);
-        checkAssignment(initializer, secType);
+        checkAssignment(initializer, secType,variable);
       }
       //add variable to the scope
       if(_secScope.isDefined(variable.name.name)) {
@@ -219,7 +232,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     var leftSecType = _getSecurityType(node.leftHandSide);
     var rigthSecType = _getSecurityType(node.rightHandSide);
 
-    _checkAssignment2(node.leftHandSide,leftSecType,rigthSecType);
+    _checkAssignment2(node.leftHandSide,leftSecType,rigthSecType,node);
     return true;
   }
 
@@ -251,6 +264,8 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     _pc = currentPc;
   }
 
+
+
   @override
   bool visitBinaryExpression(BinaryExpression node) {
     //TODO: Check if we should treat && and || in an special way
@@ -274,19 +289,23 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
    * returned.
    */
   bool visitSimpleIdentifier(SimpleIdentifier node) {
-    //TODO: Remove return type for visitor method is not necesary
     if (node.inGetterContext() && node.staticElement is ParameterElement) {
       //if this identifier is in getter context we can get from the scope
       var secType = _secScope.lookup(node.name);
       node.setProperty(SEC_TYPE_PROPERTY, secType);
     }
-    //is in the left side of an assignment
-    if (node.inSetterContext() && node.staticElement is LocalVariableElement) {
+    else if (node.inGetterContext() && node.staticElement is LocalVariableElement) {
+      //if this identifier is in getter context we can get from the scope
       var secType = _secScope.lookup(node.name);
       node.setProperty(SEC_TYPE_PROPERTY, secType);
     }
-    //access to a function
-    if (node.inGetterContext() && node.staticElement is FunctionElement) {
+    //is in the left side of an assignment
+    else if (node.inSetterContext() && node.staticElement is LocalVariableElement) {
+      var secType = _secScope.lookup(node.name);
+      node.setProperty(SEC_TYPE_PROPERTY, secType);
+    }
+    else if (node.inGetterContext() && node.staticElement is FunctionElement) {
+      //access to a function
       var secType = _secScope.lookup(node.name);
       node.setProperty(SEC_TYPE_PROPERTY, secType);
     }
@@ -312,6 +331,38 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   }
 
   @override
+  bool visitConditionalExpression(ConditionalExpression node) {
+    //visit the if node
+    var okCond = node.condition.accept(this);
+    var secType = _getSecurityType(node.condition);
+    //increase the pc
+    var currentPc = _pc;
+    _pc = _pc.join(_getLabel(secType));
+
+    var currentScope = _secScope;
+
+    _secScope = new NestedSecurityScope(_secScope);
+    //visit both branches
+    var okThenBranch = node.thenExpression.accept(this);
+    _secScope = currentScope;
+
+    var okElseBranch = true;
+
+
+    _secScope = new NestedSecurityScope(_secScope);
+    okElseBranch = node.elseExpression.accept(this);
+    _secScope = currentScope;
+
+    var secTypeThenExpr = _getSecurityType(node.thenExpression);
+    var secTypeElseExpr = _getSecurityType(node.elseExpression);
+
+    //TODO: This is wrong for high order types
+    var resultType = new GroundSecurityType(node.staticType, secTypeThenExpr.label.join(secTypeElseExpr.label).join(secType.label));
+    node.setProperty(SEC_TYPE_PROPERTY, resultType);
+    _pc = currentPc;
+  }
+
+  @override
   bool visitBooleanLiteral(BooleanLiteral node) {
     node.setProperty(
         SEC_TYPE_PROPERTY, new GroundSecurityType(node.staticType, _pc));
@@ -329,6 +380,13 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
         SEC_TYPE_PROPERTY, new GroundSecurityType(node.staticType, _pc));
   }
 
+  @override
+  bool visitParenthesizedExpression(ParenthesizedExpression node){
+    node.expression.accept(this);
+    node.setProperty(SEC_TYPE_PROPERTY, _getSecurityType(node.expression));
+    return true;
+  }
+
   /**
    * Given a [FunctionDeclaration] node returns its security type
    */
@@ -344,8 +402,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
 
       if(latentAnnotations.length>1){
         reportError(SecurityTypeError.getDuplicatedLatentError(node));
-        //TODO:change that
-        throw new UnsupportedError("Tow much latent annotations");
+        throw new SecCompilationException("Too much ${FUNCTION_LATTENT_LABEL} label annotation for function ${node.name.name}");
       }
       else if(latentAnnotations.length==1) {
         Annotation securityFunctionAnnotation = latentAnnotations.first;
@@ -357,7 +414,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
       var returnAnnotations = metadataList.where((a)=>_parser.isLabel(a));
       if(returnAnnotations.length>1){
         reportError(SecurityTypeError.getDuplicatedLatentError(node));
-        throw new UnsupportedError("Two much return label annotations");
+        return null;
       }
       else if(returnAnnotations.length==1){
         returnLabel = _parser.parseLabel(returnAnnotations.first);
@@ -382,7 +439,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     var label = _parser.dynamicLabel;
     if(secLabelAnnotations.length>1){
       reportError(SecurityTypeError.getDuplicatedLabelOnParameterError(parameter));
-      throw new UnsupportedError("Too much label for this parameter");
+      throw new SecCompilationException("Too much label for this parameter");
     }
     else if(secLabelAnnotations.length==1){
       label = _parser.parseLabel(secLabelAnnotations.first);
@@ -396,11 +453,11 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   SecurityLabel _getSecurityLabelVarOrParameter(
       NodeList<Annotation> annotations,AstNode node){
     var labelAnnotations = annotations.where((a)=>_parser.isLabel(a));
-    var label = new DynamicLabel();
+    var label = _parser.dynamicLabel;
     if(labelAnnotations.length>1){
       //TODO:Fix
       reportError(SecurityTypeError.getDuplicatedLabelOnParameterError(node));
-      throw new UnsupportedError("Too much label on parameters or var");
+      throw new SecCompilationException("Too much label on parameters or var");
     }
     else if(labelAnnotations.length==1){
       label = _parser.parseLabel(labelAnnotations.first);
@@ -412,15 +469,15 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   /**
    * Checks that an expression can be assigned to a type
    */
-  void checkAssignment(Expression expr, SecurityType type) {
+  void checkAssignment(Expression expr, SecurityType type, VariableDeclaration node) {
     if (expr is ParenthesizedExpression) {
-      checkAssignment(expr.expression, type);
+      checkAssignment(expr.expression, type,node);
     } else {
-      _checkAssignment(expr, type);
+      _checkAssignment(expr, type,node);
     }
   }
 
-  void _checkAssignment(Expression expr, SecurityType to, {SecurityType from}) {
+  void _checkAssignment(Expression expr, SecurityType to,VariableDeclaration node, {SecurityType from}) {
     if (from == null) {
       from = _getSecurityType(expr);
     }
@@ -434,23 +491,21 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
       //var labelFrom = _getLabel(from);
       if (_pc.canRelabeledTo(labelTo)) return;
     }
-    if(secTypeSystem.error !=null)
-      reportError(SecurityTypeError.getImplementationError(expr,secTypeSystem.error));
 
     //TODO: Report error
-    reportError(SecurityTypeError.getExplicitFlowError(expr, to, from));
+    reportError(SecurityTypeError.getExplicitFlowError(node, to, from));
   }
 
-  void _checkAssignment2(Expression expr, SecurityType to, SecurityType from) {
+  void _checkAssignment2(Expression expr, SecurityType to, SecurityType from,AssignmentExpression node) {
     if (secTypeSystem.isSubtypeOf(from, to)) {
       var labelTo = _getLabel(to);
       //var labelFrom = _getLabel(from);
       if (_pc.canRelabeledTo(labelTo)) return;
     }
     //TODO: Report error
-    reportError(SecurityTypeError.getExplicitFlowError(expr, to, from));
+    reportError(SecurityTypeError.getExplicitFlowError(node, to, from));
   }
-  void checkSubtype(Expression expr, SecurityType to, SecurityType from) {
+  void checkSubtype(Expression expr, SecurityType from, SecurityType to) {
     if (secTypeSystem.isSubtypeOf(from, to)) {
       var labelTo = _getLabel(to);
       //var labelFrom = _getLabel(from);
@@ -466,7 +521,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
    */
   SecurityLabel _getLabel(SecurityType to) {
     if (!(to is GroundSecurityType)) {
-      throw new UnsupportedError("Security type is not supported yet");
+      throw new UnsupportedFeatureException("Security type is not supported yet ${to.runtimeType}");
     }
     return (to as GroundSecurityType).label;
   }
@@ -518,7 +573,26 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
       return;
     reportError(SecurityTypeError.getFunctionLabelError(decl));
     */
+    FormatException a;
   }
+}
+
+abstract class SecDartException implements Exception{
+  String getMessage();
+}
+class UnsupportedFeatureException implements SecDartException{
+  final String message;
+  UnsupportedFeatureException([this.message]);
+
+  @override
+  String getMessage() => message;
+}
+class SecCompilationException implements SecDartException{
+  final String message;
+  SecCompilationException([this.message]);
+
+  @override
+  String getMessage() => message;
 }
 
 

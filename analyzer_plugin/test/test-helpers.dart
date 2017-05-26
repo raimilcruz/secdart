@@ -8,21 +8,9 @@ import 'package:secdart_analyzer_plugin/src/borrow/context.dart';
 import 'package:secdart_analyzer_plugin/src/error-collector.dart';
 import 'package:secdart_analyzer_plugin/src/gs-typesystem.dart';
 import 'package:secdart_analyzer_plugin/src/security_visitor.dart';
+import 'package:secdart_analyzer_plugin/src/supported_subset.dart';
 
-/**
- * Provides a [Source] from a [String]
- */
-class ResourceHelper{
-  MemoryResourceProvider resourceProvider = new MemoryResourceProvider();
 
-  /**
-   * Provide a [Source] from a [String] representing the content of the source.
-   */
-  Source newSource(String path, [String content = '']) {
-    File file = resourceProvider.newFile(path, content);
-    return file.createSource();
-  }
-}
 
 bool typeCheckSecurityForSource(Source source,{bool printerError:true}){
   var unit= resolveCompilationUnit2Helper(source);
@@ -36,6 +24,23 @@ bool typeCheckSecurityForSource(Source source,{bool printerError:true}){
 
 
   if(printerError){
+    for(AnalysisError error in errorListener.errors){
+      print(error);
+    }
+  }
+  return errorListener.errors.length==0;
+}
+
+bool containsOnlySupportedFeatures(Source source,{bool printError:true}){
+  var unit= resolveCompilationUnit2Helper(source);
+
+  ErrorCollector errorListener = new ErrorCollector();
+
+  //var visitor = new SecurityVisitorNoHelp(unit.element.library,null,null,errorListener);
+  var visitor = new SupportedDartSubsetVisitor(errorListener);
+  unit.accept(visitor);
+
+  if(printError){
     for(AnalysisError error in errorListener.errors){
       print(error);
     }

@@ -1,3 +1,4 @@
+import 'package:secdart_analyzer_plugin/src/helpers/resource_helper.dart';
 import 'package:test/test.dart';
 import 'test-helpers.dart';
 
