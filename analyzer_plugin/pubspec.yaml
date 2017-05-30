@@ -8,6 +8,8 @@ environment:
 dependencies:
   analyzer: '^0.30.0'
   plugin: '^0.2.0'
+  #TODO: It should be removed (we are using this to resolve the SDK)
+  code_transformers: any
   analyzer_plugin:
     path: ../../angular_analyzer_plugin/deps/sdk/pkg/analyzer_plugin
   analysis_server:

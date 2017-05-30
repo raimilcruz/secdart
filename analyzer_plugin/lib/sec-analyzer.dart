@@ -15,6 +15,7 @@ import 'package:analyzer/src/generated/source_io.dart' show FileBasedSource, Fil
 import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/src/generated/sdk_io.dart';
 import 'package:analyzer/dart/element/element.dart';
+//TODO: Find a cleaner way to get the SDK Directory.
 import 'package:code_transformers/resolver.dart' show dartSdkDirectory;
 
 
@@ -27,13 +28,14 @@ class SecAnalyzer{
   AnalysisContext _context;
   bool _checkDartErrors = false;
   bool _throwErrorForUnSupportedFeature;
-  SecAnalyzer([bool throwErrorForUnSupportedFeature = true]){
+  final String latticeFile;
+  SecAnalyzer(this.latticeFile, [bool throwErrorForUnSupportedFeature = true]){
     this._throwErrorForUnSupportedFeature = throwErrorForUnSupportedFeature;
   }
 
    List<AnalysisError> analyze(String program,[bool useInterval =false]){
      //TODO:Remove this workaround. Find the right way to implement this.
-     var annotationsFile = new File('.').resolveSymbolicLinksSync()+"\\annotations\\flat-lattice.dart";
+     var annotationsFile = latticeFile;
      var f = new File(annotationsFile);
      String  annotationsCode = f.readAsStringSync();
      int lengthAnnotations = annotationsCode.length;

@@ -8,6 +8,7 @@ import 'package:rpc/rpc.dart';
 import 'package:analyzer/analyzer.dart' show AnalysisError;
 import 'dart:io';
 import 'package:secdart_analyzer_plugin/sec-analyzer.dart';
+import 'package:web_api/src/application_configuration.dart';
 
 
 /**
@@ -15,12 +16,9 @@ import 'package:secdart_analyzer_plugin/sec-analyzer.dart';
  * for other project, except for the SecDart Pad.
  */
 @ApiClass(version: 'v1')
-class DartFlowApi {
-
-  DartFlowApi();
-
-  @ApiMethod(path: 'noop')
-  VoidMessage noop() { return null; }
+class SecDartApi {
+  var config = new ApplicationConfiguration("config.yaml");
+  SecDartApi();
 
   @ApiMethod(path: 'failing')
   VoidMessage failing() {
@@ -29,22 +27,29 @@ class DartFlowApi {
   }
 
   @ApiMethod(path: 'hello')
-  DartFlowResult hello() { return new DartFlowResult()..result = 'Hello there!'; }
+  SecDartResult hello() { return new SecDartResult()..result = 'Hello there!'; }
+
+
   @ApiMethod(path: 'analyze',method: 'POST')
   SecAnalysisResult analyze(SecAnalysisInput input) {
-    SecAnalyzer secAnalyzer = new SecAnalyzer(false);
+    var latticeFile = _getLatticeFilePath();
+    SecAnalyzer secAnalyzer = new SecAnalyzer(latticeFile,false);
     var errors = secAnalyzer.analyze(input.source,input.useInterval);
 
     SecAnalysisResult result = new SecAnalysisResult();
 
-    var issues = errors.map(secIssueFromAnalysisError).toList();
+    var issues = errors.map(_secIssueFromAnalysisError).toList();
     result.issues = issues;
 
     return result;
   }
 
+  String _getLatticeFilePath(){
+    return new File('.').resolveSymbolicLinksSync()+"\\${config.secdart_lattice_package}";
+  }
+
   //helper method
-  SecIssue secIssueFromAnalysisError(AnalysisError error){
+  SecIssue _secIssueFromAnalysisError(AnalysisError error){
     var issue = new SecIssue();
     issue.message = error.message;
     issue.kind = "secerror";
@@ -56,19 +61,15 @@ class DartFlowApi {
     //TOODO:finish. See how the analyzer do that
     return issue;
   }
-  @ApiMethod(method: 'POST', path: 'test')
-  DartFlowResult test(AInput x) {
-    return new DartFlowResult()..result = x.toString();
-  }
   void setLine(String source,SecIssue issue){
     var parts = source.split("\n");
   }
 
 }
 
-class DartFlowResult {
+class SecDartResult {
   String result;
-  DartFlowResult();
+  SecDartResult();
 }
 class SecAnalysisResult{
   List<SecIssue> issues;
@@ -81,10 +82,6 @@ class SecIssue{
   int charStart;
   int charLength;
   int column;
-}
-class AInput{
-  @ApiProperty(minValue: 0, maxValue: 10)
-  int val;
 }
 
 class SecAnalysisInput{
