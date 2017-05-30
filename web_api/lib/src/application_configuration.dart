@@ -8,4 +8,5 @@ class ApplicationConfiguration extends ConfigurationItem {
         super.fromFile(fileName);
 
   String secdart_lattice_package;
+  int port = 8181;
 }

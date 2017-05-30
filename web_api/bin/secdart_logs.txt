@@ -3107,3 +3107,230 @@ Response
   Body:
     {issues: [{kind: secerror, message: Information flow leak, line: 0, charStart: 226, charLength: 31, column: 0}]}
 
+2017.26.30 15:26:53.577	rpc	[INFO]:	Adding /secDartApi/v1 to set of valid APIs.
+2017.26.30 15:26:53.625	rpc	[INFO]:	Enabling Discovery API Service for api: /secDartApi/v1
+2017.26.30 15:26:53.702	rpc	[INFO]:	Adding /discovery/v1 to set of valid APIs.
+2017.27.30 15:27:15.897	rpc	[INFO]:	Invoking API: /secDartApi/v1 with HTTP method: GET on url: http://localhost:8282/api/secDartApi/v1/hello.
+2017.27.30 15:27:15.929	rpc	[FINER]:	
+Request for API /secDartApi/v1:
+  Method: GET
+  Path: /api/secDartApi/v1/hello
+    accept: [text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8]
+    accept-encoding: [gzip, deflate]
+    accept-language: [en-US,en;q=0.5]
+    connection: [keep-alive]
+    host: [localhost:8282]
+    upgrade-insecure-requests: [1]
+    user-agent: [Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0]
+
+2017.27.30 15:27:15.939	rpc	[FINE]:	
+Invoking method: hello with:
+  Positional Parameters:
+  Named Parameters:
+
+2017.27.30 15:27:15.950	rpc	[FINE]:	Method returned result: Instance of 'SecDartResult'
+2017.27.30 15:27:15.967	rpc	[FINEST]:	Successfully encoded result as json: {result: Hello there!}
+2017.27.30 15:27:15.983	rpc	[FINEST]:	Successfully encoded json as bytes:
+  [123, 10, 32, 34, 114, 101, 115, 117, 108, 116, 34, 58, 32, 34, 72, 101, 108, 108, 111, 32, 116, 104, 101, 114, 101, 33, 34, 10, 125]
+2017.27.30 15:27:15.993	rpc	[FINER]:	
+Response
+  Status Code: 200
+  Headers:
+    access-control-allow-credentials: true
+    access-control-allow-origin: *
+    cache-control: no-cache, no-store, must-revalidate
+    content-type: application/json; charset=utf-8
+    expires: 0
+    pragma: no-cache
+  Body:
+    {result: Hello there!}
+
+2017.24.30 16:24:26.645	rpc	[INFO]:	Adding /secDartApi/v1 to set of valid APIs.
+2017.24.30 16:24:26.674	rpc	[INFO]:	Enabling Discovery API Service for api: /secDartApi/v1
+2017.24.30 16:24:26.705	rpc	[INFO]:	Adding /discovery/v1 to set of valid APIs.
+2017.24.30 16:24:31.581	rpc	[INFO]:	Invoking API: /secDartApi/v1 with HTTP method: GET on url: http://localhost:8282/api/secDartApi/v1/hello.
+2017.24.30 16:24:31.613	rpc	[FINER]:	
+Request for API /secDartApi/v1:
+  Method: GET
+  Path: /api/secDartApi/v1/hello
+    accept: [text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8]
+    accept-encoding: [gzip, deflate]
+    accept-language: [en-US,en;q=0.5]
+    connection: [keep-alive]
+    host: [localhost:8282]
+    upgrade-insecure-requests: [1]
+    user-agent: [Mozilla/5.0 (Windows NT 6.1; WOW64; rv:53.0) Gecko/20100101 Firefox/53.0]
+
+2017.24.30 16:24:31.623	rpc	[FINE]:	
+Invoking method: hello with:
+  Positional Parameters:
+  Named Parameters:
+
+2017.24.30 16:24:31.635	rpc	[FINE]:	Method returned result: Instance of 'SecDartResult'
+2017.24.30 16:24:31.644	rpc	[FINEST]:	Successfully encoded result as json: {result: Hello there!}
+2017.24.30 16:24:31.657	rpc	[FINEST]:	Successfully encoded json as bytes:
+  [123, 10, 32, 34, 114, 101, 115, 117, 108, 116, 34, 58, 32, 34, 72, 101, 108, 108, 111, 32, 116, 104, 101, 114, 101, 33, 34, 10, 125]
+2017.24.30 16:24:31.664	rpc	[FINER]:	
+Response
+  Status Code: 200
+  Headers:
+    access-control-allow-credentials: true
+    access-control-allow-origin: *
+    cache-control: no-cache, no-store, must-revalidate
+    content-type: application/json; charset=utf-8
+    expires: 0
+    pragma: no-cache
+  Body:
+    {result: Hello there!}
+
+2017.26.30 16:26:05.285	rpc	[INFO]:	Invoking API: /secDartApi/v1 with HTTP method: POST on url: http://localhost:8282/api/secDartApi/v1/analyze.
+2017.26.30 16:26:05.309	rpc	[FINER]:	
+Request for API /secDartApi/v1:
+  Method: POST
+  Path: /api/secDartApi/v1/analyze
+    accept: [text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2]
+    accept-encoding: [gzip,deflate]
+    charset: [UTF-8]
+    connection: [keep-alive]
+    content-length: [312]
+    content-type: [application/json]
+    host: [localhost:8282]
+    user-agent: [scalaj-http/1.0]
+  Body:
+    {source: @latent("L","L")
+printNumber (@low int s) {
+  //TODO: We need to deal with libraries
+  //print(s);
+}
+@latent("L","L")
+printSalary(@low bool isTheBoss) {
+  @high var salary = 18000;
+  @low var baseSalary = 12000;
+  printNumber(isTheBoss ? salary : baseSalary);
+}, useInterval: false}
+
+2017.26.30 16:26:05.318	rpc	[FINE]:	
+Invoking method: analyze with:
+  Positional Parameters:
+    Instance of 'SecAnalysisInput'
+  Named Parameters:
+
+2017.26.30 16:26:07.620	rpc	[FINE]:	Method returned result: Instance of 'SecAnalysisResult'
+2017.26.30 16:26:07.630	rpc	[FINEST]:	Successfully encoded result as json: {issues: [{kind: secerror, message: Information flow leak, line: 0, charStart: 226, charLength: 31, column: 0}]}
+2017.26.30 16:26:07.640	rpc	[FINEST]:	Successfully encoded json as bytes:
+  [123, 10, 32, 34, 105, 115, 115, 117, 101, 115, 34, 58, 32, 91, 10, 32, 32, 123, 10, 32, 32, 32, 34, 107, 105, 110, 100, 34, 58, 32, 34, 115, 101, 99, 101, 114, 114, 111, 114, 34, 44, 10, 32, 32, 32, 34, 109, 101, 115, 115, 97, 103, 101, 34, 58, 32, 34, 73, 110, 102, 111, 114, 109, 97, 116, 105, 111, 110, 32, 102, 108, 111, 119, 32, 108, 101, 97, 107, 34, 44, 10, 32, 32, 32, 34, 108, 105, 110, 101, 34, 58, 32, 48, 44, 10, 32, 32, 32, 34, 99, 104, 97, 114, 83, 116, 97, 114, 116, 34, 58, 32, 50, 50, 54, 44, 10, 32, 32, 32, 34, 99, 104, 97, 114, 76, 101, 110, 103, 116, 104, 34, 58, 32, 51, 49, 44, 10, 32, 32, 32, 34, 99, 111, 108, 117, 109, 110, 34, 58, 32, 48, 10, 32, 32, 125, 10, 32, 93, 10, 125]
+2017.26.30 16:26:07.649	rpc	[FINER]:	
+Response
+  Status Code: 200
+  Headers:
+    access-control-allow-credentials: true
+    access-control-allow-origin: *
+    cache-control: no-cache, no-store, must-revalidate
+    content-type: application/json; charset=utf-8
+    expires: 0
+    pragma: no-cache
+  Body:
+    {issues: [{kind: secerror, message: Information flow leak, line: 0, charStart: 226, charLength: 31, column: 0}]}
+
+2017.18.30 18:18:04.275	rpc	[INFO]:	Adding /secDartApi/v1 to set of valid APIs.
+2017.18.30 18:18:04.299	rpc	[INFO]:	Enabling Discovery API Service for api: /secDartApi/v1
+2017.18.30 18:18:04.326	rpc	[INFO]:	Adding /discovery/v1 to set of valid APIs.
+2017.18.30 18:18:25.132	rpc	[INFO]:	Invoking API: /secDartApi/v1 with HTTP method: POST on url: http://localhost:8282/api/secDartApi/v1/analyze.
+2017.18.30 18:18:25.185	rpc	[FINER]:	
+Request for API /secDartApi/v1:
+  Method: POST
+  Path: /api/secDartApi/v1/analyze
+    accept: [text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2]
+    accept-encoding: [gzip,deflate]
+    charset: [UTF-8]
+    connection: [keep-alive]
+    content-length: [312]
+    content-type: [application/json]
+    host: [localhost:8282]
+    user-agent: [scalaj-http/1.0]
+  Body:
+    {source: @latent("L","L")
+printNumber (@low int s) {
+  //TODO: We need to deal with libraries
+  //print(s);
+}
+@latent("L","L")
+printSalary(@low bool isTheBoss) {
+  @high var salary = 18000;
+  @low var baseSalary = 12000;
+  printNumber(isTheBoss ? salary : baseSalary);
+}, useInterval: false}
+
+2017.18.30 18:18:25.196	rpc	[FINE]:	
+Invoking method: analyze with:
+  Positional Parameters:
+    Instance of 'SecAnalysisInput'
+  Named Parameters:
+
+2017.18.30 18:18:25.215	rpc	[WARNING]:	
+Response
+  Status Code: 500
+  Headers:
+    access-control-allow-credentials: true
+    access-control-allow-origin: *
+    cache-control: no-cache, no-store, must-revalidate
+    content-type: application/json; charset=utf-8
+    expires: 0
+    pragma: no-cache
+  Exception:
+    RPC Error with status: 500 and message: NoSuchMethodError: Class 'SecDartApi' has no instance getter 'path'.
+Receiver: Instance of 'SecDartApi'
+Tried calling: path
+
+2017.19.30 18:19:18.778	rpc	[INFO]:	Adding /secDartApi/v1 to set of valid APIs.
+2017.19.30 18:19:18.808	rpc	[INFO]:	Enabling Discovery API Service for api: /secDartApi/v1
+2017.19.30 18:19:18.833	rpc	[INFO]:	Adding /discovery/v1 to set of valid APIs.
+2017.19.30 18:19:30.065	rpc	[INFO]:	Invoking API: /secDartApi/v1 with HTTP method: POST on url: http://localhost:8282/api/secDartApi/v1/analyze.
+2017.19.30 18:19:30.126	rpc	[FINER]:	
+Request for API /secDartApi/v1:
+  Method: POST
+  Path: /api/secDartApi/v1/analyze
+    accept: [text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2]
+    accept-encoding: [gzip,deflate]
+    charset: [UTF-8]
+    connection: [keep-alive]
+    content-length: [312]
+    content-type: [application/json]
+    host: [localhost:8282]
+    user-agent: [scalaj-http/1.0]
+  Body:
+    {source: @latent("L","L")
+printNumber (@low int s) {
+  //TODO: We need to deal with libraries
+  //print(s);
+}
+@latent("L","L")
+printSalary(@low bool isTheBoss) {
+  @high var salary = 18000;
+  @low var baseSalary = 12000;
+  printNumber(isTheBoss ? salary : baseSalary);
+}, useInterval: false}
+
+2017.19.30 18:19:30.137	rpc	[FINE]:	
+Invoking method: analyze with:
+  Positional Parameters:
+    Instance of 'SecAnalysisInput'
+  Named Parameters:
+
+2017.19.30 18:19:32.338	rpc	[FINE]:	Method returned result: Instance of 'SecAnalysisResult'
+2017.19.30 18:19:32.347	rpc	[FINEST]:	Successfully encoded result as json: {issues: [{kind: secerror, message: Information flow leak, line: 0, charStart: 226, charLength: 31, column: 0}]}
+2017.19.30 18:19:32.387	rpc	[FINEST]:	Successfully encoded json as bytes:
+  [123, 10, 32, 34, 105, 115, 115, 117, 101, 115, 34, 58, 32, 91, 10, 32, 32, 123, 10, 32, 32, 32, 34, 107, 105, 110, 100, 34, 58, 32, 34, 115, 101, 99, 101, 114, 114, 111, 114, 34, 44, 10, 32, 32, 32, 34, 109, 101, 115, 115, 97, 103, 101, 34, 58, 32, 34, 73, 110, 102, 111, 114, 109, 97, 116, 105, 111, 110, 32, 102, 108, 111, 119, 32, 108, 101, 97, 107, 34, 44, 10, 32, 32, 32, 34, 108, 105, 110, 101, 34, 58, 32, 48, 44, 10, 32, 32, 32, 34, 99, 104, 97, 114, 83, 116, 97, 114, 116, 34, 58, 32, 50, 50, 54, 44, 10, 32, 32, 32, 34, 99, 104, 97, 114, 76, 101, 110, 103, 116, 104, 34, 58, 32, 51, 49, 44, 10, 32, 32, 32, 34, 99, 111, 108, 117, 109, 110, 34, 58, 32, 48, 10, 32, 32, 125, 10, 32, 93, 10, 125]
+2017.19.30 18:19:32.399	rpc	[FINER]:	
+Response
+  Status Code: 200
+  Headers:
+    access-control-allow-credentials: true
+    access-control-allow-origin: *
+    cache-control: no-cache, no-store, must-revalidate
+    content-type: application/json; charset=utf-8
+    expires: 0
+    pragma: no-cache
+  Body:
+    {issues: [{kind: secerror, message: Information flow leak, line: 0, charStart: 226, charLength: 31, column: 0}]}
+

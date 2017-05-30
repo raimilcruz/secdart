@@ -13,7 +13,8 @@ dependencies:
   shelf: '>=0.6.0 <0.7.0'
   shelf_route: '>=0.13.4 <0.14.0'
   shelf_rpc: '>=0.0.3 <0.0.4'
-  secdart_analyzer_plugin:
-    path: ../analyzer_plugin
+  secdart_analyzer:
+    path: ../sec_analyzer
   code_transformers: any
   safe_config: any
+  path: any

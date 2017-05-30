@@ -7,8 +7,9 @@ library web_api;
 import 'package:rpc/rpc.dart';
 import 'package:analyzer/analyzer.dart' show AnalysisError;
 import 'dart:io';
-import 'package:secdart_analyzer_plugin/sec-analyzer.dart';
+import 'package:secdart_analyzer/sec-analyzer.dart';
 import 'package:web_api/src/application_configuration.dart';
+import 'package:path/path.dart' as path;
 
 
 /**
@@ -45,7 +46,7 @@ class SecDartApi {
   }
 
   String _getLatticeFilePath(){
-    return new File('.').resolveSymbolicLinksSync()+"\\${config.secdart_lattice_package}";
+    return path.join(new File('.').resolveSymbolicLinksSync(),config.secdart_lattice_package);
   }
 
   //helper method

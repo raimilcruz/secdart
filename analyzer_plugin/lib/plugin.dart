@@ -3,7 +3,7 @@ import 'package:analyzer/src/generated/engine.dart';
 import 'package:analyzer/task/model.dart';
 import 'package:plugin/manager.dart';
 import 'package:plugin/plugin.dart';
-import 'package:secdart_analyzer_plugin/src/errors.dart';
+import 'package:secdart_analyzer/src/errors.dart';
 
 
 class SecDartAnalysisPlugin implements Plugin {

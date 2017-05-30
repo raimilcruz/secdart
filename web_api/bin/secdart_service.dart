@@ -7,6 +7,7 @@ import 'package:logging_handlers/server_logging_handlers.dart';
 import 'package:rpc/rpc.dart';
 
 import 'package:web_api/web_api.dart';
+import 'package:web_api/src/application_configuration.dart';
 
 const String _API_PREFIX = '/api';
 final ApiServer _apiServer =
@@ -23,6 +24,8 @@ main() async {
   _apiServer.addApi(new SecDartApi());
   _apiServer.enableDiscoveryApi();
 
-  HttpServer server = await HttpServer.bind(InternetAddress.ANY_IP_V4, 8181);
+  var config = new ApplicationConfiguration("config.yaml");
+
+  HttpServer server = await HttpServer.bind(InternetAddress.ANY_IP_V4, config.port);
   server.listen(_apiServer.httpRequestHandler);
 }

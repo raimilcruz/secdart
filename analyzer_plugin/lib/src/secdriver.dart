@@ -8,11 +8,12 @@ import 'package:analysis_server/src/protocol_server.dart' as protocol;
 import 'package:analyzer/error/error.dart';
 import 'package:analyzer/src/dart/analysis/driver.dart';
 //import 'package:analyzer/src/generated/resolver.dart' show TypeProvider;
-import 'package:secdart_analyzer_plugin/src/error-collector.dart';
-import 'package:secdart_analyzer_plugin/src/errors.dart';
 import 'package:analyzer/src/dart/analysis/file_state.dart';
-import 'package:secdart_analyzer_plugin/src/gs-typesystem.dart';
-import 'package:secdart_analyzer_plugin/src/security_visitor.dart';
+
+import 'package:secdart_analyzer/src/error-collector.dart';
+import 'package:secdart_analyzer/src/errors.dart';
+import 'package:secdart_analyzer/src/gs-typesystem.dart';
+import 'package:secdart_analyzer/src/security_visitor.dart';
 
 
 class SecDriver  implements AnalysisDriverGeneric{
