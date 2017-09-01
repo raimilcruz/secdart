@@ -159,7 +159,8 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   bool visitMethodInvocation(MethodInvocation node) {
     //visit the function expression
     node.function.accept(this);
-    //get the function sec type
+    //get the function sec type. This does not work when the function is another file. We need to solve
+    //the problems with the scope.
     var functionSecType = _getSecurityType(node.function) as SecurityFunctionType;
     var beginLabel = functionSecType.beginLabel;
     var endlabel = functionSecType.endLabel;
@@ -484,7 +485,14 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
    * Get the security type associated to an expression. The security type need to be resolved for the expression
    */
   SecurityType _getSecurityType(Expression expr) {
-    return expr.getProperty(SEC_TYPE_PROPERTY);
+    var result = expr.getProperty(SEC_TYPE_PROPERTY);
+    if(result == null) {
+      reportError(SecurityTypeError.toAnalysisError(expr,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, "Expression does not "
+          "have a security type (For instance it happens when a calling a function in another library, we do not how to deal"
+          "with multiple file yet)"));
+      throw new UnsupportedFeatureException("Error in SecurityVisitor._getSecurityType");
+    }
+    return result;
   }
 
   //TODO: Neet to Return a security type
@@ -513,16 +521,6 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   }
 }
 
-abstract class SecDartException implements Exception{
-  String getMessage();
-}
-class UnsupportedFeatureException implements SecDartException{
-  final String message;
-  UnsupportedFeatureException([this.message]);
-
-  @override
-  String getMessage() => message;
-}
 
 
 

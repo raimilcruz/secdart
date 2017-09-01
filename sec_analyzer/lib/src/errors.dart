@@ -165,4 +165,16 @@ class ImplementationErrorCode extends ErrorCode{
   @override
   ErrorType get type => ErrorType.STATIC_WARNING;
 }
+
+abstract class SecDartException implements Exception{
+  String getMessage();
+}
+class UnsupportedFeatureException implements SecDartException{
+  final String message;
+  UnsupportedFeatureException([this.message]);
+
+  @override
+  String getMessage() => message;
+}
+
   
