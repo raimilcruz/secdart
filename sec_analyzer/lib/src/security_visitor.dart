@@ -27,7 +27,6 @@ final String SEC_TYPE_PROPERTY = "sec-type";
  */
 //TODO: Use a ScopedVisitor
 class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
-  static const String FUNCTION_LATTENT_LABEL = "latent";
 
   //The implementation of the security type system
   final GradualSecurityTypeSystem secTypeSystem;
@@ -37,7 +36,12 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   /**
    * The parser used to get label from annotation
    */
-  SecAnnotationParser _parser = new FlatLatticeParser();
+  SecAnnotationParser _parser;
+
+  /**
+   * A helper parser to extract the function annotated security type
+   */
+  SecurityTypeHelperParser functionSecTypeParser;
 
   /**
    * Map(id,SecType)
@@ -59,6 +63,8 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   SecurityVisitor(this.secTypeSystem, this.reporter,[bool this.intervalMode = false]) {
     //TODO: Change for LibraryScope
     _secScope = new NestedSecurityScope(new EmptySecurityScope<SecurityType>());
+    _parser = new FlatLatticeParser(reporter);
+    functionSecTypeParser = new SecurityTypeHelperParser(_parser,reporter);
   }
 
   bool visitCompilationUnit(CompilationUnit node) {
@@ -75,7 +81,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     /*TODO: Check here. We need a better way to add function declaration to the scope 
     eg. calls to function that are defined ahead
     */
-    var secType = getFunctionSecType(node);
+    var secType = functionSecTypeParser.getFunctionSecType(node);
     if(_secScope.isDefined(node.name.name)) {
       reportError(_secScope.getErrorForDuplicate(node.name.name, node.element));
       return false;
@@ -117,7 +123,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     for (FormalParameter pElem in node.parameters) {
       DartType type = pElem.element.type;
       String name = pElem.element.name;
-      var label = _getSecurityAnnotationForFunctionParameter(pElem);
+      var label = functionSecTypeParser.getSecurityAnnotationForFunctionParameter(pElem);
       var secType = new GroundSecurityType(type, label);
       if(_secScope.isDefined(name)) {
         reportError(_secScope.getErrorForDuplicate(name, pElem.element));
@@ -390,81 +396,11 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   /**
    * Given a [FunctionDeclaration] node returns its security type
    */
-  SecurityFunctionType getFunctionSecType(FunctionDeclaration node) {
-    var metadataList = node.metadata;
 
-    //label are dynamic by default
-    var returnLabel = _parser.dynamicLabel;
-    var beginLabel = _parser.dynamicLabel;
-    var endLabel = _parser.dynamicLabel;
-    if (metadataList != null) {
-      var latentAnnotations = metadataList.where((a)=>a.name.name == FUNCTION_LATTENT_LABEL);
 
-      if(latentAnnotations.length>1){
-        reportError(SecurityTypeError.getDuplicatedLatentError(node));
-        throw new SecCompilationException("Too much ${FUNCTION_LATTENT_LABEL} label annotation for function ${node.name.name}");
-      }
-      else if(latentAnnotations.length==1) {
-        Annotation securityFunctionAnnotation = latentAnnotations.first;
-        var labels = _parser.parseFunctionLabel(securityFunctionAnnotation);
-        beginLabel = labels[0];
-        endLabel = labels[1];
-      }
 
-      var returnAnnotations = metadataList.where((a)=>_parser.isLabel(a));
-      if(returnAnnotations.length>1){
-        reportError(SecurityTypeError.getDuplicatedLatentError(node));
-        return null;
-      }
-      else if(returnAnnotations.length==1){
-        returnLabel = _parser.parseLabel(returnAnnotations.first);
-      }
-    }
-    var parameterSecTypes = new List<SecurityType>();
-    FunctionExpression functionExpr = node.functionExpression;
-    var formalParameterlists = functionExpr.parameters.parameters;
-    for (FormalParameter p in formalParameterlists) {
-      SecurityLabel label =_getSecurityAnnotationForFunctionParameter(p);
-      parameterSecTypes.add(new GroundSecurityType(p.element.type, label));
-    }
-    var returnType = new GroundSecurityType(functionExpr.element.returnType, returnLabel);
-    return new SecurityFunctionType(beginLabel, parameterSecTypes, returnType, endLabel);
-  }
 
-  /**
-   * Get the security annotation for a function parameter
-   */
-  SecurityLabel _getSecurityAnnotationForFunctionParameter(FormalParameter parameter) {
-    var secLabelAnnotations = parameter.metadata.where((x)=> _parser.isLabel(x));
-    var label = _parser.dynamicLabel;
-    if(secLabelAnnotations.length>1){
-      reportError(SecurityTypeError.getDuplicatedLabelOnParameterError(parameter));
-      throw new SecCompilationException("Too much label for this parameter");
-    }
-    else if(secLabelAnnotations.length==1){
-      label = _parser.parseLabel(secLabelAnnotations.first);
-    }
-    return label;
-  }
 
-  /**
-   * Get the security annotation from a list of annotations
-   */
-  SecurityLabel _getSecurityLabelVarOrParameter(
-      NodeList<Annotation> annotations,AstNode node){
-    var labelAnnotations = annotations.where((a)=>_parser.isLabel(a));
-    var label = _parser.dynamicLabel;
-    if(labelAnnotations.length>1){
-      //TODO:Fix
-      reportError(SecurityTypeError.getDuplicatedLabelOnParameterError(node));
-      throw new SecCompilationException("Too much label on parameters or var");
-    }
-    else if(labelAnnotations.length==1){
-      label = _parser.parseLabel(labelAnnotations.first);
-    }
-    return label;
-
-  }
 
   /**
    * Checks that an expression can be assigned to a type
@@ -561,7 +497,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     if (type is SecurityType) {
       throw new ArgumentError("type must be an original DartType");
     }
-    var label = _getSecurityLabelVarOrParameter(node.metadata,node);
+    var label = functionSecTypeParser.getSecurityLabelVarOrParameter(node.metadata,node);
     return new GroundSecurityType(type, label);
   }
 
@@ -583,13 +519,6 @@ abstract class SecDartException implements Exception{
 class UnsupportedFeatureException implements SecDartException{
   final String message;
   UnsupportedFeatureException([this.message]);
-
-  @override
-  String getMessage() => message;
-}
-class SecCompilationException implements SecDartException{
-  final String message;
-  SecCompilationException([this.message]);
 
   @override
   String getMessage() => message;

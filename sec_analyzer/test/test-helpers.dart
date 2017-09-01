@@ -4,11 +4,11 @@ import 'package:analyzer/error/error.dart';
 import 'package:analyzer/file_system/file_system.dart';
 import 'package:analyzer/file_system/memory_file_system.dart';
 import 'package:front_end/src/base/source.dart';
-import 'package:secdart_analyzer_plugin/src/borrow/context.dart';
-import 'package:secdart_analyzer_plugin/src/error-collector.dart';
-import 'package:secdart_analyzer_plugin/src/gs-typesystem.dart';
-import 'package:secdart_analyzer_plugin/src/security_visitor.dart';
-import 'package:secdart_analyzer_plugin/src/supported_subset.dart';
+import 'package:secdart_analyzer/src/borrow/context.dart';
+import 'package:secdart_analyzer/src/error-collector.dart';
+import 'package:secdart_analyzer/src/gs-typesystem.dart';
+import 'package:secdart_analyzer/src/security_visitor.dart';
+import 'package:secdart_analyzer/src/supported_subset.dart';
 
 
 

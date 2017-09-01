@@ -82,6 +82,12 @@ class SecurityTypeError{
     var source = expr.source;
     return new AnalysisError(source, 0, 2, errorCode, null);        
   }
+  //SYNTACTIC ERRORS IN LABEL
+  static AnalysisError getBadFunctionLabel(AstNode node) {
+    var errorCode = SecurityErrorCode.BAD_FUNCTION_LABEL;
+    return toAnalysisError(node,errorCode,null);
+  }
+
 }
 
 /**
@@ -126,6 +132,11 @@ class SecurityErrorCode extends ErrorCode{
   static const SecurityErrorCode DUPLICATED_LABEL_ON_PARAMETER_ERROR=
   const SecurityErrorCode(
       'DUPLICATED_LABEL_ON_PARAMETER_ERROR', 'Duplicated label on parameter');
+
+  //SYNTACTIC ERRORS IN SECURITY ANNOTATIONS
+  static const SecurityErrorCode BAD_FUNCTION_LABEL=
+  const SecurityErrorCode(
+      'BAD_FUNCTION_LABEL', 'Function label annotations must have two labels: the [endlabel] and the [beginlabel]');
 
   static const SecurityErrorCode MY_WARNING_CODE =  const SecurityErrorCode('MY_WARNING_CODE', 'This is a proof-of-concept error');
 
