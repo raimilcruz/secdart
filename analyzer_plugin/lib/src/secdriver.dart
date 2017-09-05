@@ -117,10 +117,7 @@ class SecDriver  implements AnalysisDriverGeneric{
     if (result == null) return;
     final errors = new List<AnalysisError>.from(result.errors);
     final lineInfo = new LineInfo.fromContent(getFileContent(path));
-    final serverErrors = protocol.doAnalysisError_listFromEngine(
-        dartDriver.analysisOptions, lineInfo, errors);
-    notificationManager
-        .recordAnalysisErrors("secPlugin", path, serverErrors);
+    notificationManager.recordAnalysisErrors(path,lineInfo, errors);
   }
 
   String getFileContent(String path) {

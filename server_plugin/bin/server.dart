@@ -1,5 +1,5 @@
-import '../lib/starter.dart';
-import 'package:secdart_analyzer_plugin/starter.dart' as sec;
+import '../lib/starter.dart' as sec;
+import 'package:analysis_server/starter.dart';
 
 /**
  * Create and run an analysis server with the SecDart plugins.

@@ -6,6 +6,23 @@ import 'package:analyzer/src/context/builder.dart';
 import 'package:analyzer/src/source/source_resource.dart';
 import 'package:secdart_analyzer_plugin/src/secdriver.dart';
 import 'package:analysis_server/src/analysis_server.dart';
+import 'package:analysis_server/src/protocol_server.dart' as protocol;
+
+class ServerNotificationManager implements NotificationManager {
+  final AnalysisServer server;
+  final AnalysisDriver dartDriver;
+
+  ServerNotificationManager(this.server, this.dartDriver);
+
+  @override
+  void recordAnalysisErrors(
+      String path, LineInfo lineInfo, List<AnalysisError> analysisErrors) =>
+      server.notificationManager.recordAnalysisErrors(
+          'secPlugin',
+          path,
+          protocol.doAnalysisError_listFromEngine(
+              dartDriver.analysisOptions, lineInfo, analysisErrors));
+}
 
 class Starter {
   final secDrivers = <String, SecDriver>{};
@@ -15,8 +32,6 @@ class Starter {
     this.server = server;
     ContextBuilder.onCreateAnalysisDriver = onCreateAnalysisDriver;
     server.onResultErrorSupplementor = sumErrors;
-    server.onNoAnalysisResult = readHowToImplementonNoAnalysisResult;
-    server.onNoAnalysisCompletion = readHowToImplementonNoAnalysisCompletion;
   }
 
   void onCreateAnalysisDriver(
@@ -30,7 +45,7 @@ class Starter {
       sourceFactory,
       analysisOptions) {
 
-   final SecDriver driver = new SecDriver(server, analysisDriver,
+   final SecDriver driver = new SecDriver(new ServerNotificationManager(server, analysisDriver), analysisDriver,
         scheduler,sourceFactory, contentOverlay);
 
     secDrivers[driverPath] = driver;
@@ -55,66 +70,5 @@ class Starter {
       errors.addAll(angularErrors);
     }
     return null;
-  }
-
-  Future readHowToImplementonNoAnalysisResult(String path, Function sendFn) async {
-    for (final driverPath in secDrivers.keys) {
-      if (server.contextManager.getContextFolderFor(path).path == driverPath) {
-        final driver = secDrivers[driverPath];
-        // only the owning driver "adds" the path
-        final angularErrors = await driver.requestDartErrors(path);
-        sendFn(
-            driver.dartDriver.analysisOptions,
-            new LineInfo.fromContent(driver.getFileContent(path)),
-            angularErrors);
-        return;
-      }
-    }
-
-    sendFn(null, null, null);
-  }
-
-  // Handles .html completion. Directly sends the suggestions to the
-  // [completionHandler].
-  Future readHowToImplementonNoAnalysisCompletion(
-    Request request,
-    CompletionDomainHandler completionHandler,
-    CompletionGetSuggestionsParams params,
-    CompletionPerformance performance,
-    String completionId,
-  ) async {
-   /* var filePath = (request.toJson()['params'] as Map)['file'];
-    var source =
-        new FileSource(server.resourceProvider.getFile(filePath), filePath);
-
-    if (server.contextManager.isInAnalysisRoot(filePath)) {
-      for (final driverPath in angularDrivers.keys) {
-        if (server.contextManager.getContextFolderFor(filePath).path ==
-            driverPath) {
-          final driver = angularDrivers[driverPath];
-
-          var completionContributor = new AngularCompletionContributor(driver);
-          CompletionRequestImpl completionRequest = new CompletionRequestImpl(
-              null, // AnalysisResult - unneeded for AngularCompletion
-              null, // AnalysisContext - unnedded for AngularCompletion
-              server.resourceProvider,
-              source,
-              params.offset,
-              performance,
-              server.ideOptions);
-          completionHandler.setNewRequest(completionRequest);
-          server.sendResponse(new CompletionGetSuggestionsResult(completionId)
-              .toResponse(request.id));
-          var suggestions =
-              await completionContributor.computeSuggestions(completionRequest);
-          completionHandler.sendCompletionNotification(
-              completionId,
-              completionRequest.replacementOffset,
-              completionRequest.replacementLength,
-              suggestions);
-          completionHandler.ifMatchesRequestClear(completionRequest);
-        }
-      }
-    }*/
   }
 }
