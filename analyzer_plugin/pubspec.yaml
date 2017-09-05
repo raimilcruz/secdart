@@ -6,20 +6,8 @@ environment:
   sdk: '>=1.20.1 <2.0.0'
 
 dependencies:
-  analyzer: '^0.30.0'
-  plugin: '^0.2.0'
-  #TODO: It should be removed (we are using this to resolve the SDK)
-  code_transformers: any
+  analyzer: '^0.31.0-alpha.1'
   secdart_analyzer:
     path: ../sec_analyzer
-  #analyzer_plugin:
-   # path: ../../angular_analyzer_plugin/deps/sdk/pkg/analyzer_plugin
-  analysis_server:
-    path: ../../angular_analyzer_plugin/deps/sdk/pkg/analysis_server
-
-
-dependency_overrides:
-  analyzer:
-    path: ../../angular_analyzer_plugin/deps/sdk/pkg/analyzer
 dev_dependencies:
   test: ^0.12.0

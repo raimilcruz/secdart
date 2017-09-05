@@ -15,8 +15,7 @@ import 'package:analyzer/src/generated/source_io.dart' show FileBasedSource, Fil
 import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/src/generated/sdk_io.dart';
 import 'package:analyzer/dart/element/element.dart';
-//TODO: Find a cleaner way to get the SDK Directory.
-import 'package:code_transformers/resolver.dart' show dartSdkDirectory;
+
 
 
 /**
@@ -24,7 +23,7 @@ import 'package:code_transformers/resolver.dart' show dartSdkDirectory;
  * for test and for the REST API.
  */
 class SecAnalyzer{
-
+  var dartSdkDirectory = "C:/tools/dart-sdk/";
   AnalysisContext _context;
   bool _checkDartErrors = false;
   bool _throwErrorForUnSupportedFeature;

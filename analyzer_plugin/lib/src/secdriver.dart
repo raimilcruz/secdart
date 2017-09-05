@@ -1,10 +1,8 @@
 import 'dart:convert';
 import 'dart:async';
 import 'dart:collection';
-import 'package:analysis_server/src/analysis_server.dart';
+
 import 'package:analyzer/src/generated/source.dart';
-import 'package:analysis_server/plugin/protocol/protocol_dart.dart' as protocol;
-import 'package:analysis_server/src/protocol_server.dart' as protocol;
 import 'package:analyzer/error/error.dart';
 import 'package:analyzer/src/dart/analysis/driver.dart';
 //import 'package:analyzer/src/generated/resolver.dart' show TypeProvider;
@@ -16,8 +14,13 @@ import 'package:secdart_analyzer/src/gs-typesystem.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart';
 
 
+abstract class NotificationManager {
+  void recordAnalysisErrors(
+      String path, LineInfo lineInfo, List<AnalysisError> analysisErrors);
+}
+
 class SecDriver  implements AnalysisDriverGeneric{
-  final AnalysisServer server;
+  final NotificationManager notificationManager;
   final AnalysisDriverScheduler _scheduler;
   final AnalysisDriver dartDriver;
   SourceFactory _sourceFactory;
@@ -31,7 +34,7 @@ class SecDriver  implements AnalysisDriverGeneric{
 
   bool _hasSecDefinitionsImported = false;
 
-  SecDriver(this.server, this.dartDriver, this._scheduler,SourceFactory sourceFactory,this._contentOverlay) {
+  SecDriver(this.notificationManager, this.dartDriver, this._scheduler,SourceFactory sourceFactory,this._contentOverlay) {
     _sourceFactory = sourceFactory.clone();
     _scheduler.add(this);
 
@@ -116,7 +119,7 @@ class SecDriver  implements AnalysisDriverGeneric{
     final lineInfo = new LineInfo.fromContent(getFileContent(path));
     final serverErrors = protocol.doAnalysisError_listFromEngine(
         dartDriver.analysisOptions, lineInfo, errors);
-    server.notificationManager
+    notificationManager
         .recordAnalysisErrors("secPlugin", path, serverErrors);
   }
 

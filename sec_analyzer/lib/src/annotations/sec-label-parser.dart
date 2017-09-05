@@ -1,7 +1,7 @@
-import '../security_label.dart';
-import '../security-type.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/analyzer.dart';
+import '../security_label.dart';
+import '../security-type.dart';
 import '../errors.dart';
 
 /**
@@ -197,6 +197,9 @@ class SecurityTypeHelperParser{
       label = _parser.parseLabel(secLabelAnnotations.first);
     }
     return label;
+  }
+  void reportError(AnalysisError explicitFlowError) {
+    errorListener.onError(explicitFlowError);
   }
 }
 class SecCompilationException implements SecDartException{

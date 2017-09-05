@@ -7,22 +7,13 @@ environment:
 
 
 dependencies:
-  analyzer: '>=0.25.1'
+  analyzer: ^0.31.0-alpha.1
   secdart_analyzer_plugin:
     path: ../analyzer_plugin
-  analysis_server:
-    path: ../../angular_analyzer_plugin/deps/sdk/pkg/analysis_server
-  analyzer_plugin:
-    path: ../../angular_analyzer_plugin/deps/sdk/pkg/analyzer_plugin
+  analysis_server: any
+  analyzer_plugin: any
+  front_end: any
   plugin: '^0.2.0'
-
-dependency_overrides:
-  analyzer:
-     path: ../../angular_analyzer_plugin/deps/sdk/pkg/analyzer
-  analysis_server:
-     path: ../../angular_analyzer_plugin/deps/sdk/pkg/analysis_server
-  front_end:
-    path: ../../angular_analyzer_plugin/deps/sdk/pkg/front_end
 
 dev_dependencies:
   test: ^0.12.0

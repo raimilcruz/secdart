@@ -1,17 +1,11 @@
 import 'dart:async';
 
 import 'package:analyzer/error/error.dart';
-import 'package:analysis_server/src/analysis_server.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/src/context/builder.dart';
-import 'package:analysis_server/protocol/protocol.dart' show Request;
-import 'package:analysis_server/protocol/protocol_generated.dart'
-    show CompletionGetSuggestionsParams, CompletionGetSuggestionsResult;
-import 'package:analysis_server/src/services/completion/completion_core.dart';
-import 'package:analysis_server/src/services/completion/completion_performance.dart';
 import 'package:analyzer/src/source/source_resource.dart';
-import 'package:analysis_server/src/domain_completion.dart';
 import 'package:secdart_analyzer_plugin/src/secdriver.dart';
+import 'package:analysis_server/src/analysis_server.dart';
 
 class Starter {
   final secDrivers = <String, SecDriver>{};

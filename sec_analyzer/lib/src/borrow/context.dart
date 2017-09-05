@@ -7,7 +7,7 @@ import 'package:analyzer/src/generated/java_io.dart';
 import 'package:path/path.dart';
 import 'package:analyzer/src/generated/sdk.dart' show DartSdk;
 import 'package:analyzer/src/generated/sdk_io.dart' show DirectoryBasedDartSdk;
-import 'package:code_transformers/resolver.dart' show dartSdkDirectory;
+
 
 /**
  * This file contains function to initialize AnalysisContext that are used by the Security Analyzer
@@ -17,6 +17,7 @@ import 'package:code_transformers/resolver.dart' show dartSdkDirectory;
  * Create an analysis context
  */
 AnalysisContext createAnalysisContext(){
+  var dartSdkDirectory = "C:/tools/dart-sdk/";
   JavaSystemIO.setProperty("com.google.dart.sdk", dartSdkDirectory);
   DartSdk sdk = DirectoryBasedDartSdk.defaultSdk;
 
