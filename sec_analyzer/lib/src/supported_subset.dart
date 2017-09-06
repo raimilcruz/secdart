@@ -24,6 +24,7 @@ class SupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
     return null;
   }
 
+
   @override
   Object visitEnumDeclaration(EnumDeclaration node) {
     _reportUnsupportedDartFeature(node, "enum");

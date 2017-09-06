@@ -160,10 +160,10 @@ class SecDriver  implements AnalysisDriverGeneric{
       if(realErrors.length!=0) {
         AnalysisError error = SecurityTypeError.getImplementationError(
             unit.element.computeNode(),
-            "Proof-of-concept error. Standard Dart error:" +
+            "Standard Dart error:" +
                 realErrors.first.message);
-        var list = new List<AnalysisError>();
-        list.add(error);
+        var list = realErrors;
+        //list.add(error);
         return new SecResult(list);
       }
     }

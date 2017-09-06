@@ -64,7 +64,7 @@ class FlatLatticeParser extends SecAnnotationParser{
       case 'dynl':
         return this.dynamicLabel;
       default:
-        throw new ArgumentError(
+        throw new SecCompilationException(
             "Annotation does not represent a label for me!");
     }
   }
@@ -81,7 +81,7 @@ class FlatLatticeParser extends SecAnnotationParser{
       case 'dynl':
         return this.dynamicLabel;
       default:
-        throw new ArgumentError("String does not represent a label for me!");
+        throw new SecCompilationException("String does not represent a label for me!");
     }
   }
 

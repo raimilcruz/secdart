@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:analyzer/error/error.dart';
+import 'package:analyzer/src/dart/analysis/driver.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/src/context/builder.dart';
 import 'package:analyzer/src/source/source_resource.dart';

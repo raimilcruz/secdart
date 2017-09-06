@@ -1,5 +1,8 @@
+import 'package:analyzer/context/context_root.dart' as analyzer;
 import 'package:analyzer/file_system/file_system.dart';
+import 'package:analyzer/src/context/builder.dart';
 import 'package:analyzer/src/dart/analysis/driver.dart';
+import 'package:analyzer/src/dart/analysis/performance_logger.dart';
 import 'package:analyzer_plugin/protocol/protocol_generated.dart';
 import 'package:analyzer_plugin/starter.dart';
 import 'package:analyzer_plugin/plugin/plugin.dart';
@@ -13,6 +16,7 @@ import 'package:analyzer_plugin/channel/channel.dart';
 import 'package:analyzer_plugin/protocol/protocol_constants.dart' as plugin;
 import 'package:analyzer_plugin/protocol/protocol_generated.dart' as plugin;
 import 'package:analyzer_plugin/utilities/analyzer_converter.dart';
+import 'package:secdart_analyzer_plugin/src/secdriver.dart';
 
 
 class SecDartPlugin extends ServerPlugin {
@@ -21,7 +25,7 @@ class SecDartPlugin extends ServerPlugin {
   @override
   AnalysisDriverGeneric createAnalysisDriver(ContextRoot contextRoot) {
     //Taken from angular_plugin
-    final root = new ContextRoot(contextRoot.root, contextRoot.exclude)
+    final root = new analyzer.ContextRoot(contextRoot.root, contextRoot.exclude)
       ..optionsFilePath = contextRoot.optionsFile;
     if (!isEnabled(root.optionsFilePath)) {
       return null;
@@ -57,6 +61,26 @@ class SecDartPlugin extends ServerPlugin {
 
   @override
   bool isCompatibleWith(Version serverVersion) => true;
+
+  bool isEnabled(String optionsFilePath) {
+    if (optionsFilePath == null || optionsFilePath.isEmpty) {
+      return false;
+    }
+
+    final file = resourceProvider.getFile(optionsFilePath);
+
+    if (!file.exists) {
+      return false;
+    }
+    return true;
+
+    /*final contents = file.readAsStringSync();
+    final options = loadYaml(contents);
+
+    return options['plugins'] != null &&
+        options['plugins']['angular'] != null &&
+        options['plugins']['angular']['enabled'] == true;*/
+  }
 }
 class ChannelNotificationManager implements NotificationManager {
   final PluginCommunicationChannel channel;

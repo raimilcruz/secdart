@@ -72,6 +72,8 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
       node.visitChildren(this);
     } on SecDartException catch(e){
       reportError(SecurityTypeError.toAnalysisError(node,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.getMessage()]));
+    } on Exception catch(e){
+      reportError(SecurityTypeError.toAnalysisError(node,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, ["(No extra details)"]));
     }
     return null;
   }
