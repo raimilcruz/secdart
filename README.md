@@ -16,7 +16,7 @@ download and build this project locally.
 It is expected that the plugin can be loaded automatically by the Analysis Framework 
 (once we find out how to do it).
 
-![Preview gif](/assets/secdart_plugin_webstorm.gif "Preview gif")
+![SecDart Plugin Preview in WebStorm](/assets/plugin_in_webstorm.gif "Preview gif")
 
 
 ## Documentation
@@ -24,6 +24,6 @@ The current implementation and documentation are admittedly limited. However
 any update will be placed at [https://pleiad.cl/research/software/secdart](https://pleiad.cl/research/software/secdart).
 
 ## Acknowledge
-This project is fork of the [Angular Analyzer Plugin](https://github.com/dart-lang/angular_analyzer_plugin)
- in the sense that many ideas and code of how to interact with Analyzer Plugin
-Framework has been taken from that project.
+This project is a fork of the [Angular Analyzer Plugin](https://github.com/dart-lang/angular_analyzer_plugin). 
+Many ideas and code of how to interact with the [Analyzer Plugin
+Framework](https://github.com/dart-lang/sdk/tree/master/pkg/analyzer_plugin) has been taken from that project.
