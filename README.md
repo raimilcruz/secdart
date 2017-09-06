@@ -7,8 +7,23 @@ We will provide three ways to interact with the SecDart's security analysis (cur
 - **The SecDart Analyzer CLI**
 - **The SecDart Plugin for the Dart Analysis Server.**
 
+### The SecDart Plugin
+The plugin is unstable at the current state, but it is possible to see the result
+of the security analysis for the supported subset of Dart.
+
+The initial tests has been done in WebStorm. For now to see the plugin working you need to 
+download and build this project locally. 
+It is expected that the plugin can be loaded automatically by the Analysis Framework 
+(once we find out how to do it).
+
+![Preview gif](/assets/secdart_plugin_webstorm.gif "Preview gif")
 
 
 ## Documentation
 The current implementation and documentation are admittedly limited. However
 any update will be placed at [https://pleiad.cl/research/software/secdart](https://pleiad.cl/research/software/secdart).
+
+## Acknowledge
+This project is fork of the [Angular Analyzer Plugin](https://github.com/dart-lang/angular_analyzer_plugin)
+ in the sense that many ideas and code of how to interact with Analyzer Plugin
+Framework has been taken from that project.
