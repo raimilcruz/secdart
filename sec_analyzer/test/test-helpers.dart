@@ -1,8 +1,6 @@
 // This file contains classes and functions that help to build test
 
 import 'package:analyzer/error/error.dart';
-import 'package:analyzer/file_system/file_system.dart';
-import 'package:analyzer/file_system/memory_file_system.dart';
 import 'package:front_end/src/base/source.dart';
 import 'package:secdart_analyzer/src/borrow/context.dart';
 import 'package:secdart_analyzer/src/error-collector.dart';

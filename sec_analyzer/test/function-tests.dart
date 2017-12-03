@@ -4,9 +4,6 @@
 
 import 'package:secdart_analyzer/src/helpers/resource_helper.dart';
 import 'package:test/test.dart';
-import 'package:analyzer/file_system/file_system.dart';
-import 'package:analyzer/file_system/memory_file_system.dart';
-import 'package:analyzer/src/generated/source.dart';
 import 'test-helpers.dart';
 
 

@@ -2,7 +2,6 @@
 // Implementation of subtyping rules for security types 
 //
 
-import 'package:secdart_analyzer/src/error-collector.dart';
 import 'security-type.dart';
 
 //TODO: Checks if it is convinient to inherit from the TypeSystem class from analyzer package

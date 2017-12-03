@@ -2,11 +2,8 @@ import 'annotations/sec-label-parser.dart';
 import 'errors.dart';
 import 'gs-typesystem.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
-import 'package:analyzer/src/dart/analysis/file_state.dart';
-import 'package:analyzer/src/generated/resolver.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/src/generated/error.dart';
-import 'package:analyzer/src/generated/source.dart' show Source;
 import 'package:analyzer/dart/element/element.dart';
 
 import 'package:analyzer/dart/element/type.dart';
