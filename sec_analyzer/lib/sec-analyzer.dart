@@ -1,3 +1,4 @@
+import 'package:analyzer/file_system/file_system.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/src/dart/sdk/sdk.dart';
 import 'package:analyzer/src/generated/source.dart';
@@ -11,12 +12,12 @@ import 'package:secdart_analyzer/src/security_visitor.dart'
     show SecurityVisitor;
 import 'package:analyzer/analyzer.dart'
     show AnalysisError, CompilationUnit;
-import 'dart:io' show File;
+import 'dart:io' as io show File;
 import 'package:path/path.dart' as pathos;
 import 'package:analyzer/src/generated/engine.dart';
 import 'package:analyzer/src/generated/java_io.dart';
 import 'package:analyzer/src/generated/source_io.dart'
-    show FileBasedSource, FileUriResolver;
+    show FileBasedSource;
 import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/dart/element/element.dart';
 
@@ -26,7 +27,6 @@ import 'package:analyzer/dart/element/element.dart';
  * for test and for the REST API.
  */
 class SecAnalyzer {
-  var dartSdkDirectory = getSdkPath();
   PhysicalResourceProvider resourceProvider = PhysicalResourceProvider.INSTANCE;
   bool _checkDartErrors = false;
   bool _throwErrorForUnSupportedFeature;
@@ -39,7 +39,7 @@ class SecAnalyzer {
   List<AnalysisError> analyze(String program, [bool useInterval = false]) {
     //TODO:Remove this workaround. Find the right way to implement this.
     var annotationsFile = latticeFile;
-    var f = new File(annotationsFile);
+    var f = new io.File(annotationsFile);
     String annotationsCode = f.readAsStringSync();
     int lengthAnnotations = annotationsCode.length;
 
@@ -86,7 +86,7 @@ class SecAnalyzer {
   }
 
   List<AnalysisError> analyzeFile(String filePath, [bool useInterval = false]) {
-    if (!(new File(filePath).existsSync())) {
+    if (!(new io.File(filePath).existsSync())) {
       throw new ArgumentError("filePath does not exist");
     }
 
@@ -116,13 +116,11 @@ class SecAnalyzer {
   }
 
   List<AnalysisError> dartAnalyze(String fileSource) {
-    print('working dir ${new File('.').resolveSymbolicLinksSync()}');
+    print('working dir ${new io.File('.').resolveSymbolicLinksSync()}');
 
-    JavaSystemIO.setProperty("com.google.dart.sdk", dartSdkDirectory);
-    DartSdk sdk = new FolderBasedDartSdk(
-        resourceProvider, resourceProvider.getFolder(dartSdkDirectory));
+    DartSdk sdk =  getDarkSdk();
 
-    var resolvers = [new DartUriResolver(sdk), new FileUriResolver()];
+    var resolvers = [new DartUriResolver(sdk), new ResourceUriResolver(PhysicalResourceProvider.INSTANCE)];
 
     AnalysisContext context = AnalysisEngine.instance.createAnalysisContext()
       ..sourceFactory = new SourceFactory(resolvers);

@@ -15,6 +15,5 @@ dependencies:
   shelf_rpc: '>=0.0.3 <0.0.4'
   secdart_analyzer:
     path: ../sec_analyzer
-  code_transformers: any
   safe_config: any
   path: any

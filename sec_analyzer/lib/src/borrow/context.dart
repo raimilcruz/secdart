@@ -1,3 +1,4 @@
+import 'package:analyzer/file_system/file_system.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/src/dart/sdk/sdk.dart';
 import 'package:analyzer/src/generated/source.dart';
@@ -17,18 +18,24 @@ import 'package:analyzer/src/generated/sdk.dart' show DartSdk;
  * Create an analysis context
  */
 AnalysisContext createAnalysisContext() {
-  var dartSdkDirectory = getSdkPath();
-  PhysicalResourceProvider resourceProvider = PhysicalResourceProvider.INSTANCE;
-  DartSdk sdk = new FolderBasedDartSdk(
-      resourceProvider, resourceProvider.getFolder(dartSdkDirectory));
+  DartSdk sdk = getDarkSdk();
 
   AnalysisContext context = AnalysisEngine.instance.createAnalysisContext();
 
   context.sourceFactory =
-  new SourceFactory([new DartUriResolver(sdk), new FileUriResolver()]);
+    new SourceFactory([new DartUriResolver(sdk),
+    new ResourceUriResolver(PhysicalResourceProvider.INSTANCE)]);
+
   context.analysisOptions = new AnalysisOptionsImpl()
     ..strongMode = true;
   return context;
+}
+DartSdk getDarkSdk() {
+  PhysicalResourceProvider resourceProvider = PhysicalResourceProvider.INSTANCE;
+  var dartSdkDirectory = getSdkPath();
+  DartSdk sdk = new FolderBasedDartSdk(
+      resourceProvider, resourceProvider.getFolder(dartSdkDirectory));
+  return sdk;
 }
 
 /**
@@ -40,10 +47,6 @@ CompilationUnit resolveCompilationUnitHelper(String path) {
 
   Source source = context.sourceFactory.forUri(
       pathos.toUri(absolutePath).toString());
-  /*ChangeSet changeSet = new ChangeSet();
-  changeSet.addedSource(source);
-  context.applyChanges(changeSet);
-  LibraryElement libElement = context.computeLibraryElement(source);*/
 
   return context.resolveCompilationUnit2(source, source);
 }

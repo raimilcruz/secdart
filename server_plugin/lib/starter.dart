@@ -67,8 +67,8 @@ class Starter {
 
   Future sumErrors(String path, List<AnalysisError> errors) async {
    for (final driver in secDrivers.values) {
-      final angularErrors = await driver.requestDartErrors(path);
-      errors.addAll(angularErrors);
+      final secErrors = await driver.requestDartErrors(path);
+      errors.addAll(secErrors);
     }
     return null;
   }
