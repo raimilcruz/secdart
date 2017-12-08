@@ -9,7 +9,7 @@ environment:
 dependencies:
   analyzer: '^0.30.0'
   secdart_analyzer_plugin:
-    path: ../analyzer_plugin
+    path: ../secdart_analyzer_plugin
   analysis_server: any
   analyzer_plugin: any
   plugin: '^0.2.0'

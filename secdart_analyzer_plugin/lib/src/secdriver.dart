@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:analyzer/src/dart/analysis/driver.dart';
@@ -92,6 +93,7 @@ class SecDriver  implements AnalysisDriverGeneric{
 
 
   //Methods to manage file changes
+  @override
   void addFile(String path) {
     if (_ownsFile(path)) {
       _addedFiles.add(path);
@@ -171,13 +173,24 @@ class SecDriver  implements AnalysisDriverGeneric{
     final unitAst = unit.element.computeNode();
 
     ErrorCollector errorListener = new ErrorCollector();
+    var errors = new List<AnalysisError>();
+
     GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
+    //TODO: put this in another place
+    if(!isValidSecDartFile(unitAst)){
+      return new SecResult(errors);;
+    }
     var visitor = new SecurityVisitor(typeSystem,errorListener);
     unitAst.accept(visitor);
 
-    var errors = new List<AnalysisError>();
+
     errors.addAll(errorListener.errors);
     return new SecResult(errors);
+  }
+
+  bool isValidSecDartFile(CompilationUnit unitAst) {
+    return unitAst.directives.where((x)=> x is ImportDirective).map((y)=> y as ImportDirective).
+    where((import) => import.uriContent.contains("package:secdart/")).length >0;
   }
 }
 class SecResult{

@@ -73,13 +73,28 @@ class SecDartPlugin extends ServerPlugin {
       return false;
     }
     return true;
+  }
 
-    /*final contents = file.readAsStringSync();
-    final options = loadYaml(contents);
+  @override
+  void contentChanged(String path) {
+    final driver = secDriverForPath(path);
+    if (driver == null) {
+      return;
+    }
+    driver
+      ..addFile(path)
+      ..fileChanged(path);
 
-    return options['plugins'] != null &&
-        options['plugins']['angular'] != null &&
-        options['plugins']['angular']['enabled'] == true;*/
+    driver.dartDriver
+      ..addFile(path)
+      ..changeFile(path);
+  }
+  SecDriver secDriverForPath(String path) {
+    final driver = super.driverForPath(path);
+    if (driver is SecDriver) {
+      return driver;
+    }
+    return null;
   }
 }
 class ChannelNotificationManager implements NotificationManager {

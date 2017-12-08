@@ -14,10 +14,4 @@ TODO:
 Next extensions:
 - Extend the security analysis to object and classes
 - Manage interaction with libraries
-- Implement code transformer to insert necesary casts
-
-
-Security Analysis front-end options:
-- SecDart Pad
-- Integration with Analysis Server
-- Command line tool: secdartanalyzer
+- Implement code transformer to insert necessary casts
