@@ -1,51 +1,52 @@
-import 'package:secdart_analyzer/src/helpers/resource_helper.dart';
 import 'package:test/test.dart';
 import 'test-helpers.dart';
 
+import 'package:test_reflective_loader/test_reflective_loader.dart';
+
+
 void main() {
-  group('Implicit flow tests:', () {
-    ResourceHelper helper = new ResourceHelper();
-
-    setUp(() {
-    });
-
-    test('If statement with standard implicit flow ', () {
-      var program =
-      '''@latent("L","L")
-@low foo (@high bool s) {
-  @low bool a = false;
-  if(s){
-    a = true; //Must be rejected (pc here must be H)
-  }
-  else{
-    a = false;
-  }
-  return 1;
-}
-      ''';
-
-      var source = helper.newSource("/test.dart",program);
-      expect(typeCheckSecurityForSource(source),isFalse);
-
-    });
-
-    test('If statament without implicit flow ', () {
-      var program =
-      '''@latent("L","L")
-@low foo (@low bool s) {
-  @low bool a = false;
-  if(s){
-    a = true; //Must be rejected (pc here must be H)
-  }
-  else{
-    a = false;
-  }
-  return 1;
-}
-      ''';
-
-      var source = helper.newSource("/test.dart",program);
-      expect(typeCheckSecurityForSource(source),isTrue);
-    });
+  defineReflectiveSuite(() {
+    defineReflectiveTests(ImplicitFlowsTest);
   });
+}
+@reflectiveTest
+class ImplicitFlowsTest extends AbstractSecDartTest {
+  void test_implicitFlow1() {
+    var program =
+    '''
+        import "package:secdart/secdart.dart";
+        @latent("L","L")
+        @low foo (@high bool s) {
+          @low bool a = false;
+          if(s){
+            a = true; //Must be rejected (pc here must be H)
+          }
+          else{
+            a = false;
+          }
+          return 1;
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    expect(typeCheckSecurityForSource(source), isFalse);
+  }
+  void test_noImplicitFlow() {
+    var program =
+    '''
+        import "package:secdart/secdart.dart";
+        @latent("L","L")
+        @low foo (@low bool s) {
+          @low bool a = false;
+          if(s){
+            a = true;
+          }
+          else{
+            a = false;
+          }
+          return 1;
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    expect(typeCheckSecurityForSource(source), isTrue);
+  }
 }

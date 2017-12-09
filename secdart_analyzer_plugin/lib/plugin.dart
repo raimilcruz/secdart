@@ -4,10 +4,7 @@ import 'package:analyzer/src/context/builder.dart';
 import 'package:analyzer/src/dart/analysis/driver.dart';
 import 'package:analyzer/src/dart/analysis/performance_logger.dart';
 import 'package:analyzer_plugin/protocol/protocol_generated.dart';
-import 'package:analyzer_plugin/starter.dart';
 import 'package:analyzer_plugin/plugin/plugin.dart';
-import 'package:analyzer_plugin/plugin/outline_mixin.dart';
-import 'package:analyzer_plugin/utilities/outline/outline.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import 'package:analyzer/error/error.dart';

@@ -63,7 +63,6 @@ class SecDartApi {
     return issue;
   }
   void setLine(String source,SecIssue issue){
-    var parts = source.split("\n");
   }
 
 }

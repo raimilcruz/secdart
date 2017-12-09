@@ -210,7 +210,7 @@ class FlatLatticeOperations{
     var il1 = intervalizeLabel(l1);
     var il2 = intervalizeLabel(l2);
 
-
+    return new IntervalLabel(il1.lowerBound.join(il2.lowerBound),il1.upperBound.join(il2.upperBound));
   }
 
   static checkConflict(FlatLabel l1, FlatLabel l2){

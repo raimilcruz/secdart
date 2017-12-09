@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:async';
 import 'dart:collection';
 
@@ -6,11 +5,9 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:analyzer/src/dart/analysis/driver.dart';
-//import 'package:analyzer/src/generated/resolver.dart' show TypeProvider;
 import 'package:analyzer/src/dart/analysis/file_state.dart';
 
 import 'package:secdart_analyzer/src/error-collector.dart';
-import 'package:secdart_analyzer/src/errors.dart';
 import 'package:secdart_analyzer/src/gs-typesystem.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart';
 
@@ -32,8 +29,6 @@ class SecDriver  implements AnalysisDriverGeneric{
   final _changedFiles = new LinkedHashSet<String>();
   final _filesToAnalyze = new HashSet<String>();
   final _requestedDartFiles = new Map<String, List<Completer>>();
-
-  bool _hasSecDefinitionsImported = false;
 
   SecDriver(this.notificationManager, this.dartDriver, this._scheduler,SourceFactory sourceFactory,this._contentOverlay) {
     _sourceFactory = sourceFactory.clone();
@@ -160,13 +155,7 @@ class SecDriver  implements AnalysisDriverGeneric{
     if(result.errors!=null) {
       var realErrors = result.errors.where((e)=>e.errorCode.errorSeverity == ErrorSeverity.ERROR).toList();
       if(realErrors.length!=0) {
-        AnalysisError error = SecurityTypeError.getImplementationError(
-            unit.element.computeNode(),
-            "Standard Dart error:" +
-                realErrors.first.message);
-        var list = realErrors;
-        //list.add(error);
-        return new SecResult(list);
+        return new SecResult(realErrors);
       }
     }
 
@@ -178,7 +167,7 @@ class SecDriver  implements AnalysisDriverGeneric{
     GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
     //TODO: put this in another place
     if(!isValidSecDartFile(unitAst)){
-      return new SecResult(errors);;
+      return new SecResult(errors);
     }
     var visitor = new SecurityVisitor(typeSystem,errorListener);
     unitAst.accept(visitor);

@@ -4,7 +4,6 @@ import 'package:analyzer/error/error.dart';
 import 'package:analyzer/src/dart/analysis/driver.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/src/context/builder.dart';
-import 'package:analyzer/src/source/source_resource.dart';
 import 'package:secdart_analyzer_plugin/src/secdriver.dart';
 import 'package:analysis_server/src/analysis_server.dart';
 import 'package:analysis_server/src/protocol_server.dart' as protocol;

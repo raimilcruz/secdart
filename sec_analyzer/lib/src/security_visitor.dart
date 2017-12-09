@@ -1,9 +1,11 @@
+import 'package:analyzer/error/listener.dart';
+
 import 'annotations/sec-label-parser.dart';
 import 'errors.dart';
 import 'gs-typesystem.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/src/generated/error.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:analyzer/dart/element/element.dart';
 
 import 'package:analyzer/dart/element/type.dart';
@@ -69,8 +71,10 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
       node.visitChildren(this);
     } on SecDartException catch(e){
       reportError(SecurityTypeError.toAnalysisError(node,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.getMessage()]));
-    } catch(e){
-      reportError(SecurityTypeError.toAnalysisError(node,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, ["(No extra details)"]));
+    } on Exception catch(e){
+      reportError(SecurityTypeError.toAnalysisError(node,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.toString()]));
+    }catch(e){
+      reportError(SecurityTypeError.toAnalysisError(node,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.toString()]));
     }
     return null;
   }
@@ -103,7 +107,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
 
     _secScope = new SecurityFunctionScope(_secScope, node.element);
 
-    _pc = (secType as SecurityFunctionType).beginLabel;
+    _pc = secType.beginLabel;
 
 
     var result = super.visitFunctionDeclaration(node);
@@ -120,16 +124,37 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   @override
   bool visitFormalParameterList(FormalParameterList node) {
     for (FormalParameter pElem in node.parameters) {
-      DartType type = pElem.element.type;
       String name = pElem.element.name;
-      var label = functionSecTypeParser.getSecurityAnnotationForFunctionParameter(pElem);
-      var secType = new GroundSecurityType(type, label);
+      var secType = getSecurityType(pElem);
       if(_secScope.isDefined(name)) {
         reportError(_secScope.getErrorForDuplicate(name, pElem.element));
         return false;
       }
       _secScope.define(name, secType);
-    }    
+    }
+    return true;
+  }
+
+  SecurityType getSecurityType(FormalParameter parameter) {
+    DartType type = parameter.element.type;
+    if(parameter is SimpleFormalParameter){
+      var label =  functionSecTypeParser.getSecurityAnnotationForFunctionParameter(parameter);
+      return new GroundSecurityType(type,label);
+    }
+    if(parameter is FunctionTypedFormalParameter){
+      return getDynamicSecurityType(type);
+    }
+    return new GroundSecurityType(type, new DynamicLabel());
+  }
+  SecurityType getDynamicSecurityType(DartType dartType){
+    if(dartType is FunctionType){
+      FunctionType sft =  dartType;
+      return new SecurityFunctionType(new DynamicLabel(),
+          sft.typeArguments.map((t)=> getDynamicSecurityType(t)).toList(),
+          getDynamicSecurityType(sft.returnType),
+          new DynamicLabel());
+    }
+    return new GroundSecurityType(dartType, new DynamicLabel());
   }
   
   @override
@@ -137,7 +162,12 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     //visit the function expression
     node.function.accept(this);
     //get the function sec type
-    var functionSecType = _getSecurityType(node) as SecurityFunctionType;
+    var fSecType = _getSecurityType(node.function);
+    if(!(fSecType is SecurityFunctionType)){
+      reportError(SecurityTypeError.getCallNoFunction(node));
+      return false;
+    }
+    SecurityFunctionType functionSecType = fSecType;
     var beginLabel = functionSecType.beginLabel;
     var endLabel = functionSecType.endLabel;
     //check the pc is enough high to invoke the function
@@ -150,7 +180,9 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
 
     checkArgummentList(node.argumentList,functionSecType);
     //foreach function formal argument type, ensure each actual argument type is a subtype
-    node.setProperty(SEC_TYPE_PROPERTY,stampLabel(functionSecType.returnType,functionSecType.endLabel));
+    node.setProperty(SEC_TYPE_PROPERTY,functionSecType.returnType.stampLabel(functionSecType.endLabel));
+
+    return true;
   }
 
 
@@ -160,7 +192,12 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     node.function.accept(this);
     //get the function sec type. This does not work when the function is another file. We need to solve
     //the problems with the scope.
-    var functionSecType = _getSecurityType(node.function) as SecurityFunctionType;
+    var fSecType = _getSecurityType(node.function);
+    if(!(fSecType is SecurityFunctionType)){
+      reportError(SecurityTypeError.getCallNoFunction(node));
+      return false;
+    }
+    SecurityFunctionType functionSecType = fSecType;
     var beginLabel = functionSecType.beginLabel;
     var endlabel = functionSecType.endLabel;
     //check the pc is enough high to invoke the funciton
@@ -173,12 +210,9 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
 
     checkArgummentList(node.argumentList,functionSecType);
     //foreach function formal argument type, ensure each actual argument type is a subtype
-    node.setProperty(SEC_TYPE_PROPERTY,stampLabel(functionSecType.returnType,functionSecType.endLabel));
-  }
+    node.setProperty(SEC_TYPE_PROPERTY,functionSecType.returnType.stampLabel(functionSecType.endLabel));
 
-  SecurityType stampLabel(SecurityType type, SecurityLabel l){
-    type.label = type.label.join(l);
-    return type;
+    return true;
   }
 
   void checkArgummentList(ArgumentList node, SecurityFunctionType functionSecType) {
@@ -200,7 +234,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     var dartType = null;
     var secType = null;
     if (type != null) {
-      dartType = getType(type);
+      dartType = getDartType(type);
       secType = _getSecurityTypeForBaseType(dartType, node);
     }
     //the security dart type
@@ -245,7 +279,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   @override
   bool visitIfStatement(IfStatement node) {
     //visit the if node
-    var okCond = node.condition.accept(this);
+    node.condition.accept(this);
     var secType = _getSecurityType(node.condition);
     //increase the pc
     var currentPc = _pc;
@@ -255,19 +289,19 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     _secScope = new NestedSecurityScope(_secScope);
 
     //visit both branches
-    var okThenBranch = node.thenStatement.accept(this);
+    node.thenStatement.accept(this);
 
     _secScope = currentScope;
 
-    var okElseBranch = true;
     if (node.elseStatement != null) {
       _secScope = new NestedSecurityScope(_secScope);
 
-      okElseBranch = node.elseStatement.accept(this);
+      node.elseStatement.accept(this);
 
       _secScope = currentScope;
     }
     _pc = currentPc;
+    return true;
   }
 
 
@@ -330,8 +364,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
         return true;
       }
 
-      reportError(SecurityTypeError.getReturnTypeError(
-          node, functionSecType.returnType, secType));
+      reportError(SecurityTypeError.getReturnTypeError(node, functionSecType.returnType, secType));
     }
     return false;
   }
@@ -339,7 +372,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
   @override
   bool visitConditionalExpression(ConditionalExpression node) {
     //visit the if node
-    var okCond = node.condition.accept(this);
+    node.condition.accept(this);
     var secType = _getSecurityType(node.condition);
     //increase the pc
     var currentPc = _pc;
@@ -349,14 +382,14 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
 
     _secScope = new NestedSecurityScope(_secScope);
     //visit both branches
-    var okThenBranch = node.thenExpression.accept(this);
+    node.thenExpression.accept(this);
     _secScope = currentScope;
 
-    var okElseBranch = true;
+
 
 
     _secScope = new NestedSecurityScope(_secScope);
-    okElseBranch = node.elseExpression.accept(this);
+    node.elseExpression.accept(this);
     _secScope = currentScope;
 
     var secTypeThenExpr = _getSecurityType(node.thenExpression);
@@ -366,24 +399,29 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     var resultType = new GroundSecurityType(node.staticType, secTypeThenExpr.label.join(secTypeElseExpr.label).join(secType.label));
     node.setProperty(SEC_TYPE_PROPERTY, resultType);
     _pc = currentPc;
+
+    return true;
   }
 
   @override
   bool visitBooleanLiteral(BooleanLiteral node) {
     node.setProperty(
         SEC_TYPE_PROPERTY, new GroundSecurityType(node.staticType, _pc));
+    return true;
   }
 
   @override
   bool visitIntegerLiteral(IntegerLiteral node) {
     node.setProperty(
         SEC_TYPE_PROPERTY, new GroundSecurityType(node.staticType, _pc));
+    return true;
   }
 
   @override
   bool visitSimpleStringLiteral(SimpleStringLiteral node) {
     node.setProperty(
         SEC_TYPE_PROPERTY, new GroundSecurityType(node.staticType, _pc));
+    return true;
   }
 
   @override
@@ -417,19 +455,13 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     if (from == null) {
       from = _getSecurityType(expr);
     }
-
-    // We can use anything as void.
-    if (to.isVoid) return;
-
     // fromT <: toT, no coercion needed.
     if (secTypeSystem.isSubtypeOf(from, to)) {
       var labelTo = _getLabel(to);
       //var labelFrom = _getLabel(from);
       if (_pc.canRelabeledTo(labelTo)) return;
     }
-
-    //TODO: Report error
-    reportError(SecurityTypeError.getExplicitFlowError(node, to, from));
+    reportError(SecurityTypeError.getExplicitFlowError(node, from, to));
   }
 
   void _checkAssignment2(Expression expr, SecurityType to, SecurityType from,AssignmentExpression node) {
@@ -439,7 +471,7 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
       if (_pc.canRelabeledTo(labelTo)) return;
     }
     //TODO: Report error
-    reportError(SecurityTypeError.getExplicitFlowError(node, to, from));
+    reportError(SecurityTypeError.getExplicitFlowError(node, from, to));
   }
   void checkSubtype(Expression expr, SecurityType from, SecurityType to) {
     if (secTypeSystem.isSubtypeOf(from, to)) {
@@ -449,17 +481,14 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     }
 
     //TODO: Report error
-    reportError(SecurityTypeError.getExplicitFlowError(expr, to, from));
+    reportError(SecurityTypeError.getExplicitFlowError(expr, from, to));
   }
 
   /**
    * Get the label from a security type.
    */
-  SecurityLabel _getLabel(SecurityType to) {
-    if (!(to is GroundSecurityType)) {
-      throw new UnsupportedFeatureException("Security type is not supported yet ${to.runtimeType}");
-    }
-    return (to as GroundSecurityType).label;
+  SecurityLabel _getLabel(SecurityType secType) {
+    return secType.label;
   }
 
   /**
@@ -469,41 +498,27 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
     reporter.onError(explicitFlowError);
   }
 
-  DartType _getStaticType(Expression expr) {
-    DartType t = expr.staticType ?? DynamicTypeImpl.instance;
-
-    // Remove fuzzy arrow if possible.
-    /*if (t is FunctionType && StaticInfo.isKnownFunction(expr)) {
-      t = _removeFuzz(t);
-    }*/
-
-    return t;
-  }
-
   /**
    * Get the security type associated to an expression. The security type need to be resolved for the expression
    */
   SecurityType _getSecurityType(Expression expr) {
     var result = expr.getProperty(SEC_TYPE_PROPERTY);
     if(result == null) {
-      reportError(SecurityTypeError.toAnalysisError(expr,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, "Expression does not "
+      reportError(SecurityTypeError.toAnalysisError(expr,SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR,
+          new List<Object>()..add("Expression does not "
           "have a security type (For instance it happens when a calling a function in another library, we do not how to deal"
-          "with multiple file yet)"));
+          "with multiple file yet)")));
       throw new UnsupportedFeatureException("Error in SecurityVisitor._getSecurityType");
     }
     return result;
   }
 
-  //TODO: Neet to Return a security type
-  DartType getType(TypeName name) {
+  DartType getDartType(TypeName name) {
     return (name == null) ? DynamicTypeImpl.instance : name.type;
   }
 
   SecurityType _getSecurityTypeForBaseType(DartType type,
       VariableDeclarationList node) {
-    if (type is SecurityType) {
-      throw new ArgumentError("type must be an original DartType");
-    }
     var label = functionSecTypeParser.getSecurityLabelVarOrParameter(node.metadata,node);
     return new GroundSecurityType(type, label);
   }
@@ -511,12 +526,6 @@ class SecurityVisitor extends /*ScopedVisitor*/RecursiveAstVisitor<bool> {
 
   void _checkFunctionSecType(FunctionDeclaration decl,SecurityFunctionType secType) {
     //TODO: Be careful. In the next implementation iteration we will deal with first class functions
-    /*var returnLabel = (secType.returnType as GroundSecurityType).label;
-    if(returnLabel.canRelabeledTo(secType.endLabel))
-      return;
-    reportError(SecurityTypeError.getFunctionLabelError(decl));
-    */
-    FormatException a;
   }
 }
 

@@ -1,25 +1,10 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/type.dart';
-/// Analysis error results.
-
 import 'package:analyzer/error/error.dart';
 import 'package:analyzer/task/model.dart';
+import 'package:secdart_analyzer/src/security-type.dart';
 
-/// Error code used for Sample warnings.
-/*class MyErrorCode extends ErrorCode {
-  static const MyErrorCode MY_WARNING_CODE =  const MyErrorCode('MY_WARNING_CODE', 'My sample warning');
 
-  const MyErrorCode(String name, String message, [String correction])
-      : super(name, message, correction);
-
-  @override
-  ErrorSeverity get errorSeverity => ErrorSeverity.ERROR;
-
-  @override
-  ErrorType get type => ErrorType.STATIC_WARNING;
-}
-*/
 /// Analysis error results.
 final ListResultDescriptor<AnalysisError> SECURITY_TYPING_ERRORS =
 new ListResultDescriptor<AnalysisError>(
@@ -29,9 +14,9 @@ new ListResultDescriptor<AnalysisError>(
  * A helper class with static methods to report errors
  */
 class SecurityTypeError{
-  static AnalysisError toAnalysisError(AstNode node, ErrorCode code, arguments) {
+  static AnalysisError toAnalysisError(AstNode node, ErrorCode code,List<Object> arguments) {
     int begin = node is AnnotatedNode
-        ? (node as AnnotatedNode).firstTokenAfterCommentAndMetadata.offset
+        ? node.firstTokenAfterCommentAndMetadata.offset
         : node.offset;
     int length = node.end - begin;
     var source = (node.root as CompilationUnit).element.source;
@@ -45,47 +30,51 @@ class SecurityTypeError{
 
   }
 
-  static AnalysisError getExplicitFlowError(AstNode expr, DartType from,DartType to){
+  static AnalysisError getExplicitFlowError(AstNode expr, SecurityType from,SecurityType to){
     var errorCode = SecurityErrorCode.EXPLICIT_FLOW;
-    return toAnalysisError(expr,errorCode,null);
+    return toAnalysisError(expr,errorCode,new List<Object>()..add(from.toString())..add(to.toString()) );
 
   }
-  static AnalysisError getReturnTypeError(ReturnStatement node,DartType from, DartType to){
+  static AnalysisError getReturnTypeError(ReturnStatement node,SecurityType from, SecurityType to){
     var errorCode = SecurityErrorCode.RETURN_TYPE_ERROR;
-    return toAnalysisError(node,errorCode,null);
+    return toAnalysisError(node,errorCode,new List<Object>());
   }
   static AnalysisError getFunctionLabelError(FunctionDeclaration node){
     var errorCode = SecurityErrorCode.FUNCTION_LABEL_ERROR;
-    return toAnalysisError(node,errorCode,null);
+    return toAnalysisError(node,errorCode,new List<Object>());
   }
 
   static AnalysisError getBadFunctionCall(Expression node) {
     var errorCode = SecurityErrorCode.INVALID_FUNCTION_CALL;
-    return toAnalysisError(node,errorCode,null);
+    return toAnalysisError(node,errorCode,new List<Object>());
   }
 
   static AnalysisError getDuplicatedLatentError(FunctionDeclaration node) {
     var errorCode = SecurityErrorCode.DUPLICATED_FUNCTION_LATENT_ERROR;
-    return toAnalysisError(node,errorCode,null);
+    return toAnalysisError(node,errorCode,new List<Object>());
   }
   static AnalysisError getDuplicatedReturnLabelError(FunctionDeclaration node) {
     var errorCode = SecurityErrorCode.DUPLICATED_RETURN_LABEL_ERROR;
-    return toAnalysisError(node,errorCode,null);
+    return toAnalysisError(node,errorCode,new List<Object>());
   }
   static AnalysisError getDuplicatedLabelOnParameterError(AstNode node) {
     var errorCode = SecurityErrorCode.DUPLICATED_LABEL_ON_PARAMETER_ERROR;
-    return toAnalysisError(node,errorCode,null);
+    return toAnalysisError(node,errorCode,new List<Object>());
   }
   
   static AnalysisError getDummyError(CompilationUnitElement expr){
     var errorCode = SecurityErrorCode.MY_WARNING_CODE;
     var source = expr.source;
-    return new AnalysisError(source, 0, 2, errorCode, null);        
+    return new AnalysisError(source, 0, 2, errorCode, new List<Object>());
   }
   //SYNTACTIC ERRORS IN LABEL
   static AnalysisError getBadFunctionLabel(AstNode node) {
     var errorCode = SecurityErrorCode.BAD_FUNCTION_LABEL;
-    return toAnalysisError(node,errorCode,null);
+    return toAnalysisError(node,errorCode,new List<Object>());
+  }
+  static AnalysisError getCallNoFunction(AstNode node) {
+    var errorCode = SecurityErrorCode.CALL_NO_FUNCTION;
+    return toAnalysisError(node,errorCode,new List<Object>());
   }
 
 }
@@ -104,7 +93,7 @@ class SecurityErrorCode extends ErrorCode{
    */
   static const SecurityErrorCode EXPLICIT_FLOW =
   const SecurityErrorCode(
-      'EXPLICIT_FLOW', 'Information flow leak');
+      'EXPLICIT_FLOW', 'Information flow leak from {0} to {1}');
 
 /** 
  * Reported when the label of the returned value is not less than declared function return label
@@ -137,6 +126,10 @@ class SecurityErrorCode extends ErrorCode{
   static const SecurityErrorCode BAD_FUNCTION_LABEL=
   const SecurityErrorCode(
       'BAD_FUNCTION_LABEL', 'Function label annotations must have two labels: the [endlabel] and the [beginlabel]');
+
+  static const SecurityErrorCode CALL_NO_FUNCTION=
+  const SecurityErrorCode(
+  'CALL_NO_FUNCTION', 'The expression in function position has dynamic type and we do not support dynamic functions');
 
   static const SecurityErrorCode MY_WARNING_CODE =  const SecurityErrorCode('MY_WARNING_CODE', 'This is a proof-of-concept error');
 
