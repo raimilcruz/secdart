@@ -1,7 +1,7 @@
 import 'package:analyzer/error/listener.dart';
 
 import 'errors.dart';
-import 'gs-typesystem.dart';
+import 'gs_typesystem.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
@@ -9,7 +9,7 @@ import 'package:analyzer/dart/element/element.dart';
 
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/src/dart/element/type.dart';
-import 'security-type.dart';
+import 'security_type.dart';
 import 'security_label.dart';
 
 

@@ -1,6 +1,6 @@
 name: secdart_analyzer_plugin_loader
 description: This is a self "loader" package for the secdart_analyzer_plugin. The expected way to load
-the plugin is with the package "secdart" (through the loader it contains).
+  the plugin is with the package "secdart" (through the loader it contains).
 version: 0.0.1
 
 environment:
@@ -8,4 +8,4 @@ environment:
 
 dependencies:
   secdart_analyzer_plugin:
-    path: C:\Storage\phd\secdart\secdart_analyzer_plugin
+    path: C:\Users\racruz\Desktop\Dart_Projects\secdart\secdart_analyzer_plugin

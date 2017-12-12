@@ -3,8 +3,8 @@ import 'package:analyzer/file_system/file_system.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:secdart_analyzer/src/context.dart';
-import 'package:secdart_analyzer/src/error-collector.dart';
-import 'package:secdart_analyzer/src/gs-typesystem.dart';
+import 'package:secdart_analyzer/src/error_collector.dart';
+import 'package:secdart_analyzer/src/gs_typesystem.dart';
 import 'package:secdart_analyzer/src/helpers/resource_helper.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart'

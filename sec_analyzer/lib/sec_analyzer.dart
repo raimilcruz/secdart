@@ -5,3 +5,4 @@
 library secdart_analyzer;
 
 // TODO: Export any libraries intended for clients of this package.
+export "analyzer.dart";

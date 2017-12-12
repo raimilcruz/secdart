@@ -2,13 +2,8 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:analyzer/task/model.dart';
-import 'package:secdart_analyzer/src/security-type.dart';
+import 'package:secdart_analyzer/src/security_type.dart';
 
-
-/// Analysis error results.
-final ListResultDescriptor<AnalysisError> SECURITY_TYPING_ERRORS =
-new ListResultDescriptor<AnalysisError>(
-    'SECURITY_TYPING_ERRORS', AnalysisError.NO_ERRORS);
 
 /**
  * A helper class with static methods to report errors

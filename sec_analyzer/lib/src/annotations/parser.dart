@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/analyzer.dart';
 import '../security_label.dart';
-import '../security-type.dart';
+import '../security_type.dart';
 import '../errors.dart';
 
 /**

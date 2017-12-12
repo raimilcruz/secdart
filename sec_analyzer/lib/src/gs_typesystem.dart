@@ -2,7 +2,7 @@
 // Implementation of subtyping rules for security types 
 //
 
-import 'security-type.dart';
+import 'security_type.dart';
 
 class GradualSecurityTypeSystem {
   String _error;

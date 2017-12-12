@@ -7,7 +7,7 @@ library web_api;
 import 'package:rpc/rpc.dart';
 import 'package:analyzer/analyzer.dart' show AnalysisError;
 import 'dart:io';
-import 'package:secdart_analyzer/sec-analyzer.dart';
+import 'package:secdart_analyzer/analyzer.dart';
 import 'package:web_api/src/application_configuration.dart';
 import 'package:path/path.dart' as path;
 

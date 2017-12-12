@@ -3,4 +3,4 @@
 
 
 library secdart;
-export 'src/flat-lattice.dart';
+export 'src/flat_lattice.dart';

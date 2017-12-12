@@ -1,5 +1,5 @@
 import 'package:test/test.dart';
-import '../test-helpers.dart';
+import '../test_helpers.dart';
 
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 

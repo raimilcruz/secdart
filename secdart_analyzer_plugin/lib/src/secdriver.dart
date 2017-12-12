@@ -6,7 +6,7 @@ import 'package:analyzer/error/error.dart';
 import 'package:analyzer/src/dart/analysis/driver.dart';
 import 'package:analyzer/src/dart/analysis/file_state.dart';
 
-import "package:secdart_analyzer/sec-analyzer.dart";
+import "package:secdart_analyzer/analyzer.dart";
 
 abstract class NotificationManager {
   void recordAnalysisErrors(

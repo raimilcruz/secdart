@@ -3,11 +3,11 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:analyzer/src/dart/element/type.dart';
-import 'package:secdart_analyzer/src/annotations/sec-label-parser.dart';
-import 'package:secdart_analyzer/src/security-type.dart';
+import 'package:secdart_analyzer/src/annotations/parser.dart';
+import 'package:secdart_analyzer/src/security_type.dart';
 import 'package:secdart_analyzer/src/security_label.dart';
 
-final String SEC_TYPE_PROPERTY = "sec-type";
+const String SEC_TYPE_PROPERTY = "sec-type";
 
 /*
 It parses security elements, that is annotations of security labels
