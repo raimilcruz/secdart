@@ -4,7 +4,7 @@
 
 import 'package:test/test.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
-import 'test-helpers.dart';
+import '../test-helpers.dart';
 
 void main() {
   defineReflectiveSuite(() {
