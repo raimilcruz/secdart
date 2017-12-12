@@ -15,43 +15,94 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
 
   @override
   Object visitClassDeclaration(ClassDeclaration node) {
-    _reportUnsupportedDartFeature(node, "class");
+    _reportError(node, "class");
     return null;
   }
   @override
   Object visitClassTypeAlias(ClassTypeAlias node) {
-    _reportUnsupportedDartFeature(node, "type alias");
+    _reportError(node, "type alias");
     return null;
   }
 
   @override
+  Object visitClassMember(ClassMember node) =>
+      _reportError(node,"class member");
+
+
+  @override
   Object visitEnumDeclaration(EnumDeclaration node) {
-    _reportUnsupportedDartFeature(node, "enum");
+    _reportError(node, "enum");
     return null;
   }
 
   @override
   Object visitThrowExpression(ThrowExpression node) {
-    _reportUnsupportedDartFeature(node, "throw exception");
+    _reportError(node, "throw exception");
     return null;
   }
   @override
   Object visitCatchClause(CatchClause node) {
-    _reportUnsupportedDartFeature(node, "catch");
+    _reportError(node, "catch");
     return null;
   }
 
+  @override
+  Object visitAwaitExpression(AwaitExpression node) =>
+      _reportError(node,"await");
 
   @override
   Object visitFunctionTypeAlias(FunctionTypeAlias node) {
-    _reportUnsupportedDartFeature(node, "function type alias");
+    _reportError(node, "function type alias");
     return null;
   }
 
+  //loops
+  @override
+  Object visitWhileStatement(WhileStatement node) =>
+      _reportError(node,"while");
 
-  void _reportUnsupportedDartFeature(AstNode node,String nodeDisplyName){
+  @override
+  Object visitYieldStatement(YieldStatement node) =>
+      _reportError(node,"yield");
+
+  @override
+  Object visitBreakStatement(BreakStatement node) =>
+      _reportError(node,"break");
+
+  @override
+  Object visitContinueStatement(ContinueStatement node) =>
+      _reportError(node,"continue");
+
+  //<-- end loops
+
+  @override
+  Object visitDoStatement(DoStatement node) =>
+      _reportError(node,"do... while");
+
+  @override
+  Object visitForEachStatement(ForEachStatement node) => _reportError(node,"foreach");
+
+  @override
+  Object visitForStatement(ForStatement node) => _reportError(node,"for");
+
+  @override
+  Object visitFunctionDeclarationStatement(FunctionDeclarationStatement node) =>
+      _reportError(node,"function declaration statement");
+
+  @override
+  Object visitRethrowExpression(RethrowExpression node) => _reportError(node,"rethrow");
+
+
+  @override
+  Object visitSwitchStatement(SwitchStatement node) => _reportError(node,"switch");
+
+  @override
+  Object visitTryStatement(TryStatement node) => _reportError(node,"try");
+
+
+  void _reportError(AstNode node,String nodeDisplyName){
     AnalysisError error =  SecurityTypeError.getUnsupportedDartFeature(node,nodeDisplyName);
     reporter.onError(error);
+    return null;
   }
 }
-
