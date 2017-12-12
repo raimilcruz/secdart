@@ -45,4 +45,34 @@ class FunctionCallTest extends AbstractSecDartTest{
       var source = newSource("/test.dart",program);
       expect(typeCheckSecurityForSource(source), isFalse);
    }
+   void test_forwardCall(){
+     var program =
+     '''
+       import "package:secdart/secdart.dart";
+       
+        @latent("H","H")
+        @high callFoo(){
+          foo(5);
+        }
+
+       @latent("H","H")
+       @high foo (@high int s) {
+        return 1;
+        }
+        
+      ''';
+     var source = newSource("/test.dart",program);
+     expect(typeCheckSecurityForSource(source),isTrue);
+   }
+   void test_basicTest(){
+     var program =
+     '''
+        import "package:secdart/secdart.dart";
+        void callFoo(foo){
+          foo();
+        }
+      ''';
+     var source = newSource("/test.dart",program);
+     expect(typeCheckSecurityForSource(source),isTrue);
+   }
 }

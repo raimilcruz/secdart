@@ -7,11 +7,11 @@ import 'package:analyzer/error/error.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:secdart_analyzer/src/errors.dart';
 
-//TODO: Change the implementation of this class to avoid overriding each of the unsupported visitX methods for feature X.
-class SupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
+
+class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
   final AnalysisErrorListener reporter;
 
-  SupportedDartSubsetVisitor(this.reporter);
+  UnSupportedDartSubsetVisitor(this.reporter);
 
   @override
   Object visitClassDeclaration(ClassDeclaration node) {
@@ -23,7 +23,6 @@ class SupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
     _reportUnsupportedDartFeature(node, "type alias");
     return null;
   }
-
 
   @override
   Object visitEnumDeclaration(EnumDeclaration node) {
@@ -51,7 +50,8 @@ class SupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
 
 
   void _reportUnsupportedDartFeature(AstNode node,String nodeDisplyName){
-    AnalysisError error =  SecurityTypeError.toAnalysisError(node, ImplementationErrorCode.UNSUPPORTED_DART_FEATURE, [nodeDisplyName]);
+    AnalysisError error =  SecurityTypeError.getUnsupportedDartFeature(node,nodeDisplyName);
     reporter.onError(error);
   }
 }
+

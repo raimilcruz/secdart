@@ -7,10 +7,10 @@ import 'package:analyzer/src/generated/engine.dart';
 import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:front_end/src/base/source.dart';
+import 'package:secdart_analyzer/sec-analyzer.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error-collector.dart';
-import 'package:secdart_analyzer/src/gs-typesystem.dart';
-import 'package:secdart_analyzer/src/security_visitor.dart';
+import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
 import 'package:analyzer/source/package_map_resolver.dart';
 
@@ -25,6 +25,10 @@ class AbstractSecDartTest{
     final file = resourceProvider.newFile(path, content);
     final source = file.createSource();
     return source;
+  }
+  void addSource(Source source){
+    ChangeSet changeSet = new ChangeSet()..addedSource(source);
+    context.applyChanges(changeSet);
   }
 
   void setUp() {
@@ -112,6 +116,7 @@ class DynLabel{
   }
 
   bool typeCheckSecurityForSource(Source source,{bool printerError:true}){
+    //TODO: Pending of refactoring: repeated implementation, this is implemented in SecurityAnalyzer
     var libraryElement = context.computeLibraryElement(source);
     //var unit  = context.resolveCompilationUnit2(source, source);
     var unit = context.resolveCompilationUnit(source, libraryElement);
@@ -124,30 +129,40 @@ class DynLabel{
       return false;
     }
 
-    ErrorCollector errorListener = new ErrorCollector();
-    GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
-
-    //var visitor = new SecurityVisitorNoHelp(unit.element.library,null,null,errorListener);
-    var visitor = new SecurityVisitor(typeSystem,errorListener);
-    unit.accept(visitor);
-
+   var errors = SecAnalyzer.computeErrors(unit);
 
     if(printerError){
+      for(AnalysisError error in errors){
+        print(error);
+      }
+    }
+    return errors.length==0;
+  }
+
+
+  bool containsOnlySupportedFeatures(Source source,{bool printError:true}){
+    var libraryElement = context.computeLibraryElement(source);
+    var unit = context.resolveCompilationUnit(source, libraryElement);
+
+    ErrorCollector errorListener = new ErrorCollector();
+
+    var visitor = new UnSupportedDartSubsetVisitor(errorListener);
+    unit.accept(visitor);
+
+    if(printError){
       for(AnalysisError error in errorListener.errors){
         print(error);
       }
     }
     return errorListener.errors.length==0;
   }
-  bool containsOnlySupportedFeatures(Source source,{bool printError:true}){
+  bool containsParseErrors(Source source,{bool printError:true}){
     var libraryElement = context.computeLibraryElement(source);
-    //var unit  = context.resolveCompilationUnit2(source, source);
     var unit = context.resolveCompilationUnit(source, libraryElement);
 
     ErrorCollector errorListener = new ErrorCollector();
 
-    //var visitor = new SecurityVisitorNoHelp(unit.element.library,null,null,errorListener);
-    var visitor = new SupportedDartSubsetVisitor(errorListener);
+    var visitor = new SecurityParserVisitor(errorListener);
     unit.accept(visitor);
 
     if(printError){

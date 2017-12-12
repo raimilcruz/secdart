@@ -1,16 +1,12 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:analyzer/src/dart/analysis/driver.dart';
 import 'package:analyzer/src/dart/analysis/file_state.dart';
 
-import 'package:secdart_analyzer/src/error-collector.dart';
-import 'package:secdart_analyzer/src/gs-typesystem.dart';
-import 'package:secdart_analyzer/src/security_visitor.dart';
-
+import "package:secdart_analyzer/sec-analyzer.dart";
 
 abstract class NotificationManager {
   void recordAnalysisErrors(
@@ -160,27 +156,11 @@ class SecDriver  implements AnalysisDriverGeneric{
     }
 
     final unitAst = unit.element.computeNode();
-
-    ErrorCollector errorListener = new ErrorCollector();
-    var errors = new List<AnalysisError>();
-
-    GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
-    //TODO: put this in another place
-    if(!isValidSecDartFile(unitAst)){
-      return new SecResult(errors);
-    }
-    var visitor = new SecurityVisitor(typeSystem,errorListener);
-    unitAst.accept(visitor);
-
-
-    errors.addAll(errorListener.errors);
+    var errors = SecAnalyzer.computeErrors(unitAst);
     return new SecResult(errors);
   }
 
-  bool isValidSecDartFile(CompilationUnit unitAst) {
-    return unitAst.directives.where((x)=> x is ImportDirective).map((y)=> y as ImportDirective).
-    where((import) => import.uriContent.contains("package:secdart/")).length >0;
-  }
+
 }
 class SecResult{
   List<AnalysisError> errors;

@@ -3,6 +3,7 @@ import 'fun-call-tests.dart' as fun_call;
 import 'function-tests.dart' as function;
 import 'high-order-tests.dart' as high_order;
 import 'implicit-flow-tests.dart' as implicit;
+import 'identfier_tests.dart' as identifier;
 
 import 'lattice/lh-lattice-test.dart' as lattice;
 
@@ -16,6 +17,7 @@ void main(){
     function.main();
     high_order.main();
     implicit.main();
+    identifier.main();
 
     lattice.main();
   });

@@ -135,7 +135,7 @@ class SecurityTypeHelperParser{
 
       if(latentAnnotations.length>1){
         reportError(SecurityTypeError.getDuplicatedLatentError(node));
-        throw new SecCompilationException("Too much ${FUNCTION_LATTENT_LABEL} label annotation for function ${node.name.name}");
+        return null;
       }
       else if(latentAnnotations.length==1) {
         Annotation securityFunctionAnnotation = latentAnnotations.first;
@@ -173,9 +173,8 @@ class SecurityTypeHelperParser{
     var labelAnnotations = annotations.where((a)=>_parser.isLabel(a));
     var label = _parser.dynamicLabel;
     if(labelAnnotations.length>1){
-      //TODO:Fix
       errorListener.onError(SecurityTypeError.getDuplicatedLabelOnParameterError(node));
-      throw new SecCompilationException("Too much label on parameters or var");
+      return null;
     }
     else if(labelAnnotations.length==1){
       label = _parser.parseLabel(labelAnnotations.first);
@@ -191,7 +190,7 @@ class SecurityTypeHelperParser{
     var label = _parser.dynamicLabel;
     if(secLabelAnnotations.length>1){
       reportError(SecurityTypeError.getDuplicatedLabelOnParameterError(parameter));
-      throw new SecCompilationException("Too much label for this parameter");
+      return null;
     }
     else if(secLabelAnnotations.length==1){
       label = _parser.parseLabel(secLabelAnnotations.first);

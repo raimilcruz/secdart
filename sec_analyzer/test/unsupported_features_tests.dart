@@ -15,7 +15,7 @@ class UnsupportedFeaturesTest extends AbstractSecDartTest {
     '''class A{}
       ''';
     var source = newSource("/test.dart", program);
-    expect(typeCheckSecurityForSource(source), isFalse);
+    expect(containsOnlySupportedFeatures(source), isFalse);
   }
   void test_enumIsNotSupported() {
     var program =
@@ -26,7 +26,7 @@ class UnsupportedFeaturesTest extends AbstractSecDartTest {
        }
       ''';
     var source = newSource("/test.dart", program);
-    expect(typeCheckSecurityForSource(source), isFalse);
+    expect(containsOnlySupportedFeatures(source), isFalse);
   }
   void test_throwIsNotSupported() {
     var program =
@@ -35,13 +35,13 @@ class UnsupportedFeaturesTest extends AbstractSecDartTest {
       }
       ''';
     var source = newSource("/test.dart", program);
-    expect(typeCheckSecurityForSource(source), isFalse);
+    expect(containsOnlySupportedFeatures(source), isFalse);
   }
   void test_functionTypeAliasIsNotSupported() {
     var program =
     '''typedef int Compare(int a, int b);
       ''';
     var source = newSource("/test.dart", program);
-    expect(typeCheckSecurityForSource(source), isFalse);
+    expect(containsOnlySupportedFeatures(source), isFalse);
   }
 }

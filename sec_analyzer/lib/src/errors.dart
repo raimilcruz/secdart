@@ -76,6 +76,10 @@ class SecurityTypeError{
     var errorCode = SecurityErrorCode.CALL_NO_FUNCTION;
     return toAnalysisError(node,errorCode,new List<Object>());
   }
+  static AnalysisError getUnsupportedDartFeature(AstNode node,String feature){
+    var errorCode = SecurityErrorCode.UNSUPPORTED_DART_FEATURE;
+    return toAnalysisError(node,errorCode,[feature]);
+  }
 
 }
 
@@ -131,6 +135,10 @@ class SecurityErrorCode extends ErrorCode{
   const SecurityErrorCode(
   'CALL_NO_FUNCTION', 'The expression in function position has dynamic type and we do not support dynamic functions');
 
+  static const SecurityErrorCode UNSUPPORTED_DART_FEATURE=
+  const SecurityErrorCode(
+      'UNSUPPORTED_DART_FEATURE', '{0} is not supported by the security analyzer');
+
   static const SecurityErrorCode MY_WARNING_CODE =  const SecurityErrorCode('MY_WARNING_CODE', 'This is a proof-of-concept error');
 
 
@@ -147,9 +155,7 @@ class SecurityErrorCode extends ErrorCode{
 class ImplementationErrorCode extends ErrorCode{
   ImplementationErrorCode(String name, String message) : super(name, message);
 
-  static const SecurityErrorCode UNSUPPORTED_DART_FEATURE=
-  const SecurityErrorCode(
-      'UNSUPPORTED_DART_FEATURE', '{0} is not supported by the security analyzer');
+
 
   @override
   ErrorSeverity get errorSeverity => ErrorSeverity.ERROR;
