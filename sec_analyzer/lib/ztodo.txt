@@ -1,12 +1,9 @@
 Current state:
-- A dummy error is reported to the Analyzer Server and it show it!
-- The Analyzer Server crashes because we do not coordinate the security analysis properly.
-    - References to libraries are not supported
-    - We need to ensure our security analysis takes place only on well-typed dart programs
+- The plugin is loaded by the analysis server
 
 TODO:
-- Separate analysis in different phases (e.g. detection of sec-syntactic errors, unsupported features, semantic checks)
-- Design how to exclude some files from the analysis
+- [Done] Separate analysis in different phases (e.g. detection of sec-syntactic errors, unsupported features, semantic checks)
+- [Partially done] Design how to exclude some files from the analysis
     - e.g. test files
 - Design how to recognize custom settings from the analysis_options.yaml file.
 - Implements secdartanalyzer: a console application that uses the security analysis.

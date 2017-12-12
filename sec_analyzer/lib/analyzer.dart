@@ -1,6 +1,4 @@
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer/file_system/file_system.dart';
-import 'package:analyzer/file_system/physical_file_system.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
@@ -15,7 +13,6 @@ import 'package:path/path.dart' as pathos;
 import 'package:analyzer/src/generated/engine.dart';
 import 'package:analyzer/src/generated/java_io.dart';
 import 'package:analyzer/src/generated/source_io.dart' show FileBasedSource;
-import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
 
@@ -24,13 +21,11 @@ import 'package:secdart_analyzer/src/supported_subset.dart';
  * for test and for the REST API.
  */
 class SecAnalyzer {
-  PhysicalResourceProvider resourceProvider = PhysicalResourceProvider.INSTANCE;
-  bool _checkDartErrors = false;
-  final String latticeFile;
+  bool returnDartErrors = false;
+  SecAnalyzer();
 
-  SecAnalyzer(this.latticeFile);
-
-  List<AnalysisError> analyze(String program, [bool useInterval = false]) {
+  List<AnalysisError> analyze(String program, String latticeFile,
+      [bool useInterval = false]) {
     //TODO:Remove this workaround. Find the right way to implement this.
     var annotationsFile = latticeFile;
     var f = new io.File(annotationsFile);
@@ -61,74 +56,73 @@ class SecAnalyzer {
     if (!(new io.File(filePath).existsSync())) {
       throw new ArgumentError("filePath does not exist");
     }
+    var absolutePath = pathos.absolute(filePath);
 
     var context = createAnalysisContext();
-    var absolutePath = pathos.absolute(filePath);
     Source source =
         context.sourceFactory.forUri(pathos.toUri(absolutePath).toString());
 
-    var libraryElement = context.computeLibraryElement(source);
-    //var unit  = context.resolveCompilationUnit2(source, source);
-    var unit = context.resolveCompilationUnit(source, libraryElement);
-
-    var dartErrors = context.getErrors(source).errors;
-    if (dartErrors.length > 0 && _checkDartErrors) return dartErrors;
-
-    return computeErrors(unit);
+    return computeAllErrors(context, source);
   }
 
   List<AnalysisError> dartAnalyze(String fileSource) {
     print('working dir ${new io.File('.').resolveSymbolicLinksSync()}');
 
-    DartSdk sdk = getDarkSdk();
-
-    var resolvers = [
-      new DartUriResolver(sdk),
-      new ResourceUriResolver(PhysicalResourceProvider.INSTANCE)
-    ];
-
-    AnalysisContext context = AnalysisEngine.instance.createAnalysisContext()
-      ..sourceFactory = new SourceFactory(resolvers);
+    var context = createAnalysisContext();
 
     Source source = new FileBasedSource(new JavaFile(fileSource));
     ChangeSet changeSet = new ChangeSet()..addedSource(source);
     context.applyChanges(changeSet);
-    LibraryElement libElement = context.computeLibraryElement(source);
 
-    CompilationUnit resolvedUnit =
-        context.resolveCompilationUnit(source, libElement);
+    LibraryElement libElement = context.computeLibraryElement(source);
+    context.resolveCompilationUnit(source, libElement);
+
     return context.getErrors(source).errors;
   }
 
-  static List<AnalysisError> computeErrors(CompilationUnit resolvedUnit){
+  static List<AnalysisError> computeAllErrors(
+      AnalysisContext context, Source source,
+      [bool returnDartErrors = true]) {
+    var libraryElement = context.computeLibraryElement(source);
+    var unit = context.resolveCompilationUnit(source, libraryElement);
 
+    var dartErrors = context.getErrors(source).errors;
+    if (dartErrors.length > 0 && returnDartErrors) return dartErrors;
+
+    return computeErrors(unit);
+  }
+
+  static List<AnalysisError> computeErrors(CompilationUnit resolvedUnit) {
     ErrorCollector errorListener = new ErrorCollector();
 
     //TODO: put this in another place
-    if(!isValidSecDartFile(resolvedUnit)){
+    if (!isValidSecDartFile(resolvedUnit)) {
       return errorListener.errors;
     }
 
     //parse element
-    var parserVisitor= new SecurityParserVisitor(errorListener);
+    var parserVisitor = new SecurityParserVisitor(errorListener);
     resolvedUnit.accept(parserVisitor);
-    if(errorListener.errors.length>0)
-      return errorListener.errors;
+    if (errorListener.errors.length > 0) return errorListener.errors;
 
     var supportedDart = new UnSupportedDartSubsetVisitor(errorListener);
     resolvedUnit.accept(supportedDart);
-    if(errorListener.errors.length>0)
-      return errorListener.errors;
+    if (errorListener.errors.length > 0) return errorListener.errors;
 
     GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
 
-    var visitor = new SecurityVisitor(typeSystem,errorListener);
+    var visitor = new SecurityVisitor(typeSystem, errorListener);
     resolvedUnit.accept(visitor);
 
     return errorListener.errors;
   }
+
   static bool isValidSecDartFile(CompilationUnit unitAst) {
-    return unitAst.directives.where((x)=> x is ImportDirective).map((y)=> y as ImportDirective).
-    where((import) => import.uriContent.contains("package:secdart/")).length >0;
+    return unitAst.directives
+            .where((x) => x is ImportDirective)
+            .map((y) => y as ImportDirective)
+            .where((import) => import.uriContent.contains("package:secdart/"))
+            .length >
+        0;
   }
 }

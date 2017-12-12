@@ -116,20 +116,7 @@ class DynLabel{
   }
 
   bool typeCheckSecurityForSource(Source source,{bool printerError:true}){
-    //TODO: Pending of refactoring: repeated implementation, this is implemented in SecurityAnalyzer
-    var libraryElement = context.computeLibraryElement(source);
-    //var unit  = context.resolveCompilationUnit2(source, source);
-    var unit = context.resolveCompilationUnit(source, libraryElement);
-
-    var dartErrors = context.getErrors(source).errors;
-    if (dartErrors.length > 0) {
-      for (var err in dartErrors) {
-        print(err);
-      }
-      return false;
-    }
-
-   var errors = SecAnalyzer.computeErrors(unit);
+   var errors = SecAnalyzer.computeAllErrors(context,source);
 
     if(printerError){
       for(AnalysisError error in errors){
