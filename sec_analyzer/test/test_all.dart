@@ -4,6 +4,7 @@ import 'sec_analysis/fun_decl_test.dart' as function;
 import 'sec_analysis/high_order_tests.dart' as high_order;
 import 'sec_analysis/implicit_flow_tests.dart' as implicit;
 import 'sec_analysis/identfier_tests.dart' as identifier;
+import 'sec_analysis/ds_ecoop.dart' as ds_ecoop;
 
 import 'lattice/lh_lattice_test.dart' as lattice;
 import 'parser/annotation_test.dart' as parser;
@@ -30,7 +31,7 @@ void main(){
     high_order.main();
     implicit.main();
     identifier.main();
-
+    ds_ecoop.main();
 
   });
 }
