@@ -7,6 +7,7 @@ import 'package:analyzer/src/dart/analysis/driver.dart';
 import 'package:analyzer/src/dart/analysis/file_state.dart';
 
 import "package:secdart_analyzer/analyzer.dart";
+import 'package:secdart_analyzer/src/options.dart';
 
 abstract class NotificationManager {
   void recordAnalysisErrors(
@@ -19,6 +20,7 @@ class SecDriver  implements AnalysisDriverGeneric{
   final AnalysisDriver dartDriver;
   SourceFactory _sourceFactory;
   final FileContentOverlay _contentOverlay;
+  final SecDartOptions options;
 
   final _addedFiles = new LinkedHashSet<String>();
   final _dartFiles = new LinkedHashSet<String>();
@@ -26,7 +28,8 @@ class SecDriver  implements AnalysisDriverGeneric{
   final _filesToAnalyze = new HashSet<String>();
   final _requestedDartFiles = new Map<String, List<Completer>>();
 
-  SecDriver(this.notificationManager, this.dartDriver, this._scheduler,SourceFactory sourceFactory,this._contentOverlay) {
+  SecDriver(this.notificationManager, this.dartDriver, this._scheduler,
+      SourceFactory sourceFactory,this._contentOverlay,this.options) {
     _sourceFactory = sourceFactory.clone();
     _scheduler.add(this);
 
@@ -149,14 +152,15 @@ class SecDriver  implements AnalysisDriverGeneric{
 
     //TODO: Filter error in a better way...
     if(result.errors!=null) {
-      var realErrors = result.errors.where((e)=>e.errorCode.errorSeverity == ErrorSeverity.ERROR).toList();
+      var realErrors = result.errors.where((e)=>
+        e.errorCode.errorSeverity == ErrorSeverity.ERROR).toList();
       if(realErrors.length!=0) {
         return new SecResult(realErrors);
       }
     }
 
     final unitAst = unit.element.computeNode();
-    var errors = SecAnalyzer.computeErrors(unitAst);
+    var errors = SecAnalyzer.computeErrors(unitAst,options.intervalMode);
     return new SecResult(errors);
   }
 

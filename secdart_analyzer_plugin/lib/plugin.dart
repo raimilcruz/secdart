@@ -14,6 +14,7 @@ import 'package:analyzer_plugin/protocol/protocol_constants.dart' as plugin;
 import 'package:analyzer_plugin/protocol/protocol_generated.dart' as plugin;
 import 'package:analyzer_plugin/utilities/analyzer_converter.dart';
 import 'package:secdart_analyzer_plugin/src/secdriver.dart';
+import 'package:secdart_analyzer/src/options.dart';
 
 
 class SecDartPlugin extends ServerPlugin {
@@ -24,9 +25,8 @@ class SecDartPlugin extends ServerPlugin {
     //Taken from angular_plugin
     final root = new analyzer.ContextRoot(contextRoot.root, contextRoot.exclude)
       ..optionsFilePath = contextRoot.optionsFile;
-    if (!isEnabled(root.optionsFilePath)) {
-      return null;
-    }
+
+    final options = getOptions(root.optionsFilePath);
 
     final logger = new PerformanceLog(new StringBuffer());
     final builder = new ContextBuilder(resourceProvider, sdkManager, null)
@@ -43,7 +43,8 @@ class SecDartPlugin extends ServerPlugin {
         dartDriver,
         analysisDriverScheduler,
         sourceFactory,
-        fileContentOverlay);
+        fileContentOverlay,
+        options);
     return driver;
   }
 
@@ -59,18 +60,6 @@ class SecDartPlugin extends ServerPlugin {
   @override
   bool isCompatibleWith(Version serverVersion) => true;
 
-  bool isEnabled(String optionsFilePath) {
-    if (optionsFilePath == null || optionsFilePath.isEmpty) {
-      return false;
-    }
-
-    final file = resourceProvider.getFile(optionsFilePath);
-
-    if (!file.exists) {
-      return false;
-    }
-    return true;
-  }
 
   @override
   void contentChanged(String path) {
@@ -93,6 +82,19 @@ class SecDartPlugin extends ServerPlugin {
     }
     return null;
   }
+
+
+  SecDartOptions getOptions(String optionsFilePath) {
+    if (optionsFilePath != null && optionsFilePath.isNotEmpty) {
+      final file = resourceProvider.getFile(optionsFilePath);
+      if (file.exists) {
+        final contents = file.readAsStringSync();
+        return new SecDartOptions.from(contents);
+      }
+    }
+    return new SecDartOptions.defaults();
+  }
+
 }
 class ChannelNotificationManager implements NotificationManager {
   final PluginCommunicationChannel channel;

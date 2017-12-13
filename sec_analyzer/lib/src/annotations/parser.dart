@@ -25,7 +25,8 @@ class FlatLatticeParser extends SecAnnotationParser{
 
   static const String FUNCTION_LATENT_LABEL = "latent";
 
-  FlatLatticeParser(AnalysisErrorListener this.errorListener, [bool intervalMode = false]){
+  FlatLatticeParser(AnalysisErrorListener this.errorListener,
+      [bool intervalMode = false]){
     this.intervalMode = intervalMode;
   }
 

@@ -2,6 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
+import 'package:secdart_analyzer/src/errors.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';
 import 'package:secdart_analyzer/src/helpers/resource_helper.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
@@ -82,17 +83,18 @@ class SecAnalyzer {
 
   static List<AnalysisError> computeAllErrors(
       AnalysisContext context, Source source,
-      [bool returnDartErrors = true]) {
+     {bool returnDartErrors : true, bool intervalMode: false}) {
     var libraryElement = context.computeLibraryElement(source);
     var unit = context.resolveCompilationUnit(source, libraryElement);
 
     var dartErrors = context.getErrors(source).errors;
     if (dartErrors.length > 0 && returnDartErrors) return dartErrors;
 
-    return computeErrors(unit);
+    return computeErrors(unit,intervalMode);
   }
 
-  static List<AnalysisError> computeErrors(CompilationUnit resolvedUnit) {
+  static List<AnalysisError> computeErrors(CompilationUnit resolvedUnit,
+      [bool intervalMode =false]) {
     ErrorCollector errorListener = new ErrorCollector();
 
     //TODO: put this in another place
@@ -101,7 +103,7 @@ class SecAnalyzer {
     }
 
     //parse element
-    var parserVisitor = new SecurityParserVisitor(errorListener);
+    var parserVisitor = new SecurityParserVisitor(errorListener,intervalMode);
     resolvedUnit.accept(parserVisitor);
     if (errorListener.errors.length > 0) return errorListener.errors;
 
@@ -111,7 +113,7 @@ class SecAnalyzer {
 
     GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
 
-    var visitor = new SecurityVisitor(typeSystem, errorListener);
+    var visitor = new SecurityVisitor(typeSystem, errorListener,intervalMode);
     resolvedUnit.accept(visitor);
 
     return errorListener.errors;

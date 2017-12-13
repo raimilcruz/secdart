@@ -115,8 +115,10 @@ class DynLabel{
     ''';
   }
 
-  bool typeCheckSecurityForSource(Source source,{bool printerError:true}){
-   var errors = SecAnalyzer.computeAllErrors(context,source);
+  bool typeCheckSecurityForSource(Source source,{bool intervalMode:false,
+    bool printerError:true}){
+   var errors = SecAnalyzer.computeAllErrors(context,source,
+       intervalMode: intervalMode);
 
     if(printerError){
       for(AnalysisError error in errors){

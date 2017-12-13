@@ -44,7 +44,9 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
   FunctionDeclaration _enclosingFunctionDeclaration;
 
   SecurityVisitor(this.secTypeSystem, this.reporter,
-      [bool this.intervalMode = false]) {}
+      [bool this.intervalMode = false]) {
+    print("Calling visitor with ${this.intervalMode}");
+  }
 
   @override
   bool visitCompilationUnit(CompilationUnit node) {

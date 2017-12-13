@@ -36,4 +36,26 @@ class BinaryExprTest extends AbstractSecDartTest{
     var source = newSource("/test.dart",program);
     expect(typeCheckSecurityForSource(source),isTrue);
   }
+  void test_relaxedModeBinOp(){
+    var program =
+    '''
+          import "package:secdart/secdart.dart";          
+          void foo (@high int a1, @dynl int a2) {
+            @low var a = a1 + a2;
+          }
+      ''';
+    var source = newSource("/test.dart",program);
+    expect(typeCheckSecurityForSource(source),isTrue);
+  }
+  void test_strictModeBinOp(){
+    var program =
+    '''
+          import "package:secdart/secdart.dart";          
+          void foo (@high int a1, @dynl int a2) {
+            @low var a = a1 + a2;
+          }
+      ''';
+    var source = newSource("/test.dart",program);
+    expect(typeCheckSecurityForSource(source,intervalMode: true),isFalse);
+  }
 }

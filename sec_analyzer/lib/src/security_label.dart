@@ -1,16 +1,11 @@
 /**
- * 
- */
-
-
-
-/**
  * Abstract class to represent a security label
  */
 abstract class SecurityLabel
 {
   /**
-   * When is implemented in a derived class returns a boolean value indicating if the current label can flow to the specific label
+   * When is implemented in a derived class returns a boolean value indicating
+   * if the current label can flow to the specific label
    */
   bool canRelabeledTo(SecurityLabel l);
   /**

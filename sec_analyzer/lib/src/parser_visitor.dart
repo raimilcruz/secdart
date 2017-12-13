@@ -27,10 +27,13 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool>{
    */
   SecurityTypeHelperParser functionSecTypeParser;
 
+  /**
+   * The mode define the internal representation of labels
+   */
+  final bool intervalMode;
 
-
-  SecurityParserVisitor(this.reporter) {
-    _parser = new FlatLatticeParser(reporter);
+  SecurityParserVisitor(this.reporter,[this.intervalMode = false]) {
+    _parser = new FlatLatticeParser(reporter,intervalMode);
     functionSecTypeParser = new SecurityTypeHelperParser(_parser,reporter);
   }
   @override
