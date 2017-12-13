@@ -33,9 +33,8 @@ class SecDartApi {
 
   @ApiMethod(path: 'analyze',method: 'POST')
   SecAnalysisResult analyze(SecAnalysisInput input) {
-    var latticeFile = _getLatticeFilePath();
     SecAnalyzer secAnalyzer = new SecAnalyzer();
-    var errors = secAnalyzer.analyze(input.source,latticeFile,input.useInterval);
+    var errors = secAnalyzer.analyze(input.source,input.useInterval).errors;
 
     SecAnalysisResult result = new SecAnalysisResult();
 

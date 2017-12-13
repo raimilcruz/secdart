@@ -118,7 +118,7 @@ class DynLabel{
   bool typeCheckSecurityForSource(Source source,{bool intervalMode:false,
     bool printerError:true}){
    var errors = SecAnalyzer.computeAllErrors(context,source,
-       intervalMode: intervalMode);
+       intervalMode: intervalMode).errors;
 
     if(printerError){
       for(AnalysisError error in errors){
@@ -127,7 +127,6 @@ class DynLabel{
     }
     return errors.length==0;
   }
-
 
   bool containsOnlySupportedFeatures(Source source,{bool printError:true}){
     var libraryElement = context.computeLibraryElement(source);
