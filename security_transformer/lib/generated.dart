@@ -26,5 +26,7 @@ void main() {
     SecurityContext.recoverPc(1);
   }
   SecurityContext.assign(x, SecurityContext.integerLiteral(0));
+  print(b);
   print(x);
+  print(y);
 }

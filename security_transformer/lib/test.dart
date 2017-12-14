@@ -17,5 +17,7 @@ void main() {
   else
     y = 0;
   x = 0;
+  print(b);
   print(x);
+  print(y);
 }
