@@ -50,7 +50,7 @@ class Starter {
         scheduler,sourceFactory, contentOverlay,new SecDartOptions.defaults());
 
     secDrivers[driverPath] = driver;
-    server.onFileAdded.listen((String path) {
+    server.onFileAdded.listen((path) {
       if (server.contextManager.getContextFolderFor(path).path == driverPath) {
         // only the owning driver "adds" the path
         driver.addFile(path);
@@ -59,7 +59,7 @@ class Starter {
         driver.fileChanged(path);
       }
     });
-    server.onFileChanged.listen((String path) {
+    server.onFileChanged.listen((path) {
       // all drivers get change notification
       driver.fileChanged(path);
     });
