@@ -26,7 +26,8 @@ class IdentifierTests extends AbstractSecDartTest{
         
       ''';
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source),isTrue);
+    var result = typeCheckSecurityForSource(source);
+    assert(!containsInvalidFlow(result));
   }
   void test_callToFunctionInAnotherFile(){
     var program1 =
@@ -47,7 +48,10 @@ class IdentifierTests extends AbstractSecDartTest{
     addSource(source1);
     var source2 = newSource("/test2.dart",program2);
     typeCheckSecurityForSource(source1);
-    expect(typeCheckSecurityForSource(source2),isTrue);
+
+    var result = typeCheckSecurityForSource(source2);
+
+    assert(!containsInvalidFlow(result));
   }
   void test_callToStandardLibraryFunction(){
     var program1 =
@@ -58,6 +62,8 @@ class IdentifierTests extends AbstractSecDartTest{
           }
       ''';
     var source1 = newSource("/test2.dart",program1);
-    expect(typeCheckSecurityForSource(source1),isFalse);
+    var result = typeCheckSecurityForSource(source1);
+
+    assert(containsInvalidFlow(result));
   }
 }

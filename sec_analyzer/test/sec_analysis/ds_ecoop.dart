@@ -19,27 +19,34 @@ class StrictModeTest extends AbstractSecDartTest{
   void test_ecoopds_1(){
     var program = EcoopDsPaperExamples.first();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: true),isFalse);
+    var result = typeCheckSecurityForSource(source,intervalMode: true);
+
+    assert(containsInvalidFlow(result));
   }
   void test_ecoopds_2(){
     var program = EcoopDsPaperExamples.second();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: true),isFalse);
+    var result = typeCheckSecurityForSource(source,intervalMode: true);
+    assert(containsInvalidFlow(result));
   }
   void test_ecoopds_3(){
     var program = EcoopDsPaperExamples.third();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: true),isFalse);
+    var result = typeCheckSecurityForSource(source,intervalMode: true);
+    assert(containsInvalidFlow(result));
   }
   void test_ecoopds_4(){
     var program = EcoopDsPaperExamples.fourth();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: true),isFalse);
+    var result = typeCheckSecurityForSource(source,intervalMode: true);
+    assert(containsInvalidFlow(result));
   }
   void test_ecoopds_5(){
     var program = EcoopDsPaperExamples.fifth();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: true),isFalse);
+    var result = typeCheckSecurityForSource(source,intervalMode: true);
+
+    assert(containsInvalidFlow(result));
   }
 }
 @reflectiveTest
@@ -47,27 +54,37 @@ class FlexibleModeTest extends AbstractSecDartTest{
   void test_ecoopds_1(){
     var program = EcoopDsPaperExamples.first();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: false),isFalse);
+    var result = typeCheckSecurityForSource(source,intervalMode: false);
+
+    assert(containsInvalidFlow(result));
   }
   void test_ecoopds_2(){
     var program = EcoopDsPaperExamples.second();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: false),isTrue);
+    var result = typeCheckSecurityForSource(source,intervalMode: false);
+
+    assert(!containsInvalidFlow(result));
   }
   void test_ecoopds_3(){
     var program = EcoopDsPaperExamples.third();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: false),isTrue);
+    var result = typeCheckSecurityForSource(source,intervalMode: false);
+
+    assert(!containsInvalidFlow(result));
   }
   void test_ecoopds_4(){
     var program = EcoopDsPaperExamples.fourth();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: false),isFalse);
+    var result = typeCheckSecurityForSource(source,intervalMode: false);
+
+    assert(containsInvalidFlow(result));
   }
   void test_ecoopds_5(){
     var program = EcoopDsPaperExamples.fifth();
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: false),isTrue);
+    var result = typeCheckSecurityForSource(source,intervalMode: false);
+
+    assert(!containsInvalidFlow(result));
   }
 }
 

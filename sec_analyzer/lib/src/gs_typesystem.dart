@@ -19,10 +19,9 @@ class GradualSecurityTypeSystem {
       GroundSecurityType sT1 = t1;
       GroundSecurityType sT2 = t2;
 
-      if(sT1.internalType.isSubtypeOf(sT2.internalType)){
-        return sT1.label.canRelabeledTo(sT2.label);
-      }
-      return false;
+      //We assume that we work over "gradually-well-typed programs",
+      //so we do not check for subtyping between the dart types
+      return sT1.label.canRelabeledTo(sT2.label);
     }
     if(t1 is SecurityFunctionType && t2 is SecurityFunctionType){
       SecurityFunctionType sT1 = t1;
@@ -44,7 +43,7 @@ class GradualSecurityTypeSystem {
       return true;
     }
     else{
-      _error = "${t1} is not subtype of ${t2}";
+      _error = "$t1 is not subtype of $t2";
       return false;
     }
   }

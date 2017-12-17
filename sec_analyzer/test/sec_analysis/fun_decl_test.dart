@@ -23,7 +23,9 @@ class FunctionDefinitionTest extends AbstractSecDartTest{
         }
       ''';
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source),isFalse);
+
+    var result = typeCheckSecurityForSource(source);
+    assert(containsInvalidFlow(result));
   }
   void test_secureFlow(){
     var program =
@@ -36,7 +38,8 @@ class FunctionDefinitionTest extends AbstractSecDartTest{
         ''';
 
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source), isTrue);
+    var result = typeCheckSecurityForSource(source);
+    assert(!containsInvalidFlow(result));
   }
   void test_secureFlow2(){
     var program =
@@ -49,7 +52,10 @@ class FunctionDefinitionTest extends AbstractSecDartTest{
         ''';
 
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source), isTrue);
+    var result = typeCheckSecurityForSource(source);
+
+
+    assert(!containsInvalidFlow(result));
   }
   void test_secureFlow3(){
     var program =
@@ -62,6 +68,9 @@ class FunctionDefinitionTest extends AbstractSecDartTest{
         ''';
 
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source), isTrue);
+    var result = typeCheckSecurityForSource(source);
+
+
+    assert(!containsInvalidFlow(result));
   }
 }

@@ -8,27 +8,29 @@ abstract class SecurityType{
   SecurityLabel get label;
   SecurityType stampLabel(SecurityLabel label);
 }
-
+/**
+ * Represents a security type for a [InterfaceType] (eg. Int, String.. a class)
+ */
 class GroundSecurityType extends SecurityType {
   SecurityLabel _label;
-  DartType internalType;
-
-  GroundSecurityType(this.internalType, this._label);
-
+  GroundSecurityType(this._label);
 
   @override
   SecurityLabel get label => this._label;
 
   @override
   SecurityType stampLabel(SecurityLabel label) {
-    return new GroundSecurityType(this.internalType,this._label.join(label));
+    return new GroundSecurityType(this._label.join(label));
   }
   @override
   String toString(){
-    return "$internalType@$_label";
+    return "$_label";
   }
 }
 
+/**
+ * Represents a security type associated to [FunctionType]
+ */
 class SecurityFunctionType extends SecurityType {
   SecurityType _returnType;
   List<SecurityType> _argumentTypes;
@@ -52,6 +54,26 @@ class SecurityFunctionType extends SecurityType {
 
   String toString(){
     return "($argumentTypes->[$_beginLabel]->$_returnType)@$_endLabel";
+  }
+}
+
+/**
+Represents a security type where the [DartType] is dynamic
+ **/
+class DynamicSecurityType extends SecurityType{
+  SecurityLabel _label;
+  DynamicSecurityType(this._label);
+
+  @override
+  SecurityLabel get label => this._label;
+
+  @override
+  SecurityType stampLabel(SecurityLabel label) {
+    return new GroundSecurityType(this._label.join(label));
+  }
+  @override
+  String toString(){
+    return "$_label";
   }
 }
 

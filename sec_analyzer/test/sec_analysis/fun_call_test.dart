@@ -25,7 +25,8 @@ class FunctionCallTest extends AbstractSecDartTest{
         }
       ''';
      var source = newSource("/test.dart",program);
-     expect(typeCheckSecurityForSource(source),isTrue);
+     var result = typeCheckSecurityForSource(source);
+     assert(!containsInvalidFlow(result));
    }
    void test_f2(){
       var program =
@@ -43,7 +44,9 @@ class FunctionCallTest extends AbstractSecDartTest{
         ''';
 
       var source = newSource("/test.dart",program);
-      expect(typeCheckSecurityForSource(source), isFalse);
+      var result = typeCheckSecurityForSource(source);
+
+      assert(!containsInvalidFlow(result));
    }
    void test_forwardCall(){
      var program =
@@ -62,7 +65,9 @@ class FunctionCallTest extends AbstractSecDartTest{
         
       ''';
      var source = newSource("/test.dart",program);
-     expect(typeCheckSecurityForSource(source),isTrue);
+     var result = typeCheckSecurityForSource(source);
+
+     assert(!containsInvalidFlow(result));
    }
    void test_basicTest(){
      var program =
@@ -73,6 +78,8 @@ class FunctionCallTest extends AbstractSecDartTest{
         }
       ''';
      var source = newSource("/test.dart",program);
-     expect(typeCheckSecurityForSource(source),isTrue);
+     var result = typeCheckSecurityForSource(source);
+
+     assert(!containsInvalidFlow(result));
    }
 }

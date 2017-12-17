@@ -19,7 +19,9 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
         }
       ''';
     var source = newSource("/test.dart", program);
-    expect(typeCheckSecurityForSource(source), isFalse);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(containsInvalidFlow(result));
   }
   void test_callingFunctionPassedAsParameter2() {
     var program =
@@ -30,7 +32,23 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
         }
       ''';
     var source = newSource("/test.dart", program);
-    expect(typeCheckSecurityForSource(source), isTrue);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(containsInvalidFlow(result));
+  }
+  void test_3() {
+    var program =
+    '''
+        import "package:secdart/secdart.dart";
+        void callWithSecret(void f(@low bool)) {
+          @high bool secret = true;
+          f(secret);
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(containsInvalidFlow(result));
   }
 }
 

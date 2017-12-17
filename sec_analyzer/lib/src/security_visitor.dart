@@ -45,7 +45,6 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
 
   SecurityVisitor(this.secTypeSystem, this.reporter,
       [bool this.intervalMode = false]) {
-    print("Calling visitor with ${this.intervalMode}");
   }
 
   @override
@@ -228,8 +227,7 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
     var rightSecType = _getSecurityType(node.rightOperand);
     var rightSecLabel = _getLabel(rightSecType);
 
-    var resultType = new GroundSecurityType(
-        node.staticType, leftSecLabel.join(rightSecLabel));
+    var resultType = new GroundSecurityType(leftSecLabel.join(rightSecLabel));
     node.setProperty(SEC_TYPE_PROPERTY, resultType);
     return true;
   }
@@ -300,7 +298,7 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
     var secTypeElseExpr = _getSecurityType(node.elseExpression);
 
     //TODO: This is wrong for high order types
-    var resultType = new GroundSecurityType(node.staticType,
+    var resultType = new GroundSecurityType(
         secTypeThenExpr.label.join(secTypeElseExpr.label).join(secType.label));
     node.setProperty(SEC_TYPE_PROPERTY, resultType);
     _pc = currentPc;
@@ -311,21 +309,21 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
   @override
   bool visitBooleanLiteral(BooleanLiteral node) {
     node.setProperty(
-        SEC_TYPE_PROPERTY, new GroundSecurityType(node.staticType, _pc));
+        SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
     return true;
   }
 
   @override
   bool visitIntegerLiteral(IntegerLiteral node) {
     node.setProperty(
-        SEC_TYPE_PROPERTY, new GroundSecurityType(node.staticType, _pc));
+        SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
     return true;
   }
 
   @override
   bool visitSimpleStringLiteral(SimpleStringLiteral node) {
     node.setProperty(
-        SEC_TYPE_PROPERTY, new GroundSecurityType(node.staticType, _pc));
+        SEC_TYPE_PROPERTY, new GroundSecurityType( _pc));
     return true;
   }
 
@@ -433,13 +431,13 @@ class ExternalLibraryAnnotations {
     if (name == "print")
       return new SecurityFunctionType(
           new LowLabel(),
-          [new GroundSecurityType(DynamicTypeImpl.instance, new LowLabel())],
-          new GroundSecurityType(VoidTypeImpl.instance, new LowLabel()),
+          [new GroundSecurityType(new LowLabel())],
+          new GroundSecurityType(new LowLabel()),
           new LowLabel());
     return new SecurityFunctionType(
         new DynamicLabel(),
         new List<SecurityType>(),
-        new GroundSecurityType(VoidTypeImpl.instance, new DynamicLabel()),
+        new GroundSecurityType(new DynamicLabel()),
         new DynamicLabel());
   }
 }

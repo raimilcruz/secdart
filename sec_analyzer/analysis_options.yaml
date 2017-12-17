@@ -14,3 +14,8 @@ linter:
     - test_types_in_equals
     - unrelated_type_equality_checks
     - valid_regexps
+    - library_names
+    #- non_constant_identifier_names
+    #- constant_identifier_names
+    - camel_case_types
+    - unnecessary_brace_in_string_interps

@@ -28,7 +28,9 @@ class ImplicitFlowsTest extends AbstractSecDartTest {
         }
       ''';
     var source = newSource("/test.dart", program);
-    expect(typeCheckSecurityForSource(source), isFalse);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(containsInvalidFlow(result));
   }
   void test_noImplicitFlow() {
     var program =
@@ -47,6 +49,8 @@ class ImplicitFlowsTest extends AbstractSecDartTest {
         }
       ''';
     var source = newSource("/test.dart", program);
-    expect(typeCheckSecurityForSource(source), isTrue);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(!containsInvalidFlow(result));
   }
 }

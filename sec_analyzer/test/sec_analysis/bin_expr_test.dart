@@ -1,4 +1,3 @@
-import 'package:test/test.dart';
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 
@@ -21,7 +20,9 @@ class BinaryExprTest extends AbstractSecDartTest{
           }
       ''';
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source),isFalse);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(containsInvalidFlow(result));
   }
   void test_sumOk(){
     var program =
@@ -34,7 +35,10 @@ class BinaryExprTest extends AbstractSecDartTest{
           }
       ''';
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source),isTrue);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(result.isEmpty);
+    assert(!containsInvalidFlow(result));
   }
   void test_relaxedModeBinOp(){
     var program =
@@ -45,7 +49,10 @@ class BinaryExprTest extends AbstractSecDartTest{
           }
       ''';
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source),isTrue);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(result.isEmpty);
+    assert(!containsInvalidFlow(result));
   }
   void test_strictModeBinOp(){
     var program =
@@ -56,6 +63,9 @@ class BinaryExprTest extends AbstractSecDartTest{
           }
       ''';
     var source = newSource("/test.dart",program);
-    expect(typeCheckSecurityForSource(source,intervalMode: true),isFalse);
+    var result = typeCheckSecurityForSource(source,intervalMode: true);
+
+    assert(containsInvalidFlow(result));
+
   }
 }

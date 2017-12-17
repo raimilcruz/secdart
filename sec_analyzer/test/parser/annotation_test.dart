@@ -1,4 +1,3 @@
-import 'package:test/test.dart';
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 
@@ -20,7 +19,7 @@ class ParserTest extends AbstractSecDartTest{
          }
       ''';
     var source = newSource("/test.dart",program);
-    expect(containsParseErrors(source),isFalse);
+    assert(containsParseErrors(source));
   }
   void test_repeatedArgumentAnnotation(){
     var program =
@@ -30,7 +29,7 @@ class ParserTest extends AbstractSecDartTest{
          }
       ''';
     var source = newSource("/test.dart",program);
-    expect(containsParseErrors(source),isFalse);
+    assert(containsParseErrors(source));
   }
   void test_repeatedVariableAnnotation(){
     var program =
@@ -41,6 +40,24 @@ class ParserTest extends AbstractSecDartTest{
          }
       ''';
     var source = newSource("/test.dart",program);
-    expect(containsParseErrors(source),isFalse);
+    assert(containsParseErrors(source));
   }
+  /*void test_functionAnnotatedType1(){
+    var function = '''
+        @latent("H","L")
+        @low
+        foo (@bot int a, @top int b) {            
+        }
+    ''';
+    var ast = resolveDart(  function);
+    ErrorCollector errorListener = new ErrorCollector();
+
+    var visitor = new SecurityParserVisitor(errorListener,false,false);
+    ast.accept(visitor);
+
+    var type = ast.getProperty(SEC_TYPE_PROPERTY);
+
+    //expect(type,new FunctionSecurityType());
+  }*/
+
 }

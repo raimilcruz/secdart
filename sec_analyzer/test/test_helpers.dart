@@ -10,6 +10,7 @@ import 'package:front_end/src/base/source.dart';
 import 'package:secdart_analyzer/analyzer.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
+import 'package:secdart_analyzer/src/errors.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
 import 'package:analyzer/source/package_map_resolver.dart';
@@ -115,17 +116,16 @@ class DynLabel{
     ''';
   }
 
-  bool typeCheckSecurityForSource(Source source,{bool intervalMode:false,
-    bool printerError:true}){
+  List<AnalysisError> typeCheckSecurityForSource(Source source,{bool intervalMode:false,
+    bool printError:true}){
    var errors = SecAnalyzer.computeAllErrors(context,source,
        intervalMode: intervalMode);
-
-    if(printerError){
+    if(printError){
       for(AnalysisError error in errors){
         print(error);
       }
     }
-    return errors.length==0;
+    return errors;
   }
 
 
@@ -143,7 +143,10 @@ class DynLabel{
         print(error);
       }
     }
-    return errorListener.errors.length==0;
+    return errorListener.errors.where(
+            (e)=>
+              e.errorCode ==
+                  SecurityErrorCode.UNSUPPORTED_DART_FEATURE).isEmpty;
   }
   bool containsParseErrors(Source source,{bool printError:true}){
     var libraryElement = context.computeLibraryElement(source);
@@ -159,6 +162,14 @@ class DynLabel{
         print(error);
       }
     }
-    return errorListener.errors.length==0;
+    return errorListener.errors.where((e)=>
+    e.errorCode is ParserErrorCode).isNotEmpty;
+  }
+  bool containsInvalidFlow(List<AnalysisError> errors){
+    return errors.where((e)=> e.errorCode is SecurityErrorCode).isNotEmpty;
+  }
+  bool containsUnsupportedFeature(List<AnalysisError> errors){
+    return errors.where((e)=> e.errorCode is
+      UnsupportedFeatureErrorCode).isNotEmpty;
   }
 }

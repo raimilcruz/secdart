@@ -18,6 +18,9 @@ abstract class SecAnnotationParser{
 
   isLabel(Annotation a);
 }
+abstract class SecAnnotationParser2{
+  SecurityFunctionType getFunctionSecType(FunctionDeclaration node);
+}
 
 class FlatLatticeParser extends SecAnnotationParser{
   AnalysisErrorListener errorListener;
@@ -115,92 +118,6 @@ class FunctionAnnotationLabel{
 
   SecurityLabel getBeginLabel()=> beginLabel;
   SecurityLabel getEndLabel()=> endLabel;
-}
-class SecurityTypeHelperParser{
-  static const String FUNCTION_LATTENT_LABEL = "latent";
-
-  SecAnnotationParser _parser;
-  AnalysisErrorListener errorListener;
-
-  SecurityTypeHelperParser(SecAnnotationParser this._parser, AnalysisErrorListener this.errorListener);
-
-  SecurityFunctionType getFunctionSecType(FunctionDeclaration node) {
-    var metadataList = node.metadata;
-
-    //label are dynamic by default
-    var returnLabel = _parser.dynamicLabel;
-    var beginLabel = _parser.dynamicLabel;
-    var endLabel = _parser.dynamicLabel;
-    if (metadataList != null) {
-      var latentAnnotations = metadataList.where((a)=>a.name.name == FUNCTION_LATTENT_LABEL);
-
-      if(latentAnnotations.length>1){
-        reportError(SecurityTypeError.getDuplicatedLatentError(node));
-        return null;
-      }
-      else if(latentAnnotations.length==1) {
-        Annotation securityFunctionAnnotation = latentAnnotations.first;
-        var funAnnotationLabel = _parser.parseFunctionLabel(securityFunctionAnnotation);
-        beginLabel = funAnnotationLabel.getBeginLabel();
-        endLabel = funAnnotationLabel.getEndLabel();
-      }
-
-      var returnAnnotations = metadataList.where((a)=>_parser.isLabel(a));
-      if(returnAnnotations.length>1){
-        reportError(SecurityTypeError.getDuplicatedLatentError(node));
-        return null;
-      }
-      else if(returnAnnotations.length==1){
-        returnLabel = _parser.parseLabel(returnAnnotations.first);
-      }
-    }
-    var parameterSecTypes = new List<SecurityType>();
-    FunctionExpression functionExpr = node.functionExpression;
-    var formalParameterlists = functionExpr.parameters.parameters;
-    for (FormalParameter p in formalParameterlists) {
-      //TODO: Have the option to receive especify label for function as parameter.
-      SecurityLabel label = getSecurityAnnotationForFunctionParameter(p);
-      parameterSecTypes.add(new GroundSecurityType(p.element.type, label));
-    }
-    var returnType = new GroundSecurityType(functionExpr.element.returnType, returnLabel);
-    return new SecurityFunctionType(beginLabel, parameterSecTypes, returnType, endLabel);
-  }
-
-  /**
-   * Get the security annotation from a list of annotations
-   */
-  SecurityLabel getSecurityLabelVarOrParameter(
-      NodeList<Annotation> annotations,AstNode node){
-    var labelAnnotations = annotations.where((a)=>_parser.isLabel(a));
-    var label = _parser.dynamicLabel;
-    if(labelAnnotations.length>1){
-      errorListener.onError(SecurityTypeError.getDuplicatedLabelOnParameterError(node));
-      return null;
-    }
-    else if(labelAnnotations.length==1){
-      label = _parser.parseLabel(labelAnnotations.first);
-    }
-    return label;
-
-  }
-  /**
-   * Get the security annotation for a function parameter
-   */
-  SecurityLabel getSecurityAnnotationForFunctionParameter(FormalParameter parameter) {
-    var secLabelAnnotations = parameter.metadata.where((x)=> _parser.isLabel(x));
-    var label = _parser.dynamicLabel;
-    if(secLabelAnnotations.length>1){
-      reportError(SecurityTypeError.getDuplicatedLabelOnParameterError(parameter));
-      return null;
-    }
-    else if(secLabelAnnotations.length==1){
-      label = _parser.parseLabel(secLabelAnnotations.first);
-    }
-    return label;
-  }
-  void reportError(AnalysisError explicitFlowError) {
-    errorListener.onError(explicitFlowError);
-  }
 }
 class SecCompilationException implements SecDartException{
   final String message;
