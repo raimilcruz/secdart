@@ -142,21 +142,6 @@ class DynLabel{
     return computeAllErrors(context, source);
   }
 
-  List<AnalysisError> dartAnalyze(String fileSource) {
-    print('working dir ${new io.File('.').resolveSymbolicLinksSync()}');
-
-    var context = createAnalysisContext();
-
-    Source source = new FileBasedSource(new JavaFile(fileSource));
-    ChangeSet changeSet = new ChangeSet()..addedSource(source);
-    context.applyChanges(changeSet);
-
-    LibraryElement libElement = context.computeLibraryElement(source);
-    context.resolveCompilationUnit(source, libElement);
-
-    return context.getErrors(source).errors;
-  }
-
   static SecAnalysisResult computeAllErrors(
       AnalysisContext context, Source source,
      {bool returnDartErrors : true, bool intervalMode: false}) {

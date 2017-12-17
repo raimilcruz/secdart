@@ -1,5 +1,7 @@
 // This file contains classes and functions that help to build test
 
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:analyzer/file_system/file_system.dart';
 import 'package:analyzer/file_system/memory_file_system.dart';
@@ -127,6 +129,14 @@ class DynLabel{
     }
     return errors;
   }
+  SecAnalysisResult resolveDart(Source source,{bool printErrors:false}){
+    var libraryElement = context.computeLibraryElement(source);
+    var unit = context.resolveCompilationUnit(source, libraryElement);
+
+    var dartErrors = context.getErrors(source).errors;
+    return new SecAnalysisResult(dartErrors,unit);
+  }
+
 
   bool containsOnlySupportedFeatures(Source source,{bool printError:true}){
     var libraryElement = context.computeLibraryElement(source);
@@ -170,5 +180,24 @@ class DynLabel{
   bool containsUnsupportedFeature(List<AnalysisError> errors){
     return errors.where((e)=> e.errorCode is
       UnsupportedFeatureErrorCode).isNotEmpty;
+  }
+}
+
+class AstQuery{
+  static List<AstNode> toList(AstNode node){
+    var nodes = <AstNode>[];
+    var firstVisitor = new _NodeVisitor(nodes);
+    node.accept(firstVisitor);
+    return nodes;
+  }
+}
+class _NodeVisitor extends GeneralizingAstVisitor<Object> {
+  List<AstNode> nodes;
+  _NodeVisitor(this.nodes) : super();
+
+  @override
+  Object visitNode(AstNode node) {
+    nodes.add(node);
+    return super.visitNode(node);
   }
 }
