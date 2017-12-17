@@ -11,6 +11,8 @@ import 'parser/annotation_test.dart' as parser;
 
 import  'unsupported_features_tests.dart' as unsupported;
 
+import 'analysis_client_test.dart' as client;
+
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 
 
@@ -32,6 +34,8 @@ void main(){
     implicit.main();
     identifier.main();
     ds_ecoop.main();
+
+    client.main();
 
   });
 }

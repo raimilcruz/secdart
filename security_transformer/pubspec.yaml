@@ -1,0 +1,16 @@
+name: security_transformer
+description: Security transformer
+
+environment:
+  sdk: '>=1.20.1 <=2.0.0-dev.8.0'
+
+dependencies:
+  secdart:
+      path: ../secdart
+  secdart_analyzer:
+    path: ../sec_analyzer
+  analyzer: '^0.31.0-alpha.1'
+  barback: ">=0.14.1 <0.16.0"
+
+transformers:
+- security_transformer

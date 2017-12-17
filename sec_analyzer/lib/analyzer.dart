@@ -1,10 +1,12 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/file_system/file_system.dart';
+import 'package:analyzer/file_system/memory_file_system.dart';
+import 'package:analyzer/source/package_map_resolver.dart';
+import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
-import 'package:secdart_analyzer/src/errors.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';
-import 'package:secdart_analyzer/src/helpers/resource_helper.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart'
     show SecurityVisitor;
@@ -22,38 +24,112 @@ import 'package:secdart_analyzer/src/supported_subset.dart';
  * for test and for the REST API.
  */
 class SecAnalyzer {
+  MemoryResourceProvider resourceProvider = new MemoryResourceProvider();
+  DartSdk sdk;
+  AnalysisContext context;
+
   bool returnDartErrors = false;
-  SecAnalyzer();
 
-  List<AnalysisError> analyze(String program, String latticeFile,
-      [bool useInterval = false]) {
-    //TODO:Remove this workaround. Find the right way to implement this.
-    var annotationsFile = latticeFile;
-    var f = new io.File(annotationsFile);
-    String annotationsCode = f.readAsStringSync();
-    int lengthAnnotations = annotationsCode.length;
-
-    var programAugmented = annotationsCode + program;
-
-    ResourceHelper helper = new ResourceHelper();
-    var source = helper.newSource("/test.dart", programAugmented);
-
-    var context = createAnalysisContext();
-    var unit = context.resolveCompilationUnit2(source, source);
-
-    var dartErrors = context.getErrors(source).errors;
-    if (dartErrors.length > 0) {
-      for (var err in dartErrors) {
-        err.offset = err.offset - lengthAnnotations;
-      }
-      return dartErrors;
-    }
-    source = helper.newSource("/test2.dart", program);
-    unit = context.resolveCompilationUnit2(source, source);
-    return computeErrors(unit);
+  SecAnalyzer(){
+    _setUp();
   }
 
-  List<AnalysisError> analyzeFile(String filePath, [bool useInterval = false]) {
+  void _setUp(){
+    sdk = getDarkSdk();
+
+    context = createAnalysisContext();
+    final packageMap = <String, List<Folder>>{
+      "secdart": [resourceProvider.getFolder("/secdart")]
+    };
+    final packageResolver =
+    new PackageMapUriResolver(resourceProvider, packageMap);
+    final sf = new SourceFactory([
+      new DartUriResolver(sdk),
+      packageResolver,
+      new ResourceUriResolver(resourceProvider)
+    ]);
+
+    context.sourceFactory =sf;
+    var secDart = _newSource("/secdart/secdart.dart",_getSecDartContent());
+
+    Source source = secDart;
+    ChangeSet changeSet = new ChangeSet()..addedSource(source);
+    context.applyChanges(changeSet);
+  }
+  Source _newSource(String path, [String content = '']) {
+    final file = resourceProvider.newFile(path, content);
+    final source = file.createSource();
+    return source;
+  }
+  String _getSecDartContent(){
+    return '''
+    /*
+This file contains the annotations that represents labels in a flat lattice of security
+(BOT < LOW < HIGH < TOP)
+*/
+
+const high = const High();
+const low= const Low();
+const top= const Top();
+const bot= const Bot();
+const dynl = const DynLabel();
+
+/**
+ * Represents a high confidentiality label
+ */
+class High{
+  const High();
+}
+/**
+ * Represents a low confidentiality label
+ */
+class Low{
+  const Low();
+}
+
+/**
+ * Represents the top in the lattice
+ */
+class Top{
+  const Top();
+}
+/**
+ * Represents the bottom in the lattice
+ */
+class Bot{
+  const Bot();
+}
+
+/**
+ * Label for function annotations
+ */
+class latent{
+  /**
+   * The label required to invoke the function
+   */
+  final String beginLabel;
+
+  /**
+   * The label of the return value of the function can not be higher than the [endlabel]
+   */
+  final String endLabel;
+  const latent(this.beginLabel,this.endLabel);
+}
+
+class DynLabel{
+  const DynLabel();
+}
+    ''';
+  }
+
+  SecAnalysisResult analyze(String program,
+      [bool useInterval = false]) {
+
+    Source programSource = _newSource("/test.dart",program);
+    return computeAllErrors(context, programSource);
+  }
+
+  SecAnalysisResult analyzeFile(String filePath, [bool useInterval = false]) {
     if (!(new io.File(filePath).existsSync())) {
       throw new ArgumentError("filePath does not exist");
     }
@@ -81,16 +157,17 @@ class SecAnalyzer {
     return context.getErrors(source).errors;
   }
 
-  static List<AnalysisError> computeAllErrors(
+  static SecAnalysisResult computeAllErrors(
       AnalysisContext context, Source source,
      {bool returnDartErrors : true, bool intervalMode: false}) {
     var libraryElement = context.computeLibraryElement(source);
     var unit = context.resolveCompilationUnit(source, libraryElement);
 
     var dartErrors = context.getErrors(source).errors;
-    if (dartErrors.length > 0 && returnDartErrors) return dartErrors;
+    if (dartErrors.length > 0 && returnDartErrors)
+      return new SecAnalysisResult(dartErrors,unit);
 
-    return computeErrors(unit,intervalMode);
+    return new SecAnalysisResult(computeErrors(unit,intervalMode),unit);
   }
 
   static List<AnalysisError> computeErrors(CompilationUnit resolvedUnit,
@@ -119,6 +196,7 @@ class SecAnalyzer {
     return errorListener.errors;
   }
 
+
   static bool isValidSecDartFile(CompilationUnit unitAst) {
     return unitAst.directives
             .where((x) => x is ImportDirective)
@@ -127,4 +205,9 @@ class SecAnalyzer {
             .length >
         0;
   }
+}
+class SecAnalysisResult{
+  List<AnalysisError> errors;
+  AstNode astNode;
+  SecAnalysisResult(this.errors,this.astNode);
 }
