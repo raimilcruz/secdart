@@ -5,7 +5,7 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:barback/barback.dart';
 import 'package:secdart_analyzer/analyzer.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
-import 'package:security_transformer/src/Utils.dart';
+import 'package:security_transformer/src/utils.dart';
 
 bool isSecurityLabel(String name) {
   return name == 'bot' ||
