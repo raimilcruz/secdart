@@ -1,5 +1,5 @@
-import "package:secdart/secdart.dart";
 import 'package:security_transformer/src/security_value.dart';
+import "package:secdart/secdart.dart";
 
 void main() {
   SecurityContext.checkParameters([], []);

@@ -9,8 +9,9 @@ dependencies:
       path: ../secdart
   secdart_analyzer:
     path: ../sec_analyzer
-  analyzer: '^0.31.0-alpha.1'
+  analyzer:
   barback: ">=0.14.1 <0.16.0"
+  dart_style:
 
 transformers:
 - security_transformer
