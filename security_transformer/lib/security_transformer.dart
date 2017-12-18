@@ -813,9 +813,11 @@ class SecurityTransformer extends Transformer {
   }
 
   Future<bool> isPrimary(AssetId id) {
-    bool ans = id.path.endsWith('test.dart') &&
-        !id.path.endsWith('security_transformer.dart');
-    return new Future.value(ans);
+    bool isDartFile = id.path.endsWith('.dart');
+    bool ownPackageFilter = id.package != 'security_transformer' ||
+        id.path == 'example/test.dart' ||
+        id.path.startsWith('test/dart_files/sources/');
+    return new Future.value(isDartFile && ownPackageFilter);
   }
 }
 

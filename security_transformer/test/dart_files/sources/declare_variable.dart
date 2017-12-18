@@ -1,7 +1,6 @@
 import "package:secdart/secdart.dart";
 
-void main() {
+void foo() {
   @low
-  int a = 3, b = 2;
-  a = b;
+  int a = 3;
 }
