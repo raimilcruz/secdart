@@ -7,6 +7,4 @@ void main() {
 
 @latent("H", "L")
 @low
-int foo(int a) {
-  return a;
-}
+int foo(int a) => a;

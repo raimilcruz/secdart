@@ -970,7 +970,12 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
     final returnType = functionExpression.element.returnType.name;
     final bodyStatement = returnType == 'void'
         ? createStatementExpressionWithExpression(node.expression)
-        : createReturnStatementWithExpression(node.expression);
+        : _visitReturnStatement(
+            createReturnStatementWithExpression(node.expression),
+            (functionExpression.getProperty('sec-type') as SecurityFunctionType)
+                .returnType
+                .label
+                .toString());
     return _visitFunctionBody(node, bodyStatement);
   }
 
@@ -1155,12 +1160,8 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
         node.getAncestor((e) => e is FunctionExpression) as FunctionExpression;
     SecurityFunctionType functionType =
         functionExpression.getProperty('sec-type') as SecurityFunctionType;
-    final returnTypeLabel = functionType.returnType.label.toString();
-    replaceNodeInAst(
-        node.expression,
-        createFunctionInvocation('SecurityContext.checkReturnType',
-            [node.expression.toString(), "'$returnTypeLabel'"]));
-    return node;
+    final staticReturnLabel = functionType.returnType.label.toString();
+    return _visitReturnStatement(node, staticReturnLabel);
   }
 
   @override
@@ -1287,5 +1288,14 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
     statements.add(checkStatement);
     statements.add(bodyStatement);
     return createBlockFunctionBody(statements);
+  }
+
+  ReturnStatement _visitReturnStatement(
+      ReturnStatement node, String staticReturnLabel) {
+    replaceNodeInAst(
+        node.expression,
+        createFunctionInvocation('SecurityContext.checkReturnType',
+            [node.expression.toString(), "'$staticReturnLabel'"]));
+    return node;
   }
 }

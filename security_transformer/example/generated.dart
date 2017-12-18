@@ -15,7 +15,5 @@ void main() {
 dynamic foo(dynamic a) {
   a ??= SecurityContext.nullLiteral();
   SecurityContext.checkParametersType([a], ['?']);
-  {
-    return SecurityContext.checkReturnType(a, 'L');
-  }
+  return SecurityContext.checkReturnType(a, 'L');
 }
