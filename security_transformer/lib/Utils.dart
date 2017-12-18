@@ -52,7 +52,7 @@ BlockFunctionBody createBlockFunctionBody(List<Statement> statements) {
   for (var _ = 0; _ < statements.length; _++) {
     buffer.write(';');
   }
-  final blockFunctionBody = parseBlockFunctionBody('{${buffer.toString()}}');
+  final blockFunctionBody = parseBlockFunctionBody('${buffer.toString()}');
   for (var i = 0; i < statements.length; i++) {
     replaceNodeInAst(blockFunctionBody.block.statements[i], statements[i]);
   }

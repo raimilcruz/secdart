@@ -25,7 +25,7 @@ class ReplacerVisitor extends SimpleAstVisitor {
 
   @override
   visitAnnotation(Annotation node) {
-    node.visitChildren(this);
+    // node.visitChildren(this);
     final parent = node.parent;
     replaceNodeInAst(node, node.accept(_visitor), parent: parent);
   }
@@ -821,8 +821,6 @@ class SecurityTransformer extends Transformer {
 class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   static var _size = 0;
 
-
-
   @override
   AstNode visitAdjacentStrings(AdjacentStrings node) {
     Iterable stringSecurityValues = node.strings.map((e) => e.accept(this));
@@ -869,7 +867,9 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   AstNode visitBlock(Block node) => node;
 
   @override
-  AstNode visitBlockFunctionBody(BlockFunctionBody node) => node;
+  AstNode visitBlockFunctionBody(BlockFunctionBody node) {
+    return _visitFunctionBody(node, node.block);
+  }
 
   @override
   AstNode visitBooleanLiteral(BooleanLiteral node) {
@@ -967,10 +967,10 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   AstNode visitExpressionFunctionBody(ExpressionFunctionBody node) {
     final functionExpression = node.parent as FunctionExpression;
     final returnType = functionExpression.element.returnType.name;
-    final lastStatement = returnType == 'void'
+    final bodyStatement = returnType == 'void'
         ? createStatementExpressionWithExpression(node.expression)
         : createReturnStatementWithExpression(node.expression);
-    return createBlockFunctionBody([lastStatement]);
+    return _visitFunctionBody(node, bodyStatement);
   }
 
   @override
@@ -1222,8 +1222,8 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
     replaceNodeInAst(
         node.initializer,
         createFunctionInvocation('SecurityContext.declare', [
-          node.initializer?.toString() ?? visitNullLiteral(null).toString(),
-          "'$securityLabel'"
+          "'$securityLabel'",
+          node.initializer?.toString() ?? visitNullLiteral(null).toString()
         ]),
         parent: node);
     return node;
@@ -1254,6 +1254,23 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
 
   @override
   AstNode visitYieldStatement(YieldStatement node) => node;
+
+  AstNode _visitFunctionBody(FunctionBody node, Statement bodyStatement) {
+    final functionExpression = node.parent as FunctionExpression;
+    final identifiers =
+        functionExpression.parameters.parameters.map((e) => e.identifier.name);
+    final securityLabels = functionExpression.parameters.parameters
+        .map((e) => "'${e.getProperty('sec-type')}'");
+    final checkStatement = createExpressionStatementWithFunctionInvocation(
+        'SecurityContext.checkParameters',
+        ['[${identifiers.join(', ')}]', '[${securityLabels.join(', ')}]']);
+    final statements = <Statement>[];
+    for (final identifier in identifiers) {
+      statements
+          .add(parseStatement('$identifier ??= SecurityContext.nullLiteral()'));
+    }
+    statements.add(checkStatement);
+    statements.add(bodyStatement);
+    return createBlockFunctionBody(statements);
+  }
 }
-
-

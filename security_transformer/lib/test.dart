@@ -1,7 +1,11 @@
-import 'package:secdart/secdart.dart';
+import "package:secdart/secdart.dart";
 
-int a = 0;
+void main() {
+  @high int a = 3;
+  int b = a;
+  foo(b);
+}
 
-int bar(int b) => a = b;
-
-void foo(int b) => a = b;
+@latent("H", "L")
+@low
+int foo(@low int a) => a;

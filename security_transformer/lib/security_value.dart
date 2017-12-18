@@ -1,8 +1,14 @@
 class ErrorReporter {
+  static void reportBadArgument(SecurityLabel parameterSecurityLabel,
+      SecurityLabel argumentSecurityLabel) {
+    throw new StateError(
+        'Trying to give $argumentSecurityLabel argument to $parameterSecurityLabel parameter.');
+  }
+
   static void reportBadAssignment(
       SecurityLabel variableSecurityLabel, SecurityLabel valueSecurityLabel) {
     throw new StateError(
-        'Trying to assign $variableSecurityLabel variable with $valueSecurityLabel value.');
+        'Trying to assign $valueSecurityLabel value to $variableSecurityLabel variable.');
   }
 
   static void reportBadContextAssignment(
@@ -59,6 +65,19 @@ class SecurityContext {
             upperBoundType: pc.upperBoundType));
   }
 
+  static void checkParameters(
+      List<SecurityValue> securityValues, List<String> labels) {
+    final securityLabels = labels.map((e) => new SecurityLabel(e)).toList();
+    for (var i = 0; i < securityValues.length; i++) {
+      final securityValue = securityValues[i];
+      final securityLabel = securityLabels[i];
+      if (securityLabel < securityValue.dynamicSecurityLabel) {
+        ErrorReporter.reportBadArgument(
+            securityLabel, securityValue.dynamicSecurityLabel);
+      }
+    }
+  }
+
   static SecurityValue conditionalExpression(SecurityValue condition,
       SecurityValue thenFunction(), SecurityValue elseFunction()) {
     final result = condition.value ? thenFunction() : elseFunction();
@@ -68,7 +87,7 @@ class SecurityContext {
             condition.dynamicSecurityLabel, result.dynamicSecurityLabel));
   }
 
-  static SecurityValue declare(SecurityValue initializer, String label) {
+  static SecurityValue declare(String label, SecurityValue initializer) {
     final securityLabel = new SecurityLabel(label);
     final securityValue = new SecurityValue(null, securityLabel);
     assign(securityValue, initializer);

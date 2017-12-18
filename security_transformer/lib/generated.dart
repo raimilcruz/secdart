@@ -1,12 +1,21 @@
-import 'package:secdart/secdart.dart';
+import "package:secdart/secdart.dart";
 
 import 'security_value.dart';
 
-dynamic a = SecurityContext.declare(SecurityContext.integerLiteral(0), '?');
-dynamic bar(dynamic b) {
-  return SecurityContext.assign(a, b);
+void main() {
+  SecurityContext.checkParameters([], []);
+  {
+    @high
+    dynamic a = SecurityContext.declare('H', SecurityContext.integerLiteral(3));
+    dynamic b = SecurityContext.declare('?', a);
+    foo(b);
+  }
 }
 
-void foo(dynamic b) {
-  SecurityContext.assign(a, b);
+@latent("H", "L")
+@low
+dynamic foo(@low dynamic a) {
+  a ??= SecurityContext.nullLiteral();
+  SecurityContext.checkParameters([a], ['L']);
+  return a;
 }
