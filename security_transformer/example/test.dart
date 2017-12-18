@@ -2,10 +2,11 @@ import "package:secdart/secdart.dart";
 
 void main() {
   @high int a = 3;
-  int b = a;
-  foo(b);
+  foo(a);
 }
 
 @latent("H", "L")
 @low
-int foo(@low int a) => a;
+int foo(int a) {
+  return a;
+}

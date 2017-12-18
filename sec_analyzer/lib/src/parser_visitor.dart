@@ -53,6 +53,15 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool>{
   }
 
   @override
+  bool visitFunctionExpression(FunctionExpression node) {
+    var secType = getFunctionSecType(node.parent);
+    node.setProperty(SEC_TYPE_PROPERTY, secType);
+
+    super.visitFunctionExpression(node);
+    return true;
+  }
+
+  @override
   bool visitFunctionTypedFormalParameter(FunctionTypedFormalParameter node) {
     var secType = getLabelScheme(node);
     node.setProperty(SEC_TYPE_PROPERTY, secType);

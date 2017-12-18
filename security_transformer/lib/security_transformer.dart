@@ -807,7 +807,8 @@ class SecurityTransformer extends Transformer {
     compilationUnit.accept(_replacerVisitor);
     var id = transform.primaryInput.id;
     var newContent =
-        "import 'package:security_transformer/src/security_value.dart'; " + compilationUnit.toString();
+        "import 'package:security_transformer/src/security_value.dart'; " +
+            compilationUnit.toString();
     transform.addOutput(new Asset.fromString(id, newContent));
   }
 
@@ -1146,7 +1147,21 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   AstNode visitRethrowExpression(RethrowExpression node) => node;
 
   @override
-  AstNode visitReturnStatement(ReturnStatement node) => node;
+  AstNode visitReturnStatement(ReturnStatement node) {
+    if (node.expression == null) {
+      return node;
+    }
+    final functionExpression =
+        node.getAncestor((e) => e is FunctionExpression) as FunctionExpression;
+    SecurityFunctionType functionType =
+        functionExpression.getProperty('sec-type') as SecurityFunctionType;
+    final returnTypeLabel = functionType.returnType.label.toString();
+    replaceNodeInAst(
+        node.expression,
+        createFunctionInvocation('SecurityContext.checkReturnType',
+            [node.expression.toString(), "'$returnTypeLabel'"]));
+    return node;
+  }
 
   @override
   AstNode visitScriptTag(ScriptTag node) => node;
@@ -1262,7 +1277,7 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
     final securityLabels = functionExpression.parameters.parameters
         .map((e) => "'${e.getProperty('sec-type')}'");
     final checkStatement = createExpressionStatementWithFunctionInvocation(
-        'SecurityContext.checkParameters',
+        'SecurityContext.checkParametersType',
         ['[${identifiers.join(', ')}]', '[${securityLabels.join(', ')}]']);
     final statements = <Statement>[];
     for (final identifier in identifiers) {

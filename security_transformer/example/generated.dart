@@ -2,19 +2,20 @@ import 'package:security_transformer/src/security_value.dart';
 import "package:secdart/secdart.dart";
 
 void main() {
-  SecurityContext.checkParameters([], []);
+  SecurityContext.checkParametersType([], []);
   {
     @high
     dynamic a = SecurityContext.declare('H', SecurityContext.integerLiteral(3));
-    dynamic b = SecurityContext.declare('?', a);
-    foo(b);
+    foo(a);
   }
 }
 
 @latent("H", "L")
 @low
-dynamic foo(@low dynamic a) {
+dynamic foo(dynamic a) {
   a ??= SecurityContext.nullLiteral();
-  SecurityContext.checkParameters([a], ['L']);
-  return a;
+  SecurityContext.checkParametersType([a], ['?']);
+  {
+    return SecurityContext.checkReturnType(a, 'L');
+  }
 }

@@ -16,6 +16,12 @@ class ErrorReporter {
     throw new StateError(
         'Trying to assign $variableSecurityLabel variable in $pc context.');
   }
+
+  static void reportBadReturnType(
+      SecurityLabel staticSecurityLabel, SecurityLabel dynamicSecurityLabel) {
+    throw new StateError(
+        'Trying to return $dynamicSecurityLabel value with $staticSecurityLabel static return security label.');
+  }
 }
 
 class SecurityContext {
@@ -65,7 +71,7 @@ class SecurityContext {
             upperBoundType: pc.upperBoundType));
   }
 
-  static void checkParameters(
+  static void checkParametersType(
       List<SecurityValue> securityValues, List<String> labels) {
     final securityLabels = labels.map((e) => new SecurityLabel(e)).toList();
     for (var i = 0; i < securityValues.length; i++) {
@@ -75,6 +81,14 @@ class SecurityContext {
         ErrorReporter.reportBadArgument(
             securityLabel, securityValue.dynamicSecurityLabel);
       }
+    }
+  }
+
+  static checkReturnType(SecurityValue securityValue, String label) {
+    final securityLabel = new SecurityLabel(label);
+    if (securityLabel < securityValue.dynamicSecurityLabel) {
+      ErrorReporter.reportBadReturnType(
+          securityLabel, securityValue.dynamicSecurityLabel);
     }
   }
 
