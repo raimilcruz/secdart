@@ -1,7 +1,7 @@
 import 'package:analyzer/analyzer.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/src/string_source.dart';
-import 'package:security_transformer/context.dart';
+import 'package:security_transformer/src/context.dart';
 
 void addStatementAfterStatement(Statement target, Statement newStatement) {
   final targetParent = target.parent;

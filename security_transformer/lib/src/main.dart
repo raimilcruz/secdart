@@ -19,7 +19,7 @@ Future main() async {
 
 final package = 'security_transformer';
 
-final path = 'lib/test.dart';
+final path = 'example/test.dart';
 
 class MyPackageProvider extends PackageProvider {
   @override

@@ -5,7 +5,7 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:barback/barback.dart';
 import 'package:secdart_analyzer/analyzer.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
-import 'package:security_transformer/Utils.dart';
+import 'package:security_transformer/src/Utils.dart';
 
 bool isSecurityLabel(String name) {
   return name == 'bot' ||
@@ -807,7 +807,7 @@ class SecurityTransformer extends Transformer {
     compilationUnit.accept(_replacerVisitor);
     var id = transform.primaryInput.id;
     var newContent =
-        "import 'security_value.dart'; " + compilationUnit.toString();
+        "import 'package:security_transformer/src/security_value.dart'; " + compilationUnit.toString();
     transform.addOutput(new Asset.fromString(id, newContent));
   }
 
