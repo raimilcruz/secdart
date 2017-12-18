@@ -4,9 +4,9 @@ import "package:secdart/secdart.dart";
 void main() {
   SecurityContext.checkParametersType([], []);
   {
-    @high
-    dynamic a = SecurityContext.declare('H', SecurityContext.integerLiteral(3));
-    foo(a);
+    @low
+    dynamic a = SecurityContext.declare('L', SecurityContext.integerLiteral(3));
+    print(foo(a));
   }
 }
 

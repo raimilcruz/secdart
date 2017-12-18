@@ -84,12 +84,14 @@ class SecurityContext {
     }
   }
 
-  static checkReturnType(SecurityValue securityValue, String label) {
+  static SecurityValue checkReturnType(
+      SecurityValue securityValue, String label) {
     final securityLabel = new SecurityLabel(label);
     if (securityLabel < securityValue.dynamicSecurityLabel) {
       ErrorReporter.reportBadReturnType(
           securityLabel, securityValue.dynamicSecurityLabel);
     }
+    return securityValue;
   }
 
   static SecurityValue conditionalExpression(SecurityValue condition,

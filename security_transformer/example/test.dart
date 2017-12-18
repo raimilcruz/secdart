@@ -1,8 +1,8 @@
 import "package:secdart/secdart.dart";
 
 void main() {
-  @high int a = 3;
-  foo(a);
+  @low int a = 3;
+  print(foo(a));
 }
 
 @latent("H", "L")
