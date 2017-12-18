@@ -821,6 +821,8 @@ class SecurityTransformer extends Transformer {
 class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   static var _size = 0;
 
+
+
   @override
   AstNode visitAdjacentStrings(AdjacentStrings node) {
     Iterable stringSecurityValues = node.strings.map((e) => e.accept(this));
@@ -962,7 +964,14 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   AstNode visitExportDirective(ExportDirective node) => node;
 
   @override
-  AstNode visitExpressionFunctionBody(ExpressionFunctionBody node) => node;
+  AstNode visitExpressionFunctionBody(ExpressionFunctionBody node) {
+    final functionExpression = node.parent as FunctionExpression;
+    final returnType = functionExpression.element.returnType.name;
+    final lastStatement = returnType == 'void'
+        ? createStatementExpressionWithExpression(node.expression)
+        : createReturnStatementWithExpression(node.expression);
+    return createBlockFunctionBody([lastStatement]);
+  }
 
   @override
   AstNode visitExpressionStatement(ExpressionStatement node) => node;
@@ -1246,3 +1255,5 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   @override
   AstNode visitYieldStatement(YieldStatement node) => node;
 }
+
+

@@ -44,15 +44,19 @@ void addStatementBeforeStatement(Statement target, Statement newStatement) {
 }
 
 Block createBlock(List<Statement> statements) {
+  return createBlockFunctionBody(statements).block;
+}
+
+BlockFunctionBody createBlockFunctionBody(List<Statement> statements) {
   StringBuffer buffer = new StringBuffer();
   for (var _ = 0; _ < statements.length; _++) {
     buffer.write(';');
   }
-  final block = parseStatement('{${buffer.toString()}}') as Block;
+  final blockFunctionBody = parseBlockFunctionBody('{${buffer.toString()}}');
   for (var i = 0; i < statements.length; i++) {
-    replaceNodeInAst(block.statements[i], statements[i]);
+    replaceNodeInAst(blockFunctionBody.block.statements[i], statements[i]);
   }
-  return block;
+  return blockFunctionBody;
 }
 
 TypeName createDynamicTypeName() {
@@ -84,6 +88,15 @@ FunctionExpression createLambdaWithSingleReturnExpression(
       .expression;
 }
 
+ReturnStatement createReturnStatementWithExpression(Expression expression) {
+  return parseStatement('return $expression');
+}
+
+ExpressionStatement createStatementExpressionWithExpression(
+    Expression expression) {
+  return parseStatement(expression.toString());
+}
+
 TypeName createTypeName(String type) {
   final declarationList = createVariableDeclarationList(type, ['a']);
   return declarationList.type;
@@ -99,6 +112,14 @@ VariableDeclarationStatement createVariableDeclarationStatement(
   return parseStatement('$type ${identifiers.join(', ')};');
 }
 
+BlockFunctionBody parseBlockFunctionBody(String code) {
+  final content = 'void _() {$code}';
+  final compilationUnit = parseCompilationUnit(content);
+  return (compilationUnit.declarations.first as FunctionDeclaration)
+      .functionExpression
+      .body;
+}
+
 CompilationUnit parseCompilationUnit(String contents, {String name}) {
   if (name == null) name = '<unknown source>';
   var source = new StringSource(contents, name);
@@ -107,14 +128,7 @@ CompilationUnit parseCompilationUnit(String contents, {String name}) {
 }
 
 Statement parseStatement(String code) {
-  final content = 'void _() {$code}';
-  final compilationUnit = parseCompilationUnit(content);
-  return ((compilationUnit.declarations.first as FunctionDeclaration)
-          .functionExpression
-          .body as BlockFunctionBody)
-      .block
-      .statements
-      .first;
+  return parseBlockFunctionBody(code).block.statements.first;
 }
 
 void replaceNodeInAst(AstNode oldNode, AstNode newNode, {AstNode parent}) {
