@@ -10,8 +10,7 @@ import 'package:secdart_analyzer/analyzer.dart';
 import 'package:web_api/src/application_configuration.dart';
 
 /**
- * A simple REST API for the security analysis. This is not intented to use
- * for other project, except for the SecDart Pad.
+ * A simple REST API for the security analysis. 
  */
 @ApiClass(name: 'secdartapi', version: 'v1')
 class SecDartApi {
