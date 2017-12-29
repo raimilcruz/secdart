@@ -32,7 +32,7 @@ class _PrintSecurityTypeVisitor extends GeneralizingAstVisitor<Object> {
   Object visitNode(AstNode node) {
     var prefix = getStringSpaces();
     print("$prefix ${node.runtimeType}");
-    if(node.getProperty("sec-type")!=null) {
+    if (node.getProperty("sec-type") != null) {
       print("$prefix Sec type: ${node.getProperty("sec-type")}");
     }
     spaces += 2;
