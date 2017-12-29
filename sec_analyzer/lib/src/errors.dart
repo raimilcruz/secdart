@@ -2,12 +2,12 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
 
-
 /**
  * A helper class with static methods to report errors
  */
-class SecurityTypeError{
-  static AnalysisError toAnalysisError(AstNode node, ErrorCode code,List<Object> arguments) {
+class SecurityTypeError {
+  static AnalysisError toAnalysisError(
+      AstNode node, ErrorCode code, List<Object> arguments) {
     int begin = node is AnnotatedNode
         ? node.firstTokenAfterCommentAndMetadata.offset
         : node.offset;
@@ -15,176 +15,179 @@ class SecurityTypeError{
     var source = (node.root as CompilationUnit).element.source;
     return new AnalysisError(source, begin, length, code, arguments);
   }
-  static AnalysisError getImplementationError(AstNode expr,String message){
+
+  static AnalysisError getImplementationError(AstNode expr, String message) {
     var errorCode = SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR;
     var arguments = new List<Object>();
     arguments.add(message);
-    return toAnalysisError(expr,errorCode,arguments);
-
+    return toAnalysisError(expr, errorCode, arguments);
   }
 
-  static AnalysisError getExplicitFlowError(AstNode expr, SecurityType from,SecurityType to){
+  static AnalysisError getExplicitFlowError(
+      AstNode expr, SecurityType from, SecurityType to) {
     var errorCode = SecurityErrorCode.EXPLICIT_FLOW;
-    return toAnalysisError(expr,errorCode,new List<Object>()..add(from.toString())..add(to.toString()) );
+    return toAnalysisError(expr, errorCode,
+        new List<Object>()..add(from.toString())..add(to.toString()));
+  }
 
-  }
-  static AnalysisError getReturnTypeError(ReturnStatement node,SecurityType from, SecurityType to){
+  static AnalysisError getReturnTypeError(
+      ReturnStatement node, SecurityType from, SecurityType to) {
     var errorCode = SecurityErrorCode.RETURN_TYPE_ERROR;
-    return toAnalysisError(node,errorCode,new List<Object>());
+    return toAnalysisError(node, errorCode, new List<Object>());
   }
-  static AnalysisError getFunctionLabelError(FunctionDeclaration node){
+
+  static AnalysisError getFunctionLabelError(FunctionDeclaration node) {
     var errorCode = SecurityErrorCode.FUNCTION_LABEL_ERROR;
-    return toAnalysisError(node,errorCode,new List<Object>());
+    return toAnalysisError(node, errorCode, new List<Object>());
   }
 
   static AnalysisError getBadFunctionCall(Expression node) {
     var errorCode = SecurityErrorCode.INVALID_FUNCTION_CALL;
-    return toAnalysisError(node,errorCode,new List<Object>());
+    return toAnalysisError(node, errorCode, new List<Object>());
   }
 
   static AnalysisError getDuplicatedLatentError(FunctionDeclaration node) {
     var errorCode = ParserErrorCode.DUPLICATED_FUNCTION_LATENT_ERROR;
-    return toAnalysisError(node,errorCode,new List<Object>());
+    return toAnalysisError(node, errorCode, new List<Object>());
   }
+
   static AnalysisError getDuplicatedReturnLabelError(FunctionDeclaration node) {
     var errorCode = ParserErrorCode.DUPLICATED_RETURN_LABEL_ERROR;
-    return toAnalysisError(node,errorCode,new List<Object>());
+    return toAnalysisError(node, errorCode, new List<Object>());
   }
+
   static AnalysisError getDuplicatedLabelOnParameterError(AstNode node) {
     var errorCode = ParserErrorCode.DUPLICATED_LABEL_ON_PARAMETER_ERROR;
-    return toAnalysisError(node,errorCode,new List<Object>());
+    return toAnalysisError(node, errorCode, new List<Object>());
   }
+
   //SYNTACTIC ERRORS IN LABEL
   static AnalysisError getBadFunctionLabel(AstNode node) {
     var errorCode = ParserErrorCode.BAD_FUNCTION_LABEL;
-    return toAnalysisError(node,errorCode,new List<Object>());
-  }
-  static AnalysisError getCallNoFunction(AstNode node) {
-    var errorCode = UnsupportedFeatureErrorCode.CALL_NO_FUNCTION;
-    return toAnalysisError(node,errorCode,new List<Object>());
-  }
-  static AnalysisError getUnsupportedDartFeature(AstNode node,String feature){
-    var errorCode = SecurityErrorCode.UNSUPPORTED_DART_FEATURE;
-    return toAnalysisError(node,errorCode,[feature]);
+    return toAnalysisError(node, errorCode, new List<Object>());
   }
 
+  static AnalysisError getCallNoFunction(AstNode node) {
+    var errorCode = UnsupportedFeatureErrorCode.CALL_NO_FUNCTION;
+    return toAnalysisError(node, errorCode, new List<Object>());
+  }
+
+  static AnalysisError getUnsupportedDartFeature(AstNode node, String feature) {
+    var errorCode = SecurityErrorCode.UNSUPPORTED_DART_FEATURE;
+    return toAnalysisError(node, errorCode, [feature]);
+  }
 }
 
 /**
  * Security [ErrorCode]s reported for the security analysis
  */
-class SecurityErrorCode extends ErrorCode{
-
+class SecurityErrorCode extends ErrorCode {
   static const SecurityErrorCode INTERNAL_IMPLEMENTATION_ERROR =
-  const SecurityErrorCode(
-      'INTERNAL_IMPLEMENTATION_ERROR', 'Internal implementarion error: {0}');
+      const SecurityErrorCode('INTERNAL_IMPLEMENTATION_ERROR',
+          'Internal implementarion error: {0}');
 
   /**
    * Error reported when a subtyping contraint (ST1 <: ST2) fails! (e.g. invalid direct assignment)
    */
-  static const SecurityErrorCode EXPLICIT_FLOW =
-  const SecurityErrorCode(
+  static const SecurityErrorCode EXPLICIT_FLOW = const SecurityErrorCode(
       'EXPLICIT_FLOW', 'Information flow leak from {0} to {1}');
 
 /** 
  * Reported when the label of the returned value is not less than declared function return label
 */
-  static const SecurityErrorCode RETURN_TYPE_ERROR =
-  const SecurityErrorCode(
-      'RETURN_TYPE_ERROR', 'Label of returned expression is higher than return label of the function or method');
+  static const SecurityErrorCode RETURN_TYPE_ERROR = const SecurityErrorCode(
+      'RETURN_TYPE_ERROR',
+      'Label of returned expression is higher than return label of the function or method');
 
-  static const SecurityErrorCode FUNCTION_LABEL_ERROR =
-  const SecurityErrorCode(
-      'FUNCTION_LABEL_ERROR', 'Return type label must be smaller than end label');
+  static const SecurityErrorCode FUNCTION_LABEL_ERROR = const SecurityErrorCode(
+      'FUNCTION_LABEL_ERROR',
+      'Return type label must be smaller than end label');
 
   static const SecurityErrorCode INVALID_FUNCTION_CALL =
-  const SecurityErrorCode(
-      'INVALID_FUNCTION_CALL', 'Pc is not enough to invoke the function');
+      const SecurityErrorCode(
+          'INVALID_FUNCTION_CALL', 'Pc is not enough to invoke the function');
 
-  static const SecurityErrorCode UNSUPPORTED_DART_FEATURE=
-  const SecurityErrorCode(
-      'UNSUPPORTED_DART_FEATURE', '{0} is not supported by the security analyzer');
+  static const SecurityErrorCode UNSUPPORTED_DART_FEATURE =
+      const SecurityErrorCode('UNSUPPORTED_DART_FEATURE',
+          '{0} is not supported by the security analyzer');
 
-  static const SecurityErrorCode MY_WARNING_CODE =  const SecurityErrorCode('MY_WARNING_CODE', 'This is a proof-of-concept error');
+  static const SecurityErrorCode MY_WARNING_CODE = const SecurityErrorCode(
+      'MY_WARNING_CODE', 'This is a proof-of-concept error');
 
-
-  const SecurityErrorCode(String name, String message, [String correction]) : super(name, message,correction);
-
-
-  @override
-  ErrorSeverity get errorSeverity => ErrorSeverity.ERROR;
-
-
-  @override
-  ErrorType get type => ErrorType.STATIC_WARNING;//new ErrorType("SECURITY_ERROR_TYPE",1000,ErrorSeverity.ERROR);
-}
-class UnsupportedFeatureErrorCode extends ErrorCode{
-
-  static const UnsupportedFeatureErrorCode CALL_NO_FUNCTION=
-  const UnsupportedFeatureErrorCode(
-      'CALL_NO_FUNCTION', 'The expression in function position has dynamic type and we do not support dynamic functions');
-
-  const UnsupportedFeatureErrorCode(String name, String message, [String correction]) : super(name, message,correction);
-
+  const SecurityErrorCode(String name, String message, [String correction])
+      : super(name, message, correction);
 
   @override
   ErrorSeverity get errorSeverity => ErrorSeverity.ERROR;
 
+  @override
+  ErrorType get type => ErrorType
+      .STATIC_WARNING; //new ErrorType("SECURITY_ERROR_TYPE",1000,ErrorSeverity.ERROR);
+}
+
+class UnsupportedFeatureErrorCode extends ErrorCode {
+  static const UnsupportedFeatureErrorCode CALL_NO_FUNCTION =
+      const UnsupportedFeatureErrorCode('CALL_NO_FUNCTION',
+          'The expression in function position has dynamic type and we do not support dynamic functions');
+
+  const UnsupportedFeatureErrorCode(String name, String message,
+      [String correction])
+      : super(name, message, correction);
 
   @override
-  ErrorType get type => ErrorType.STATIC_WARNING;//new ErrorType("SECURITY_ERROR_TYPE",1000,ErrorSeverity.ERROR);
+  ErrorSeverity get errorSeverity => ErrorSeverity.ERROR;
+
+  @override
+  ErrorType get type => ErrorType
+      .STATIC_WARNING; //new ErrorType("SECURITY_ERROR_TYPE",1000,ErrorSeverity.ERROR);
 }
-class ParserErrorCode extends ErrorCode{
+
+class ParserErrorCode extends ErrorCode {
   static const ParserErrorCode DUPLICATED_FUNCTION_LATENT_ERROR =
-  const ParserErrorCode(
-      'DUPLICATED_FUNCTION_LATENT_ERROR', 'Duplicated function latent label');
+      const ParserErrorCode('DUPLICATED_FUNCTION_LATENT_ERROR',
+          'Duplicated function latent label');
 
-  static const ParserErrorCode DUPLICATED_RETURN_LABEL_ERROR=
-  const ParserErrorCode(
-      'DUPLICATED_RETURN_LABEL_ERROR', 'Duplicated return label for function');
+  static const ParserErrorCode DUPLICATED_RETURN_LABEL_ERROR =
+      const ParserErrorCode('DUPLICATED_RETURN_LABEL_ERROR',
+          'Duplicated return label for function');
 
-  static const ParserErrorCode DUPLICATED_LABEL_ON_PARAMETER_ERROR=
-  const ParserErrorCode(
-      'DUPLICATED_LABEL_ON_PARAMETER_ERROR', 'Duplicated label on parameter');
+  static const ParserErrorCode DUPLICATED_LABEL_ON_PARAMETER_ERROR =
+      const ParserErrorCode('DUPLICATED_LABEL_ON_PARAMETER_ERROR',
+          'Duplicated label on parameter');
 
-
-  static const ParserErrorCode BAD_FUNCTION_LABEL=
-  const ParserErrorCode(
-      'BAD_FUNCTION_LABEL', 'Function label annotations must have two labels: '
+  static const ParserErrorCode BAD_FUNCTION_LABEL = const ParserErrorCode(
+      'BAD_FUNCTION_LABEL',
+      'Function label annotations must have two labels: '
       'the [endlabel] and the [beginlabel]');
 
-
-  const ParserErrorCode(String name, String message,[String correction]) : super(name, message,correction);
-
-  @override
-  ErrorSeverity get errorSeverity =>  ErrorSeverity.ERROR;
-
-  @override
-  ErrorType get type =>  ErrorType.STATIC_WARNING;
-}
-
-class ImplementationErrorCode extends ErrorCode{
-  ImplementationErrorCode(String name, String message) : super(name, message);
-
-
+  const ParserErrorCode(String name, String message, [String correction])
+      : super(name, message, correction);
 
   @override
   ErrorSeverity get errorSeverity => ErrorSeverity.ERROR;
-
 
   @override
   ErrorType get type => ErrorType.STATIC_WARNING;
 }
 
-abstract class SecDartException implements Exception{
+class ImplementationErrorCode extends ErrorCode {
+  ImplementationErrorCode(String name, String message) : super(name, message);
+
+  @override
+  ErrorSeverity get errorSeverity => ErrorSeverity.ERROR;
+
+  @override
+  ErrorType get type => ErrorType.STATIC_WARNING;
+}
+
+abstract class SecDartException implements Exception {
   String getMessage();
 }
-class UnsupportedFeatureException implements SecDartException{
+
+class UnsupportedFeatureException implements SecDartException {
   final String message;
   UnsupportedFeatureException([this.message]);
 
   @override
   String getMessage() => message;
 }
-
-  

@@ -16,7 +16,6 @@ import 'package:analyzer_plugin/utilities/analyzer_converter.dart';
 import 'package:secdart_analyzer_plugin/src/secdriver.dart';
 import 'package:secdart_analyzer/src/options.dart';
 
-
 class SecDartPlugin extends ServerPlugin {
   SecDartPlugin(ResourceProvider provider) : super(provider);
 
@@ -60,7 +59,6 @@ class SecDartPlugin extends ServerPlugin {
   @override
   bool isCompatibleWith(Version serverVersion) => true;
 
-
   @override
   void contentChanged(String path) {
     final driver = secDriverForPath(path);
@@ -75,6 +73,7 @@ class SecDartPlugin extends ServerPlugin {
       ..addFile(path)
       ..changeFile(path);
   }
+
   SecDriver secDriverForPath(String path) {
     final driver = super.driverForPath(path);
     if (driver is SecDriver) {
@@ -82,7 +81,6 @@ class SecDartPlugin extends ServerPlugin {
     }
     return null;
   }
-
 
   SecDartOptions getOptions(String optionsFilePath) {
     if (optionsFilePath != null && optionsFilePath.isNotEmpty) {
@@ -94,8 +92,8 @@ class SecDartPlugin extends ServerPlugin {
     }
     return new SecDartOptions.defaults();
   }
-
 }
+
 class ChannelNotificationManager implements NotificationManager {
   final PluginCommunicationChannel channel;
 

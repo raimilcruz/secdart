@@ -7,8 +7,7 @@ import 'package:analyzer/error/error.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:secdart_analyzer/src/errors.dart';
 
-
-class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
+class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object> {
   final AnalysisErrorListener reporter;
 
   UnSupportedDartSubsetVisitor(this.reporter);
@@ -18,6 +17,7 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
     _reportError(node, "class");
     return null;
   }
+
   @override
   Object visitClassTypeAlias(ClassTypeAlias node) {
     _reportError(node, "type alias");
@@ -26,8 +26,7 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
 
   @override
   Object visitClassMember(ClassMember node) =>
-      _reportError(node,"class member");
-
+      _reportError(node, "class member");
 
   @override
   Object visitEnumDeclaration(EnumDeclaration node) {
@@ -40,6 +39,7 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
     _reportError(node, "throw exception");
     return null;
   }
+
   @override
   Object visitCatchClause(CatchClause node) {
     _reportError(node, "catch");
@@ -48,7 +48,7 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
 
   @override
   Object visitAwaitExpression(AwaitExpression node) =>
-      _reportError(node,"await");
+      _reportError(node, "await");
 
   @override
   Object visitFunctionTypeAlias(FunctionTypeAlias node) {
@@ -59,49 +59,51 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object>{
   //loops
   @override
   Object visitWhileStatement(WhileStatement node) =>
-      _reportError(node,"while");
+      _reportError(node, "while");
 
   @override
   Object visitYieldStatement(YieldStatement node) =>
-      _reportError(node,"yield");
+      _reportError(node, "yield");
 
   @override
   Object visitBreakStatement(BreakStatement node) =>
-      _reportError(node,"break");
+      _reportError(node, "break");
 
   @override
   Object visitContinueStatement(ContinueStatement node) =>
-      _reportError(node,"continue");
+      _reportError(node, "continue");
 
   //<-- end loops
 
   @override
   Object visitDoStatement(DoStatement node) =>
-      _reportError(node,"do... while");
+      _reportError(node, "do... while");
 
   @override
-  Object visitForEachStatement(ForEachStatement node) => _reportError(node,"foreach");
+  Object visitForEachStatement(ForEachStatement node) =>
+      _reportError(node, "foreach");
 
   @override
-  Object visitForStatement(ForStatement node) => _reportError(node,"for");
+  Object visitForStatement(ForStatement node) => _reportError(node, "for");
 
   @override
   Object visitFunctionDeclarationStatement(FunctionDeclarationStatement node) =>
-      _reportError(node,"function declaration statement");
+      _reportError(node, "function declaration statement");
 
   @override
-  Object visitRethrowExpression(RethrowExpression node) => _reportError(node,"rethrow");
-
-
-  @override
-  Object visitSwitchStatement(SwitchStatement node) => _reportError(node,"switch");
+  Object visitRethrowExpression(RethrowExpression node) =>
+      _reportError(node, "rethrow");
 
   @override
-  Object visitTryStatement(TryStatement node) => _reportError(node,"try");
+  Object visitSwitchStatement(SwitchStatement node) =>
+      _reportError(node, "switch");
 
+  @override
+  Object visitTryStatement(TryStatement node) => _reportError(node, "try");
 
-  void _reportError(AstNode node,String nodeDisplyName){
-    AnalysisError error =  SecurityTypeError.getUnsupportedDartFeature(node,nodeDisplyName);
+  void _reportError(AstNode node, String nodeDisplyName) {
+    AnalysisError error =
+        SecurityTypeError.getUnsupportedDartFeature(node, nodeDisplyName);
     reporter.onError(error);
     return null;
   }

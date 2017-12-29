@@ -9,14 +9,14 @@ import 'sec_analysis/ds_ecoop.dart' as ds_ecoop;
 import 'lattice/lh_lattice_test.dart' as lattice;
 import 'parser/annotation_test.dart' as parser;
 
-import  'unsupported_features_tests.dart' as unsupported;
+import 'unsupported_features_tests.dart' as unsupported;
 
 import 'analysis_client_test.dart' as client;
+import 'option_test.dart' as option;
 
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 
-
-void main(){
+void main() {
   defineReflectiveSuite(() {
     //lattice operation tests
     lattice.main();
@@ -36,6 +36,7 @@ void main(){
     ds_ecoop.main();
 
     client.main();
-
+    //tests configurable option properties for the plugin
+    option.main();
   });
 }

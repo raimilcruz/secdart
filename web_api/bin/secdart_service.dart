@@ -1,5 +1,3 @@
-
-
 import 'dart:io';
 
 import 'package:logging/logging.dart';
@@ -26,6 +24,7 @@ main() async {
 
   var config = new ApplicationConfiguration("config.yaml");
 
-  HttpServer server = await HttpServer.bind(InternetAddress.ANY_IP_V4, config.port);
+  HttpServer server =
+      await HttpServer.bind(InternetAddress.ANY_IP_V4, config.port);
   server.listen(_apiServer.httpRequestHandler);
 }

@@ -54,8 +54,7 @@ class _OptionsBuilder {
   dynamic getOption(String key, bool validator(input)) {
     if (secDartOptions != null && validator(secDartOptions[key])) {
       return secDartOptions[key];
-    }
-    else if (secDartPluginOptions != null &&
+    } else if (secDartPluginOptions != null &&
         validator(secDartPluginOptions[key])) {
       return secDartPluginOptions[key];
     }

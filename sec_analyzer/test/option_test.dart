@@ -35,6 +35,7 @@ analyzer:
 ''');
     expect(options.intervalMode, isTrue);
   }
+
   void test_buildYaml_intervals_true() {
     final options = new SecDartOptions.from('''
 analyzer:

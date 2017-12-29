@@ -44,8 +44,7 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
   FunctionDeclaration _enclosingFunctionDeclaration;
 
   SecurityVisitor(this.secTypeSystem, this.reporter,
-      [bool this.intervalMode = false]) {
-  }
+      [bool this.intervalMode = false]) {}
 
   @override
   bool visitCompilationUnit(CompilationUnit node) {
@@ -69,7 +68,7 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
     //we assume that that label were already parsed
     //TODO: Deal with dynamic types (for functions)
     var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
-    _checkFunctionSecType(node,secType);
+    _checkFunctionSecType(node, secType);
 
     var currentPc = _pc;
     ExecutableElement outerFunction = _enclosingFunction;
@@ -267,9 +266,8 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
       node.expression.accept(this);
       var secType = _getSecurityType(node.expression);
 
-      var functionSecType =
-      _enclosingFunctionDeclaration.getProperty(SEC_TYPE_PROPERTY) as
-      SecurityFunctionType;
+      var functionSecType = _enclosingFunctionDeclaration
+          .getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
       if (secTypeSystem.isSubtypeOf(secType, functionSecType.returnType)) {
         return true;
       }
@@ -308,22 +306,19 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
 
   @override
   bool visitBooleanLiteral(BooleanLiteral node) {
-    node.setProperty(
-        SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
+    node.setProperty(SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
     return true;
   }
 
   @override
   bool visitIntegerLiteral(IntegerLiteral node) {
-    node.setProperty(
-        SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
+    node.setProperty(SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
     return true;
   }
 
   @override
   bool visitSimpleStringLiteral(SimpleStringLiteral node) {
-    node.setProperty(
-        SEC_TYPE_PROPERTY, new GroundSecurityType( _pc));
+    node.setProperty(SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
     return true;
   }
 

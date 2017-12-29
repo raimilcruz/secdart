@@ -17,9 +17,7 @@ import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
 import 'package:analyzer/source/package_map_resolver.dart';
 
-
-
-class AbstractSecDartTest{
+class AbstractSecDartTest {
   MemoryResourceProvider resourceProvider = new MemoryResourceProvider();
   DartSdk sdk;
   AnalysisContext context;
@@ -29,7 +27,8 @@ class AbstractSecDartTest{
     final source = file.createSource();
     return source;
   }
-  void addSource(Source source){
+
+  void addSource(Source source) {
     ChangeSet changeSet = new ChangeSet()..addedSource(source);
     context.applyChanges(changeSet);
   }
@@ -43,21 +42,22 @@ class AbstractSecDartTest{
       "secdart": [resourceProvider.getFolder("/secdart")]
     };
     final packageResolver =
-      new PackageMapUriResolver(resourceProvider, packageMap);
+        new PackageMapUriResolver(resourceProvider, packageMap);
     final sf = new SourceFactory([
       new DartUriResolver(sdk),
       packageResolver,
       new ResourceUriResolver(resourceProvider)
     ]);
 
-    context.sourceFactory =sf;
-    var secDart = newSource("/secdart/secdart.dart",_getSecDartContent());
+    context.sourceFactory = sf;
+    var secDart = newSource("/secdart/secdart.dart", _getSecDartContent());
 
     Source source = secDart;
     ChangeSet changeSet = new ChangeSet()..addedSource(source);
     context.applyChanges(changeSet);
   }
-  String _getSecDartContent(){
+
+  String _getSecDartContent() {
     return '''
     /*
 This file contains the annotations that represents labels in a flat lattice of security
@@ -118,27 +118,28 @@ class DynLabel{
     ''';
   }
 
-  List<AnalysisError> typeCheckSecurityForSource(Source source,{bool intervalMode:false,
-    bool printError:true}){
-   var errors = SecAnalyzer.computeAllErrors(context,source,
-       intervalMode: intervalMode).errors;
-    if(printError){
-      for(AnalysisError error in errors){
+  List<AnalysisError> typeCheckSecurityForSource(Source source,
+      {bool intervalMode: false, bool printError: true}) {
+    var errors = SecAnalyzer
+        .computeAllErrors(context, source, intervalMode: intervalMode)
+        .errors;
+    if (printError) {
+      for (AnalysisError error in errors) {
         print(error);
       }
     }
     return errors;
   }
-  SecAnalysisResult resolveDart(Source source,{bool printErrors:false}){
+
+  SecAnalysisResult resolveDart(Source source, {bool printErrors: false}) {
     var libraryElement = context.computeLibraryElement(source);
     var unit = context.resolveCompilationUnit(source, libraryElement);
 
     var dartErrors = context.getErrors(source).errors;
-    return new SecAnalysisResult(dartErrors,unit);
+    return new SecAnalysisResult(dartErrors, unit);
   }
 
-
-  bool containsOnlySupportedFeatures(Source source,{bool printError:true}){
+  bool containsOnlySupportedFeatures(Source source, {bool printError: true}) {
     var libraryElement = context.computeLibraryElement(source);
     var unit = context.resolveCompilationUnit(source, libraryElement);
 
@@ -147,17 +148,17 @@ class DynLabel{
     var visitor = new UnSupportedDartSubsetVisitor(errorListener);
     unit.accept(visitor);
 
-    if(printError){
-      for(AnalysisError error in errorListener.errors){
+    if (printError) {
+      for (AnalysisError error in errorListener.errors) {
         print(error);
       }
     }
-    return errorListener.errors.where(
-            (e)=>
-              e.errorCode ==
-                  SecurityErrorCode.UNSUPPORTED_DART_FEATURE).isEmpty;
+    return errorListener.errors
+        .where((e) => e.errorCode == SecurityErrorCode.UNSUPPORTED_DART_FEATURE)
+        .isEmpty;
   }
-  bool containsParseErrors(Source source,{bool printError:true}){
+
+  bool containsParseErrors(Source source, {bool printError: true}) {
     var libraryElement = context.computeLibraryElement(source);
     var unit = context.resolveCompilationUnit(source, libraryElement);
 
@@ -166,31 +167,36 @@ class DynLabel{
     var visitor = new SecurityParserVisitor(errorListener);
     unit.accept(visitor);
 
-    if(printError){
-      for(AnalysisError error in errorListener.errors){
+    if (printError) {
+      for (AnalysisError error in errorListener.errors) {
         print(error);
       }
     }
-    return errorListener.errors.where((e)=>
-    e.errorCode is ParserErrorCode).isNotEmpty;
+    return errorListener.errors
+        .where((e) => e.errorCode is ParserErrorCode)
+        .isNotEmpty;
   }
-  bool containsInvalidFlow(List<AnalysisError> errors){
-    return errors.where((e)=> e.errorCode is SecurityErrorCode).isNotEmpty;
+
+  bool containsInvalidFlow(List<AnalysisError> errors) {
+    return errors.where((e) => e.errorCode is SecurityErrorCode).isNotEmpty;
   }
-  bool containsUnsupportedFeature(List<AnalysisError> errors){
-    return errors.where((e)=> e.errorCode is
-      UnsupportedFeatureErrorCode).isNotEmpty;
+
+  bool containsUnsupportedFeature(List<AnalysisError> errors) {
+    return errors
+        .where((e) => e.errorCode is UnsupportedFeatureErrorCode)
+        .isNotEmpty;
   }
 }
 
-class AstQuery{
-  static List<AstNode> toList(AstNode node){
+class AstQuery {
+  static List<AstNode> toList(AstNode node) {
     var nodes = <AstNode>[];
     var firstVisitor = new _NodeVisitor(nodes);
     node.accept(firstVisitor);
     return nodes;
   }
 }
+
 class _NodeVisitor extends GeneralizingAstVisitor<Object> {
   List<AstNode> nodes;
   _NodeVisitor(this.nodes) : super();

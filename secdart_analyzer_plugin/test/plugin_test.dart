@@ -6,7 +6,6 @@ import 'package:secdart_analyzer_plugin/src/secdriver.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import 'package:test/test.dart';
 
-
 void main() {
   defineReflectiveSuite(() {
     defineReflectiveTests(PluginIntegrationTest);
@@ -33,7 +32,6 @@ class PluginIntegrationTest extends AnalysisOptionsUtilsBase {
     expect(driver.dartDriver.contextRoot, isNotNull);
   }
 
-
   void test_createAnalysisDriver_defaultOptions() {
     enableAnalyzerPluginSecDart();
     final SecDriver driver = plugin.createAnalysisDriver(root);
@@ -42,7 +40,6 @@ class PluginIntegrationTest extends AnalysisOptionsUtilsBase {
     expect(driver.options, isNotNull);
     expect(driver.options.intervalMode, isFalse);
   }
-
 
   void test_createAnalysisDriver_intervalModel() {
     enableAnalyzerPluginSecDart(extraOptions: [
@@ -81,7 +78,6 @@ class AnalysisOptionsUtilsBase {
           optionsSection('secdart',
               extraOptions: ['enabled: true']..addAll(extraOptions)));
 
-
   String optionsHeader = '''
 analyzer:
   plugins:
@@ -99,4 +95,3 @@ ${extraOptions.map((option) => """
     resourceProvider.newFile('/test/analysis_options.yaml', content);
   }
 }
-

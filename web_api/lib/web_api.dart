@@ -6,35 +6,27 @@ library web_api;
 
 import 'package:rpc/rpc.dart';
 import 'package:analyzer/analyzer.dart' show AnalysisError;
-import 'dart:io';
 import 'package:secdart_analyzer/analyzer.dart';
 import 'package:web_api/src/application_configuration.dart';
-import 'package:path/path.dart' as path;
-
 
 /**
  * A simple REST API for the security analysis. This is not intented to use
  * for other project, except for the SecDart Pad.
  */
-@ApiClass(version: 'v1')
+@ApiClass(name: 'secdartapi', version: 'v1')
 class SecDartApi {
   var config = new ApplicationConfiguration("config.yaml");
   SecDartApi();
 
-  @ApiMethod(path: 'failing')
-  VoidMessage failing() {
-    throw new RpcError(HttpStatus.NOT_IMPLEMENTED, 'Not Implemented',
-        'I like to fail!');
+  @ApiMethod(path: 'hello')
+  StringWrapper hello() {
+    return new StringWrapper()..result = 'Hello. It is working!';
   }
 
-  @ApiMethod(path: 'hello')
-  SecDartResult hello() { return new SecDartResult()..result = 'Hello there!'; }
-
-
-  @ApiMethod(path: 'analyze',method: 'POST')
+  @ApiMethod(path: 'analyze', method: 'POST')
   SecAnalysisResult analyze(SecAnalysisInput input) {
     SecAnalyzer secAnalyzer = new SecAnalyzer();
-    var errors = secAnalyzer.analyze(input.source,input.useInterval).errors;
+    var errors = secAnalyzer.analyze(input.source, input.useInterval).errors;
 
     SecAnalysisResult result = new SecAnalysisResult();
 
@@ -44,37 +36,32 @@ class SecDartApi {
     return result;
   }
 
-  String _getLatticeFilePath(){
-    return path.join(new File('.').resolveSymbolicLinksSync(),config.secdart_lattice_package);
-  }
-
   //helper method
-  SecIssue _secIssueFromAnalysisError(AnalysisError error){
+  SecIssue _secIssueFromAnalysisError(AnalysisError error) {
     var issue = new SecIssue();
     issue.message = error.message;
     issue.kind = "secerror";
-    issue.charLength=error.length;
-    issue.charStart=error.offset;
-    issue.column=0;
-    issue.line =0;
+    issue.charLength = error.length;
+    issue.charStart = error.offset;
 
-    //TOODO:finish. See how the analyzer do that
+    //TODO: compute line and column.
+    issue.column = 0;
+    issue.line = 0;
     return issue;
   }
-  void setLine(String source,SecIssue issue){
-  }
-
 }
 
-class SecDartResult {
+class StringWrapper {
   String result;
-  SecDartResult();
+  StringWrapper();
 }
-class SecAnalysisResult{
+
+class SecAnalysisResult {
   List<SecIssue> issues;
   SecAnalysisResult();
 }
-class SecIssue{
+
+class SecIssue {
   String kind;
   String message;
   int line;
@@ -83,11 +70,10 @@ class SecIssue{
   int column;
 }
 
-class SecAnalysisInput{
+class SecAnalysisInput {
   @ApiProperty(required: true)
   String source;
 
   @ApiProperty(defaultValue: false)
   bool useInterval;
 }
-

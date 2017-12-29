@@ -14,7 +14,7 @@ abstract class NotificationManager {
       String path, LineInfo lineInfo, List<AnalysisError> analysisErrors);
 }
 
-class SecDriver  implements AnalysisDriverGeneric{
+class SecDriver implements AnalysisDriverGeneric {
   final NotificationManager notificationManager;
   final AnalysisDriverScheduler _scheduler;
   final AnalysisDriver dartDriver;
@@ -29,7 +29,7 @@ class SecDriver  implements AnalysisDriverGeneric{
   final _requestedDartFiles = new Map<String, List<Completer>>();
 
   SecDriver(this.notificationManager, this.dartDriver, this._scheduler,
-      SourceFactory sourceFactory,this._contentOverlay,this.options) {
+      SourceFactory sourceFactory, this._contentOverlay, this.options) {
     _sourceFactory = sourceFactory.clone();
     _scheduler.add(this);
 
@@ -43,7 +43,7 @@ class SecDriver  implements AnalysisDriverGeneric{
 
   // TODO: implement hasFilesToAnalyze
   @override
-  bool get hasFilesToAnalyze =>  _filesToAnalyze.isNotEmpty;
+  bool get hasFilesToAnalyze => _filesToAnalyze.isNotEmpty;
 
   @override
   Future<Null> performWork() async {
@@ -85,7 +85,6 @@ class SecDriver  implements AnalysisDriverGeneric{
   @override
   AnalysisDriverPriority get workPriority => AnalysisDriverPriority.general;
 
-
   //Methods to manage file changes
   @override
   void addFile(String path) {
@@ -98,7 +97,7 @@ class SecDriver  implements AnalysisDriverGeneric{
 
   void fileChanged(String path) {
     if (_ownsFile(path)) {
-        _changedFiles.add(path);
+      _changedFiles.add(path);
     }
     _scheduler.notify(this);
   }
@@ -113,18 +112,19 @@ class SecDriver  implements AnalysisDriverGeneric{
     if (result == null) return;
     final errors = new List<AnalysisError>.from(result.errors);
     final lineInfo = new LineInfo.fromContent(getFileContent(path));
-    notificationManager.recordAnalysisErrors(path,lineInfo, errors);
+    notificationManager.recordAnalysisErrors(path, lineInfo, errors);
   }
 
   String getFileContent(String path) {
     return _contentOverlay[path] ??
         ((source) =>
-        source.exists() ? source.contents.data : "")(getSource(path));
+            source.exists() ? source.contents.data : "")(getSource(path));
   }
+
   Source getSource(String path) =>
       _sourceFactory.resolveUri(null, 'file:' + path);
 
- /* Future<SecResult> resolveDart(String path) async {
+  /* Future<SecResult> resolveDart(String path) async {
     final unitAst = await dartDriver.getUnitElement(path);
     final unit = unitAst.element;
     if (unit == null) return null;
@@ -133,7 +133,6 @@ class SecDriver  implements AnalysisDriverGeneric{
     list.add(error);
     return new SecResult(list);
   }*/
-
 
   //public api
   Future<List<AnalysisError>> requestDartErrors(String path) {
@@ -151,23 +150,22 @@ class SecDriver  implements AnalysisDriverGeneric{
     if (unit.element == null) return null;
 
     //TODO: Filter error in a better way...
-    if(result.errors!=null) {
-      var realErrors = result.errors.where((e)=>
-        e.errorCode.errorSeverity == ErrorSeverity.ERROR).toList();
-      if(realErrors.length!=0) {
+    if (result.errors != null) {
+      var realErrors = result.errors
+          .where((e) => e.errorCode.errorSeverity == ErrorSeverity.ERROR)
+          .toList();
+      if (realErrors.length != 0) {
         return new SecResult(realErrors);
       }
     }
 
     final unitAst = unit.element.computeNode();
-    var errors = SecAnalyzer.computeErrors(unitAst,options.intervalMode);
+    var errors = SecAnalyzer.computeErrors(unitAst, options.intervalMode);
     return new SecResult(errors);
   }
-
-
 }
-class SecResult{
+
+class SecResult {
   List<AnalysisError> errors;
   SecResult(this.errors);
 }
-

@@ -1,19 +1,17 @@
-import 'package:test/test.dart';
 import '../test_helpers.dart';
 
 import 'package:test_reflective_loader/test_reflective_loader.dart';
-
 
 void main() {
   defineReflectiveSuite(() {
     defineReflectiveTests(ImplicitFlowsTest);
   });
 }
+
 @reflectiveTest
 class ImplicitFlowsTest extends AbstractSecDartTest {
   void test_implicitFlow1() {
-    var program =
-    '''
+    var program = '''
         import "package:secdart/secdart.dart";
         @latent("L","L")
         @low foo (@high bool s) {
@@ -32,9 +30,9 @@ class ImplicitFlowsTest extends AbstractSecDartTest {
 
     assert(containsInvalidFlow(result));
   }
+
   void test_noImplicitFlow() {
-    var program =
-    '''
+    var program = '''
         import "package:secdart/secdart.dart";
         @latent("L","L")
         @low foo (@low bool s) {

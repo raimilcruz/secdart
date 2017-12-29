@@ -5,7 +5,7 @@ import 'package:front_end/src/base/source.dart';
 /**
  * Provides a [Source] from a [String]
  */
-class ResourceHelper{
+class ResourceHelper {
   MemoryResourceProvider resourceProvider = new MemoryResourceProvider();
 
   /**

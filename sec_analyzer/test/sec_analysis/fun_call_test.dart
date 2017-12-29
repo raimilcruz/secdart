@@ -1,4 +1,3 @@
-import 'package:test/test.dart';
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 
@@ -7,11 +6,11 @@ void main() {
     defineReflectiveTests(FunctionCallTest);
   });
 }
+
 @reflectiveTest
-class FunctionCallTest extends AbstractSecDartTest{
-   void test_FunctionCallTest1(){
-     var program =
-       '''
+class FunctionCallTest extends AbstractSecDartTest {
+  void test_FunctionCallTest1() {
+    var program = '''
        import "package:secdart/secdart.dart";
 
        @latent("H","H")
@@ -24,13 +23,13 @@ class FunctionCallTest extends AbstractSecDartTest{
           foo(5);
         }
       ''';
-     var source = newSource("/test.dart",program);
-     var result = typeCheckSecurityForSource(source);
-     assert(!containsInvalidFlow(result));
-   }
-   void test_f2(){
-      var program =
-      '''
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+    assert(!containsInvalidFlow(result));
+  }
+
+  void test_f2() {
+    var program = '''
         import "package:secdart/secdart.dart";
         @latent("H","L")
         @high foo (@high int s) {
@@ -43,14 +42,14 @@ class FunctionCallTest extends AbstractSecDartTest{
         }
         ''';
 
-      var source = newSource("/test.dart",program);
-      var result = typeCheckSecurityForSource(source);
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
 
-      assert(!containsInvalidFlow(result));
-   }
-   void test_forwardCall(){
-     var program =
-     '''
+    assert(!containsInvalidFlow(result));
+  }
+
+  void test_forwardCall() {
+    var program = '''
        import "package:secdart/secdart.dart";
        
         @latent("H","H")
@@ -64,22 +63,22 @@ class FunctionCallTest extends AbstractSecDartTest{
         }
         
       ''';
-     var source = newSource("/test.dart",program);
-     var result = typeCheckSecurityForSource(source);
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
 
-     assert(!containsInvalidFlow(result));
-   }
-   void test_basicTest(){
-     var program =
-     '''
+    assert(!containsInvalidFlow(result));
+  }
+
+  void test_basicTest() {
+    var program = '''
         import "package:secdart/secdart.dart";
         void callFoo(foo){
           foo();
         }
       ''';
-     var source = newSource("/test.dart",program);
-     var result = typeCheckSecurityForSource(source);
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
 
-     assert(!containsInvalidFlow(result));
-   }
+    assert(!containsInvalidFlow(result));
+  }
 }

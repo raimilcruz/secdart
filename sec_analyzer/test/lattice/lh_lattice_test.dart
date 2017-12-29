@@ -4,10 +4,10 @@ import 'package:test/test.dart';
 void main() {
   group('Static Flat Lattice tests :', () {
     Map<String, FlatLabel> staticLabels = {
-      "bot" : new BotLabel(),
-      "low" : new LowLabel(),
-      "high" : new HighLabel(),
-      "top" : new TopLabel()
+      "bot": new BotLabel(),
+      "low": new LowLabel(),
+      "high": new HighLabel(),
+      "top": new TopLabel()
     };
     setUp(() {});
     int i = 0;
@@ -23,17 +23,16 @@ void main() {
         j++;
       });
       i++;
-    }
-    );
+    });
   });
 
   group('Gradual Flat Lattice tests :', () {
     Map<String, FlatLabel> staticLabels = {
-      "bot" : new BotLabel(),
-      "low" : new LowLabel(),
-      "high" : new HighLabel(),
-      "top" : new TopLabel(),
-      "unknown" : new DynamicLabel()
+      "bot": new BotLabel(),
+      "low": new LowLabel(),
+      "high": new HighLabel(),
+      "top": new TopLabel(),
+      "unknown": new DynamicLabel()
     };
     var unknownLabel = new DynamicLabel();
 
@@ -49,7 +48,7 @@ void main() {
 
     // all < unknown
     staticLabels.forEach((key, value) {
-      test(key + " < " + "unknow" , () {
+      test(key + " < " + "unknow", () {
         expect(value.lessOrEqThan(unknownLabel), isTrue);
         expect(value.canRelabeledTo(unknownLabel), isTrue);
       });

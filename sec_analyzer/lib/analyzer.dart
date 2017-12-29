@@ -14,9 +14,6 @@ import 'package:analyzer/analyzer.dart' show AnalysisError, CompilationUnit;
 import 'dart:io' as io show File;
 import 'package:path/path.dart' as pathos;
 import 'package:analyzer/src/generated/engine.dart';
-import 'package:analyzer/src/generated/java_io.dart';
-import 'package:analyzer/src/generated/source_io.dart' show FileBasedSource;
-import 'package:analyzer/dart/element/element.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
 
 /**
@@ -30,11 +27,11 @@ class SecAnalyzer {
 
   bool returnDartErrors = false;
 
-  SecAnalyzer(){
+  SecAnalyzer() {
     _setUp();
   }
 
-  void _setUp(){
+  void _setUp() {
     sdk = getDarkSdk();
 
     context = createAnalysisContext();
@@ -42,26 +39,28 @@ class SecAnalyzer {
       "secdart": [resourceProvider.getFolder("/secdart")]
     };
     final packageResolver =
-    new PackageMapUriResolver(resourceProvider, packageMap);
+        new PackageMapUriResolver(resourceProvider, packageMap);
     final sf = new SourceFactory([
       new DartUriResolver(sdk),
       packageResolver,
       new ResourceUriResolver(resourceProvider)
     ]);
 
-    context.sourceFactory =sf;
-    var secDart = _newSource("/secdart/secdart.dart",_getSecDartContent());
+    context.sourceFactory = sf;
+    var secDart = _newSource("/secdart/secdart.dart", _getSecDartContent());
 
     Source source = secDart;
     ChangeSet changeSet = new ChangeSet()..addedSource(source);
     context.applyChanges(changeSet);
   }
+
   Source _newSource(String path, [String content = '']) {
     final file = resourceProvider.newFile(path, content);
     final source = file.createSource();
     return source;
   }
-  String _getSecDartContent(){
+
+  String _getSecDartContent() {
     return '''
     /*
 This file contains the annotations that represents labels in a flat lattice of security
@@ -122,10 +121,8 @@ class DynLabel{
     ''';
   }
 
-  SecAnalysisResult analyze(String program,
-      [bool useInterval = false]) {
-
-    Source programSource = _newSource("/test.dart",program);
+  SecAnalysisResult analyze(String program, [bool useInterval = false]) {
+    Source programSource = _newSource("/test.dart", program);
     return computeAllErrors(context, programSource);
   }
 
@@ -144,19 +141,19 @@ class DynLabel{
 
   static SecAnalysisResult computeAllErrors(
       AnalysisContext context, Source source,
-     {bool returnDartErrors : true, bool intervalMode: false}) {
+      {bool returnDartErrors: true, bool intervalMode: false}) {
     var libraryElement = context.computeLibraryElement(source);
     var unit = context.resolveCompilationUnit(source, libraryElement);
 
     var dartErrors = context.getErrors(source).errors;
     if (dartErrors.length > 0 && returnDartErrors)
-      return new SecAnalysisResult(dartErrors,unit);
+      return new SecAnalysisResult(dartErrors, unit);
 
-    return new SecAnalysisResult(computeErrors(unit,intervalMode),unit);
+    return new SecAnalysisResult(computeErrors(unit, intervalMode), unit);
   }
 
   static List<AnalysisError> computeErrors(CompilationUnit resolvedUnit,
-      [bool intervalMode =false]) {
+      [bool intervalMode = false]) {
     ErrorCollector errorListener = new ErrorCollector();
 
     //TODO: put this in another place
@@ -165,7 +162,7 @@ class DynLabel{
     }
 
     //parse element
-    var parserVisitor = new SecurityParserVisitor(errorListener,intervalMode);
+    var parserVisitor = new SecurityParserVisitor(errorListener, intervalMode);
     resolvedUnit.accept(parserVisitor);
     if (errorListener.errors.length > 0) return errorListener.errors;
 
@@ -175,12 +172,11 @@ class DynLabel{
 
     GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
 
-    var visitor = new SecurityVisitor(typeSystem, errorListener,intervalMode);
+    var visitor = new SecurityVisitor(typeSystem, errorListener, intervalMode);
     resolvedUnit.accept(visitor);
 
     return errorListener.errors;
   }
-
 
   static bool isValidSecDartFile(CompilationUnit unitAst) {
     return unitAst.directives
@@ -191,8 +187,9 @@ class DynLabel{
         0;
   }
 }
-class SecAnalysisResult{
+
+class SecAnalysisResult {
   List<AnalysisError> errors;
   AstNode astNode;
-  SecAnalysisResult(this.errors,this.astNode);
+  SecAnalysisResult(this.errors, this.astNode);
 }

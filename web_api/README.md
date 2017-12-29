@@ -1,32 +1,13 @@
 # Security annotations for Dart
  
 SecDart is an ongoing implementation of gradual security typing in Dart.
-This package provides Dart annotations that are recognized for the 
-SecDart Analyzer. 
 
-We provide annotations for:
--   individual label of a basic security lattice:
-    ``
-    @bot < @low < @high < @top
-    ``
+This package provides a simple REST API to interact with the security
+analysis.
 
--   function label annotation: ``@latent(<returnLabel>,<pcLabel>)``
--   for the gradual label:``@dyn``
+#Usage
+Use the discovery to know how to use this api:
 
-
-## Usage
-
-A simple example of usage:
-
-    import 'package:secdart/secdart.dart';
-    
-    @latent("L","L")
-    @low int max(@high int a, @high int b){
-        //this produce an error since 'a' and 'b' are high confidencial values (@high)
-        //and th return label of the function is @low
-        return a + b; 
-
-    }
-
-
-
+```
+https://your_app_server/discovery/v1/apis/secdartapi/v1/rest
+```

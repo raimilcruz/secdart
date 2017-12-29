@@ -7,7 +7,6 @@ import 'package:analyzer/src/util/sdk.dart';
 import 'package:analyzer/src/generated/engine.dart';
 import 'package:analyzer/src/generated/sdk.dart' show DartSdk;
 
-
 /**
  * This file contains function to initialize AnalysisContext that are used by the Security Analyzer
  **/
@@ -20,14 +19,15 @@ AnalysisContext createAnalysisContext() {
 
   AnalysisContext context = AnalysisEngine.instance.createAnalysisContext();
 
-  context.sourceFactory =
-    new SourceFactory([new DartUriResolver(sdk),
-    new ResourceUriResolver(PhysicalResourceProvider.INSTANCE)]);
+  context.sourceFactory = new SourceFactory([
+    new DartUriResolver(sdk),
+    new ResourceUriResolver(PhysicalResourceProvider.INSTANCE)
+  ]);
 
-  context.analysisOptions = new AnalysisOptionsImpl()
-    ..strongMode = true;
+  context.analysisOptions = new AnalysisOptionsImpl()..strongMode = true;
   return context;
 }
+
 DartSdk getDarkSdk() {
   PhysicalResourceProvider resourceProvider = PhysicalResourceProvider.INSTANCE;
   var dartSdkDirectory = getSdkPath();

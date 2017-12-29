@@ -3,10 +3,10 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/src/generated/source.dart';
 
 //TODO: Reuse Scope hierarchy at package:analyzer/lib/src/dart/resolver/scope.dart
-abstract class SecurityScope<T>{
+abstract class SecurityScope<T> {
   bool isDefined(String name);
   T lookup(String name);
-  void define(String name,T elem);
+  void define(String name, T elem);
   SecurityScope<T> get enclosingScope;
   AnalysisError getErrorForDuplicate(String existing, Element duplicate) {
     Source source = duplicate.source;
@@ -14,7 +14,8 @@ abstract class SecurityScope<T>{
         CompileTimeErrorCode.DUPLICATE_DEFINITION, [existing]);
   }
 }
-class EmptySecurityScope<T> extends SecurityScope<T>{
+
+class EmptySecurityScope<T> extends SecurityScope<T> {
   @override
   bool isDefined(String name) {
     return false;
@@ -32,13 +33,13 @@ class EmptySecurityScope<T> extends SecurityScope<T>{
 
   @override
   SecurityScope<T> get enclosingScope => null;
-
 }
-class NestedSecurityScope<T> extends SecurityScope<T>{
-  SecurityScope<T> _enclosingScope;
-  Map<String,T> names;
 
-  NestedSecurityScope(this._enclosingScope){
+class NestedSecurityScope<T> extends SecurityScope<T> {
+  SecurityScope<T> _enclosingScope;
+  Map<String, T> names;
+
+  NestedSecurityScope(this._enclosingScope) {
     names = new Map();
   }
 
@@ -49,24 +50,24 @@ class NestedSecurityScope<T> extends SecurityScope<T>{
 
   @override
   void define(String name, T elem) {
-    if(!names.containsKey(name)){
+    if (!names.containsKey(name)) {
       names[name] = elem;
     }
   }
 
   @override
   T lookup(String name) {
-    if(names.containsKey(name))
-      return names[name];
+    if (names.containsKey(name)) return names[name];
     return enclosingScope.lookup(name);
   }
 
   // TODO: implement enclosingScope
   @override
   SecurityScope<T> get enclosingScope => _enclosingScope;
-
 }
-class SecurityFunctionScope<T> extends NestedSecurityScope<T>{
+
+class SecurityFunctionScope<T> extends NestedSecurityScope<T> {
   FunctionElement element;
-  SecurityFunctionScope(SecurityScope enclosingScope,this.element) : super(enclosingScope);
+  SecurityFunctionScope(SecurityScope enclosingScope, this.element)
+      : super(enclosingScope);
 }
