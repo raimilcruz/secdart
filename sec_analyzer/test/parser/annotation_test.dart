@@ -121,4 +121,51 @@ class ParserTest extends AbstractSecDartTest {
     expect(varDeclType.toString(),
         new GroundSecurityType(new HighLabel()).toString());
   }
+
+  void test_classDeclaration() {
+    var function = '''
+         class A{
+           @latent("H","L")
+           @low
+           foo (@bot int a, @top int b) {            
+           }
+         }         
+    ''';
+    var source = newSource("/test.dart", function);
+    var result = resolveDart(source);
+    ErrorCollector errorListener = new ErrorCollector();
+
+    var unit = result.astNode;
+    var visitor = new SecurityParserVisitor(errorListener, false, true);
+    unit.accept(visitor);
+
+    var methDecl =
+        AstQuery.toList(unit).where((n) => n is MethodDeclaration).first;
+    var funDecltype = methDecl.getProperty(SEC_TYPE_PROPERTY);
+
+    var parameter1 =
+        AstQuery.toList(unit).where((n) => n is FormalParameter).first;
+    var parameter2 =
+        AstQuery.toList(unit).where((n) => n is FormalParameter).skip(1).first;
+
+    //formal parameters need to be populated
+    expect(parameter1.getProperty(SEC_TYPE_PROPERTY).toString(),
+        new GroundSecurityType(new BotLabel()).toString());
+
+    expect(parameter2.getProperty(SEC_TYPE_PROPERTY).toString(),
+        new GroundSecurityType(new TopLabel()).toString());
+
+    //FunctionDeclaration must be populated.
+    expect(
+        funDecltype.toString(),
+        new SecurityFunctionType(
+                new HighLabel(),
+                <SecurityType>[
+                  new GroundSecurityType(new BotLabel()),
+                  new GroundSecurityType(new TopLabel()),
+                ],
+                new GroundSecurityType(new LowLabel()),
+                new LowLabel())
+            .toString());
+  }
 }

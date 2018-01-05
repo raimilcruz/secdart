@@ -3,5 +3,7 @@
 
 library secdart_analyzer;
 
-// TODO: Export any libraries intended for clients of this package.
+export "package:secdart_analyzer/src/errors.dart";
+export "package:secdart_analyzer/src/security_label.dart";
+export "package:secdart_analyzer/src/security_type.dart";
 export "analyzer.dart";

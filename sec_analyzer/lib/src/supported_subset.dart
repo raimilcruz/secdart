@@ -12,9 +12,22 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object> {
 
   UnSupportedDartSubsetVisitor(this.reporter);
 
+  /*
   @override
   Object visitClassDeclaration(ClassDeclaration node) {
     _reportError(node, "class");
+    return null;
+  }*/
+
+  @override
+  Object visitFieldDeclaration(FieldDeclaration node) {
+    _reportError(node, "fields");
+    return null;
+  }
+
+  @override
+  Object visitConstructorDeclaration(ConstructorDeclaration node) {
+    _reportError(node, "explicit constructor");
     return null;
   }
 

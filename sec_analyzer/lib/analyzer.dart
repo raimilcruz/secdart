@@ -123,7 +123,7 @@ class DynLabel{
 
   SecAnalysisResult analyze(String program, [bool useInterval = false]) {
     Source programSource = _newSource("/test.dart", program);
-    return computeAllErrors(context, programSource,intervalMode: useInterval);
+    return computeAllErrors(context, programSource, intervalMode: useInterval);
   }
 
   SecAnalysisResult analyzeFile(String filePath, [bool useInterval = false]) {

@@ -40,8 +40,7 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
    * The element representing the function containing the current node,
    * or `null` if the current node is not contained in a function.
    */
-  ExecutableElement _enclosingFunction;
-  FunctionDeclaration _enclosingFunctionDeclaration;
+  ExecutableElement _enclosingExecutableElement;
 
   SecurityVisitor(this.secTypeSystem, this.reporter,
       [bool this.intervalMode = false]) {}
@@ -64,26 +63,60 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
   }
 
   @override
-  visitFunctionDeclaration(FunctionDeclaration node) {
-    //we assume that that label were already parsed
-    //TODO: Deal with dynamic types (for functions)
+  bool visitClassDeclaration(ClassDeclaration node) {
+    //do local analysis for methods and fields.
+    node.visitChildren(this);
+
+    var result = true;
+
+    //check that methods "refine" security signature.
+    final type = node.element.supertype;
+    if (type.name != "Object") {
+      final parentClass = type.element.computeNode() as ClassDeclaration;
+      final superMethods =
+          parentClass.members.where((x) => x is MethodDeclaration);
+      superMethods.forEach((md) {
+        final localMd = node.getMethod(md.element.name);
+        result = checkMethodOverrideConstrains(localMd, md) && result;
+      });
+    }
+    return result;
+  }
+
+  @override
+  bool visitMethodDeclaration(MethodDeclaration node) {
     var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
-    _checkFunctionSecType(node, secType);
 
     var currentPc = _pc;
-    ExecutableElement outerFunction = _enclosingFunction;
-    _enclosingFunction = node.element;
+    ExecutableElement outerFunction = _enclosingExecutableElement;
+    _enclosingExecutableElement = node.element;
 
-    FunctionDeclaration outerFunctionDecl = _enclosingFunctionDeclaration;
-    _enclosingFunctionDeclaration = node;
+    //TODO: update pc or join?
+    _pc = secType.beginLabel;
+
+    var result = super.visitMethodDeclaration(node);
+
+    _enclosingExecutableElement = outerFunction;
+    _pc = currentPc;
+    return result;
+  }
+
+  @override
+  visitFunctionDeclaration(FunctionDeclaration node) {
+    //we assume that that labels were already parsed
+    //TODO: Deal with dynamic types (for functions)
+    var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
+
+    var currentPc = _pc;
+    ExecutableElement outerFunction = _enclosingExecutableElement;
+    _enclosingExecutableElement = node.element;
 
     //TODO: update pc or join?
     _pc = secType.beginLabel;
 
     var result = super.visitFunctionDeclaration(node);
 
-    _enclosingFunction = outerFunction;
-    _enclosingFunctionDeclaration = outerFunctionDecl;
+    _enclosingExecutableElement = outerFunction;
     _pc = currentPc;
     return result;
   }
@@ -119,14 +152,27 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
     return true;
   }
 
+  //this apply to a.f() and f().
   @override
   bool visitMethodInvocation(MethodInvocation node) {
-    //visit the function expression
-    node.function.accept(this);
-    // get the function sec type.
-    // This does not work when the function is another file.
-    // TODO: We need to solve problem with library references
-    var fSecType = _getSecurityType(node.function);
+    //case: method invocation over object instance (eg.  a.f(1))
+    var fSecType = null;
+    if (node.target != null) {
+      node.target.accept(this);
+      //find the type
+      final classDecl =
+          node.target.bestType.element.computeNode() as ClassDeclaration;
+      //find the method in the class
+      var methDecl = classDecl.getMethod(node.methodName.staticElement.name);
+      fSecType = _getSecurityType(methDecl);
+    } else {
+      //visit the function expression
+      node.function.accept(this);
+      // get the function sec type.
+      // This does not work when the function is another file.
+      // TODO: We need to solve problem with library references
+      fSecType = _getSecurityType(node.function);
+    }
     if (!(fSecType is SecurityFunctionType)) {
       reportError(SecurityTypeError.getCallNoFunction(node));
       return false;
@@ -146,6 +192,7 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
     //type is a subtype
     checkArgumentList(node.argumentList, functionSecType);
 
+    //TODO: Should we include the label of target?
     node.setProperty(SEC_TYPE_PROPERTY,
         functionSecType.returnType.stampLabel(functionSecType.endLabel));
     return true;
@@ -266,7 +313,8 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
       node.expression.accept(this);
       var secType = _getSecurityType(node.expression);
 
-      var functionSecType = _enclosingFunctionDeclaration
+      var functionSecType = _enclosingExecutableElement
+          .computeNode()
           .getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
       if (secTypeSystem.isSubtypeOf(secType, functionSecType.returnType)) {
         return true;
@@ -301,6 +349,15 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
     node.setProperty(SEC_TYPE_PROPERTY, resultType);
     _pc = currentPc;
 
+    return true;
+  }
+
+  @override
+  bool visitInstanceCreationExpression(InstanceCreationExpression node) {
+    //we only deal with "new C(...)"
+    if (!node.isConst) {
+      node.setProperty(SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
+    }
     return true;
   }
 
@@ -403,7 +460,8 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
           SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR,
           new List<Object>()
             ..add("Expression does not "
-                "have a security type (For instance it happens when a calling a function in another library, we do not how to deal"
+                "have a security type (For instance it happens when a calling a "
+                "function in another library, we do not how to deal"
                 "with multiple file yet)")));
       throw new UnsupportedFeatureException(
           "Error in SecurityVisitor._getSecurityType");
@@ -415,9 +473,28 @@ class SecurityVisitor extends RecursiveAstVisitor<bool> {
     return (name == null) ? DynamicTypeImpl.instance : name.type;
   }
 
-  void _checkFunctionSecType(
-      FunctionDeclaration decl, SecurityFunctionType secType) {
-    //TODO: Be careful. In the next implementation iteration we will deal with first class functions
+  bool checkMethodOverrideConstrains(
+      MethodDeclaration localMd, MethodDeclaration superMd) {
+    final localMdSecType =
+        localMd.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
+    final superMdSecType =
+        superMd.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
+
+    if (!localMdSecType.returnType.label
+        .lessOrEqThan(superMdSecType.returnType.label)) {
+      reportError(SecurityTypeError.getInvalidOverrideReturnLabel(
+          localMd,
+          localMdSecType.returnType.label.toString(),
+          superMdSecType.returnType.label.toString()));
+      return false;
+    }
+
+    //TODO: Personalize error for latent constraints
+    //TODO: Personalize error for arguments label parameter constraints
+    if (!secTypeSystem.isSubtypeOf(localMdSecType, superMdSecType))
+      reportError(SecurityTypeError.getInvalidMethodOverride(localMd));
+
+    return false;
   }
 }
 

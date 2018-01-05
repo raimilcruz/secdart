@@ -1,4 +1,3 @@
-import 'package:test/test.dart';
 import 'test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 
@@ -10,11 +9,24 @@ void main() {
 
 @reflectiveTest
 class UnsupportedFeaturesTest extends AbstractSecDartTest {
-  void test_classIsNotSupported() {
-    var program = '''class A{}
+  void test_fieldMemberAreNotSupported() {
+    var program = '''
+      class A{
+        int a;
+      }
       ''';
     var source = newSource("/test.dart", program);
-    expect(containsOnlySupportedFeatures(source), isFalse);
+    assert(!containsOnlySupportedFeatures(source));
+  }
+
+  void test_explicitClassConstructorAreNotSupported() {
+    var program = '''
+      class C{
+        C(int a){}
+      }
+      ''';
+    var source = newSource("/test.dart", program);
+    assert(!containsOnlySupportedFeatures(source));
   }
 
   void test_enumIsNotSupported() {
@@ -25,7 +37,7 @@ class UnsupportedFeaturesTest extends AbstractSecDartTest {
        }
       ''';
     var source = newSource("/test.dart", program);
-    expect(containsOnlySupportedFeatures(source), isFalse);
+    assert(!containsOnlySupportedFeatures(source));
   }
 
   void test_throwIsNotSupported() {
@@ -34,13 +46,13 @@ class UnsupportedFeaturesTest extends AbstractSecDartTest {
       }
       ''';
     var source = newSource("/test.dart", program);
-    expect(containsOnlySupportedFeatures(source), isFalse);
+    assert(!containsOnlySupportedFeatures(source));
   }
 
   void test_functionTypeAliasIsNotSupported() {
     var program = '''typedef int Compare(int a, int b);
       ''';
     var source = newSource("/test.dart", program);
-    expect(containsOnlySupportedFeatures(source), isFalse);
+    assert(!containsOnlySupportedFeatures(source));
   }
 }

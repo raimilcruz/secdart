@@ -17,7 +17,7 @@ We just need to re-process the AST to include security
 annotations.
 */
 class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
-  static const String FUNCTION_LATTENT_LABEL = "latent";
+  static const String FUNCTION_LATENT_LABEL = "latent";
   final AnalysisErrorListener reporter;
 
   /**
@@ -36,11 +36,30 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
       [this.intervalMode = false, this.astIsResolved = true]) {
     _parser = new FlatLatticeParser(reporter, intervalMode);
   }
+
   @override
-  bool visitFunctionDeclaration(FunctionDeclaration node) {
-    var secType = getFunctionSecType(node);
+  bool visitFieldDeclaration(FieldDeclaration node) {
+    //TODO: We need to support functions in fields
+    final label = getSimpleSecurityLabel(node.metadata, node);
+    final secType = new GroundSecurityType(label);
     node.setProperty(SEC_TYPE_PROPERTY, secType);
 
+    return true;
+  }
+
+  @override
+  bool visitMethodDeclaration(MethodDeclaration node) {
+    var secType = getMethodSecType(node);
+    node.setProperty(SEC_TYPE_PROPERTY, secType);
+
+    super.visitMethodDeclaration(node);
+    return true;
+  }
+
+  @override
+  bool visitFunctionDeclaration(FunctionDeclaration node) {
+    final secType = getFunctionSecType(node);
+    node.setProperty(SEC_TYPE_PROPERTY, secType);
     super.visitFunctionDeclaration(node);
     return true;
   }
@@ -87,7 +106,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
     return DynamicTypeImpl.instance;
   }
 
-  DartType getFunctionDartReturnType(FunctionDeclaration node) {
+  DartType getFunctionDartReturnType(dynamic node) {
     if (astIsResolved) return node.element.returnType;
     return DynamicTypeImpl.instance;
   }
@@ -119,6 +138,11 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
         getFunctionDartReturnType(node));
   }
 
+  SecurityFunctionType getMethodSecType(MethodDeclaration node) {
+    return getFunctionSecType2(
+        node, node.parameters, getFunctionDartReturnType(node));
+  }
+
   /**
    * Get the security annotation for a formal parameter.
    */
@@ -139,6 +163,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
   SecurityFunctionType getFunctionSecType2(
       dynamic node, FormalParameterList parameters, DartType funReturnType) {
     if (!(node is FunctionDeclaration) &&
+        !(node is MethodDeclaration) &&
         !(node is FunctionTypedFormalParameter)) return null;
     var metadataList = node.metadata;
 
@@ -148,7 +173,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
     var endLabel = _parser.dynamicLabel;
     if (metadataList != null) {
       var latentAnnotations =
-          metadataList.where((a) => a.name.name == FUNCTION_LATTENT_LABEL);
+          metadataList.where((a) => a.name.name == FUNCTION_LATENT_LABEL);
 
       if (latentAnnotations.length > 1) {
         reporter.onError(SecurityTypeError.getDuplicatedLatentError(node));

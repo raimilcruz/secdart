@@ -76,6 +76,28 @@ class SecurityTypeError {
     var errorCode = SecurityErrorCode.UNSUPPORTED_DART_FEATURE;
     return toAnalysisError(node, errorCode, [feature]);
   }
+
+  //CLASS MEMBER ERRORS
+  static AnalysisError getInvalidOverrideReturnLabel(MethodDeclaration md,
+      String returnLabelOverridedMethod, String returnLabelSuperMethod) {
+    var errorCode = SecurityErrorCode.INVAlID_OVERRIDE_RETURN_LABEL;
+    return toAnalysisError(md, errorCode, [
+      md.element.name,
+      returnLabelOverridedMethod,
+      (md.parent as ClassDeclaration).element.name,
+      (md.parent as ClassDeclaration).element.supertype.element.name,
+      returnLabelSuperMethod
+    ]);
+  }
+
+  static AnalysisError getInvalidMethodOverride(MethodDeclaration md) {
+    var errorCode = SecurityErrorCode.INVAlID_METHOD_OVERRIDE;
+    return toAnalysisError(md, errorCode, [
+      md.element.name,
+      (md.parent as ClassDeclaration).element.name,
+      (md.parent as ClassDeclaration).element.supertype.element.name
+    ]);
+  }
 }
 
 /**
@@ -113,6 +135,19 @@ class SecurityErrorCode extends ErrorCode {
 
   static const SecurityErrorCode MY_WARNING_CODE = const SecurityErrorCode(
       'MY_WARNING_CODE', 'This is a proof-of-concept error');
+
+  static const SecurityErrorCode INVAlID_OVERRIDE_RETURN_LABEL =
+      const SecurityErrorCode(
+          'INVAlID_OVERRIDE_RETURN_LABEL',
+          'The return label of method "{0}" (ie. "{1}") in class "{2}" '
+          'must be less than in class "{3}" (ie. "{4}")');
+
+  static const SecurityErrorCode INVAlID_METHOD_OVERRIDE =
+      const SecurityErrorCode(
+          'INVAlID_METHOD_OVERRIDE',
+          'The security signature of method "{0}" in class "{1}" '
+          'is not a valid override for the security signature of the method '
+          'in the class "{2}" (more details soon...)');
 
   const SecurityErrorCode(String name, String message, [String correction])
       : super(name, message, correction);
