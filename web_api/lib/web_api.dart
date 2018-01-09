@@ -4,9 +4,13 @@
 
 library web_api;
 
+import 'dart:async';
+
 import 'package:rpc/rpc.dart';
 import 'package:analyzer/analyzer.dart' show AnalysisError;
+
 import 'package:secdart_analyzer/analyzer.dart';
+import 'package:security_transformer/security_compiler.dart';
 import 'package:web_api/src/application_configuration.dart';
 
 /**
@@ -36,6 +40,13 @@ class SecDartApi {
     return result;
   }
 
+  @ApiMethod(path: 'compile', method: 'POST')
+  Future<SecCompileResult> compile(SecAnalysisInput input) async {
+    final secCompiler = new SecurityCompiler();
+    var compiled = secCompiler.compile(input.source, format: true);
+    return new SecCompileResult()..compiled = compiled;
+  }
+
   //helper method
   SecIssue _secIssueFromAnalysisError(AnalysisError error) {
     var issue = new SecIssue();
@@ -59,6 +70,10 @@ class StringWrapper {
 class SecAnalysisResult {
   List<SecIssue> issues;
   SecAnalysisResult();
+}
+
+class SecCompileResult {
+  String compiled;
 }
 
 class SecIssue {

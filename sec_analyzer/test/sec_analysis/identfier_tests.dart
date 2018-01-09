@@ -1,5 +1,6 @@
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
+import 'package:secdart_analyzer/src/errors.dart';
 
 void main() {
   defineReflectiveSuite(() {
@@ -62,6 +63,6 @@ class IdentifierTests extends AbstractSecDartTest {
     var source1 = newSource("/test2.dart", program1);
     var result = typeCheckSecurityForSource(source1);
 
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 }

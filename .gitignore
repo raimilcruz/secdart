@@ -12,3 +12,4 @@ pubspec.lock
 doc/api/
 deps/*
 web_api/bin/*log*
+secdart/doc/api/

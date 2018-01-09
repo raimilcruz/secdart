@@ -121,7 +121,7 @@ BlockFunctionBody parseBlockFunctionBody(String code) {
 }
 
 CompilationUnit parseCompilationUnit(String contents, {String name}) {
-  if (name == null) name = '<unknown source>';
+  if (name == null) name = 'dummy_name';
   var source = new StringSource(contents, name);
   return resolveCompilationUnit2Helper(source);
 }

@@ -1,5 +1,6 @@
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
+import 'package:secdart_analyzer/src/errors.dart';
 
 void main() {
   defineReflectiveSuite(() {
@@ -33,6 +34,6 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 }

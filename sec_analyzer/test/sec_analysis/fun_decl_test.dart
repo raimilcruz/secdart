@@ -4,6 +4,7 @@
 
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import '../test_helpers.dart';
+import "package:secdart_analyzer/src/errors.dart";
 
 void main() {
   defineReflectiveSuite(() {
@@ -24,7 +25,7 @@ class FunctionDefinitionTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
 
     var result = typeCheckSecurityForSource(source);
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 
   void test_secureFlow() {
@@ -69,5 +70,28 @@ class FunctionDefinitionTest extends AbstractSecDartTest {
     var result = typeCheckSecurityForSource(source);
 
     assert(!containsInvalidFlow(result));
+  }
+
+  void test_functionReturnedExpression() {
+    var program = '''
+        import "package:secdart/secdart.dart";
+        @low int foo (@high String pass ,@low String guess) {
+          if(pass == guess){
+            return 1;
+          }
+          else{
+            return 2;
+          }
+        }
+        ''';
+
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+    var resultWithInterval =
+        typeCheckSecurityForSource(source, intervalMode: true);
+
+    assert(result.isEmpty);
+    assert(resultWithInterval
+        .any((e) => e.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR));
   }
 }

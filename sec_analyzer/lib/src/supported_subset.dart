@@ -38,10 +38,6 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object> {
   }
 
   @override
-  Object visitClassMember(ClassMember node) =>
-      _reportError(node, "class member");
-
-  @override
   Object visitEnumDeclaration(EnumDeclaration node) {
     _reportError(node, "enum");
     return null;

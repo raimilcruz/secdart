@@ -1,5 +1,6 @@
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
+import "package:secdart_analyzer/src/errors.dart";
 
 /**
  * This file contains the five programs that were presented in the proposal
@@ -21,28 +22,28 @@ class StrictModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 
   void test_ecoopds_2() {
     var program = EcoopDsPaperExamples.second();
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 
   void test_ecoopds_3() {
     var program = EcoopDsPaperExamples.third();
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 
   void test_ecoopds_4() {
     var program = EcoopDsPaperExamples.fourth();
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 
   void test_ecoopds_5() {
@@ -50,7 +51,7 @@ class StrictModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 }
 
@@ -61,7 +62,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: false);
 
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 
   void test_ecoopds_2() {
@@ -85,7 +86,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: false);
 
-    assert(containsInvalidFlow(result));
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 
   void test_ecoopds_5() {
