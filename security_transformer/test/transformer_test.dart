@@ -17,21 +17,34 @@ void main() {
 @reflectiveTest
 class AnalysisClientTest {
   Future test_transformer() async {
+    var missExpectedFile = false;
     final runner = new SecurityTransformerRunner();
-
+    final sourcesDir = 'test/dart_files/sources';
+    final expectedsDir = 'test/dart_files/expecteds';
     final sourcesPath =
-        await dirContentsPath(pathos.join("test", "dart_files", "sources"));
-    final expectedsPath =
-        await dirContentsPath(pathos.join("test", "dart_files", "expecteds"));
-    assert(sourcesPath.length == expectedsPath.length);
-    for (var i = 0; i < sourcesPath.length; i++) {
+    await dirContentsPath(pathos.join("test", "dart_files", "sources"));
+    for (final sourcePath in sourcesPath) {
+      final expectedPath =
+          '$expectedsDir${sourcePath.substring(sourcesDir.length)}';
       print(
-          'Comparing ${sourcesPath[i]} result of transform with ${expectedsPath[i]}.');
-      final actual = await runner.transformAndFormat(
-          'security_transformer', sourcesPath[i]);
-      final expected = await new File(expectedsPath[i]).readAsString();
+          'Comparing ${sourcePath} result of transform with ${expectedPath}.');
+      final actual =
+          await runner.transformAndFormat('security_transformer', sourcePath);
+      String expected;
+      try {
+        expected = await new File(expectedPath).readAsString();
+      } catch (e) {
+        missExpectedFile = true;
+        print('Could not open ${expectedPath} file.');
+        print('Alert: Creating expected file.');
+        await new File(expectedPath).writeAsString(actual);
+        continue;
+      }
       assert(actual == expected);
       print('Passed.');
+    }
+    if (missExpectedFile) {
+      print('Alert: Some expected files were created.');
     }
   }
 

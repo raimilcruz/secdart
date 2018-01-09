@@ -1,7 +1,6 @@
-import 'package:secdart_analyzer/analyzer.dart';
-
-import 'package:security_transformer/src/replacer_visitor.dart';
 import 'package:dart_style/src/dart_formatter.dart';
+import 'package:secdart_analyzer/analyzer.dart';
+import 'package:security_transformer/src/replacer_visitor.dart';
 
 /**
  * A compiler from SecDart to Dart.

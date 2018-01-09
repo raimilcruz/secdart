@@ -137,6 +137,13 @@ class SecurityContext {
     return condition.value;
   }
 
+  static SecurityValue functionLiteral(Function function) {
+    return new SecurityValue(
+        function,
+        new SecurityLabel(pc.lowerBoundType,
+            upperBoundType: pc.upperBoundType));
+  }
+
   static SecurityValue integerLiteral(int literal) {
     return new SecurityValue(
         literal,

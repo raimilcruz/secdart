@@ -3,6 +3,10 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/src/string_source.dart';
 import 'package:security_transformer/src/context.dart';
 
+/// Necessary to create a different source name in parseCompilationUnit.
+/// This is necessary, if use the same source name with the same AnalysisContext
+/// all the time, the parseCompilationUnit will start failing.
+int counter = 0;
 void addStatementAfterStatement(Statement target, Statement newStatement) {
   final targetParent = target.parent;
   if (targetParent is Block) {
@@ -121,13 +125,26 @@ BlockFunctionBody parseBlockFunctionBody(String code) {
 }
 
 CompilationUnit parseCompilationUnit(String contents, {String name}) {
-  if (name == null) name = 'dummy_name';
+  if (name == null) name = '<unknown source${++counter}>';
   var source = new StringSource(contents, name);
   return resolveCompilationUnit2Helper(source);
 }
 
 Statement parseStatement(String code) {
   return parseBlockFunctionBody(code).block.statements.first;
+}
+
+TopLevelVariableDeclaration parseTopLevelVariableDeclaration(
+    String type, String varName, String rightSideExpression) {
+  final content = '$type $varName = $rightSideExpression';
+  final compilationUnit = parseCompilationUnit(content);
+  return compilationUnit.declarations.first;
+}
+
+VariableDeclarationStatement parseVariableDeclarationStatement(
+    String type, String varName, String rightSideExpression) {
+  final content = '$type $varName = $rightSideExpression';
+  return parseStatement(content);
 }
 
 void replaceNodeInAst(AstNode oldNode, AstNode newNode, {AstNode parent}) {

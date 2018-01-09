@@ -1,13 +1,8 @@
 import 'dart:async';
-import 'dart:async';
-import 'dart:io';
 import 'dart:io';
 
 import 'package:barback/barback.dart';
-import 'package:barback/barback.dart';
 import 'package:dart_style/dart_style.dart';
-import 'package:dart_style/dart_style.dart';
-import 'package:security_transformer/security_transformer.dart';
 import 'package:security_transformer/security_transformer.dart';
 
 Future main() async {

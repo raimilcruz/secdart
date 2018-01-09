@@ -1,7 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
-
 import 'package:security_transformer/src/utils.dart';
 
 class ReplacerVisitor extends SimpleAstVisitor {
@@ -972,15 +971,30 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   }
 
   @override
-  AstNode visitFunctionDeclaration(FunctionDeclaration node) => node;
+  AstNode visitFunctionDeclaration(FunctionDeclaration node) {
+    if (node.name.name == 'main' || node.parent is! CompilationUnit) {
+      return node;
+    }
+    return parseTopLevelVariableDeclaration(
+        'var', node.name.name, _visitFunctionDeclaration(node));
+  }
 
   @override
-  AstNode visitFunctionDeclarationStatement(
-          FunctionDeclarationStatement node) =>
-      node;
+  AstNode visitFunctionDeclarationStatement(FunctionDeclarationStatement node) {
+    return parseVariableDeclarationStatement(
+        'var',
+        node.functionDeclaration.name.name,
+        _visitFunctionDeclaration(node.functionDeclaration));
+  }
 
   @override
-  AstNode visitFunctionExpression(FunctionExpression node) => node;
+  AstNode visitFunctionExpression(FunctionExpression node) {
+    if (node.parent is FunctionDeclaration) {
+      return node;
+    }
+    return createFunctionInvocation(
+        'SecurityContext.functionLiteral', [node.toString()]);
+  }
 
   @override
   AstNode visitFunctionExpressionInvocation(
@@ -1195,8 +1209,9 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
 
   @override
   AstNode visitVariableDeclaration(VariableDeclaration node) {
-    final securityLabel =
-        (node.getProperty('sec-type') as GroundSecurityType).label.toString();
+    var securityLabel =
+        (node.getProperty('sec-type') as GroundSecurityType)?.label?.toString();
+    securityLabel ??= '?';
     replaceNodeInAst(
         node.initializer,
         createFunctionInvocation('SecurityContext.declare', [
@@ -1251,6 +1266,9 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
     statements.add(bodyStatement);
     return createBlockFunctionBody(statements);
   }
+
+  String _visitFunctionDeclaration(FunctionDeclaration node) =>
+      "SecurityContext.declare('?', SecurityContext.functionLiteral(${node.functionExpression.toString()}))";
 
   ReturnStatement _visitReturnStatement(
       ReturnStatement node, String staticReturnLabel) {
