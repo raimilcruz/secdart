@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
+import 'package:secdart_analyzer/sec_analyzer.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
 
 /**
@@ -30,46 +31,60 @@ class SecurityTypeError {
         new List<Object>()..add(from.toString())..add(to.toString()));
   }
 
+  static AnalysisError getImplicitFlowError(AstNode assignmentNode,
+      AstNode leftHand, SecurityLabel pc, SecurityType to) {
+    var errorCode = SecurityErrorCode.IMPLICIT_FLOW;
+    return toAnalysisError(
+        assignmentNode, errorCode, [pc.toString(), leftHand.toString(), to]);
+  }
+
   static AnalysisError getReturnTypeError(
       ReturnStatement node, SecurityType from, SecurityType to) {
     var errorCode = SecurityErrorCode.RETURN_TYPE_ERROR;
-    return toAnalysisError(node, errorCode, new List<Object>());
+    return toAnalysisError(node, errorCode, []);
   }
 
   static AnalysisError getFunctionLabelError(FunctionDeclaration node) {
     var errorCode = SecurityErrorCode.FUNCTION_LABEL_ERROR;
-    return toAnalysisError(node, errorCode, new List<Object>());
+    return toAnalysisError(node, errorCode, []);
   }
 
-  static AnalysisError getBadFunctionCall(Expression node) {
+  static AnalysisError getBadFunctionCall(
+      Expression node, SecurityLabel currentPc, SecurityLabel functionPc) {
     var errorCode = SecurityErrorCode.INVALID_FUNCTION_CALL;
-    return toAnalysisError(node, errorCode, new List<Object>());
+    return toAnalysisError(node, errorCode, [currentPc, functionPc]);
+  }
+
+  static AnalysisError getBadLatentConstraintAtFunctionCall(
+      Expression node, SecurityLabel endLabel, SecurityLabel beginLabel) {
+    var errorCode = SecurityErrorCode.INVALID_LATENT_CONSTRAINT_AT_FUN_CALL;
+    return toAnalysisError(node, errorCode, [endLabel, beginLabel]);
   }
 
   static AnalysisError getDuplicatedLatentError(FunctionDeclaration node) {
     var errorCode = ParserErrorCode.DUPLICATED_FUNCTION_LATENT_ERROR;
-    return toAnalysisError(node, errorCode, new List<Object>());
+    return toAnalysisError(node, errorCode, []);
   }
 
   static AnalysisError getDuplicatedReturnLabelError(FunctionDeclaration node) {
     var errorCode = ParserErrorCode.DUPLICATED_RETURN_LABEL_ERROR;
-    return toAnalysisError(node, errorCode, new List<Object>());
+    return toAnalysisError(node, errorCode, []);
   }
 
   static AnalysisError getDuplicatedLabelOnParameterError(AstNode node) {
     var errorCode = ParserErrorCode.DUPLICATED_LABEL_ON_PARAMETER_ERROR;
-    return toAnalysisError(node, errorCode, new List<Object>());
+    return toAnalysisError(node, errorCode, []);
   }
 
   //SYNTACTIC ERRORS IN LABEL
   static AnalysisError getBadFunctionLabel(AstNode node) {
     var errorCode = ParserErrorCode.BAD_FUNCTION_LABEL;
-    return toAnalysisError(node, errorCode, new List<Object>());
+    return toAnalysisError(node, errorCode, []);
   }
 
   static AnalysisError getCallNoFunction(AstNode node) {
     var errorCode = UnsupportedFeatureErrorCode.CALL_NO_FUNCTION;
-    return toAnalysisError(node, errorCode, new List<Object>());
+    return toAnalysisError(node, errorCode, []);
   }
 
   static AnalysisError getUnsupportedDartFeature(AstNode node, String feature) {
@@ -114,6 +129,14 @@ class SecurityErrorCode extends ErrorCode {
   static const SecurityErrorCode EXPLICIT_FLOW = const SecurityErrorCode(
       'EXPLICIT_FLOW', 'Information flow leak from {0} to {1}');
 
+  /**
+   * Error reported when the PC is too high to do a low assignment
+   */
+  static const SecurityErrorCode IMPLICIT_FLOW = const SecurityErrorCode(
+      'IMPLICIT_FLOW',
+      'Pc "{0}" is higher than the security label of left hand '
+      'expression "{1}" which is "{2}"');
+
 /** 
  * Reported when the label of the returned value is not less than declared function return label
 */
@@ -127,7 +150,15 @@ class SecurityErrorCode extends ErrorCode {
 
   static const SecurityErrorCode INVALID_FUNCTION_CALL =
       const SecurityErrorCode(
-          'INVALID_FUNCTION_CALL', 'Pc is not enough to invoke the function');
+          'INVALID_FUNCTION_CALL',
+          'PC "{0}" at the invocation site '
+          ' is higher than the function static PC (begin label: "{1}")');
+
+  static const SecurityErrorCode INVALID_LATENT_CONSTRAINT_AT_FUN_CALL =
+      const SecurityErrorCode(
+          'INVALID_LATENT_CONSTRAINT_AT_FUN_CALL',
+          'Function label "{0}" '
+          ' is higher than the function static PC (begin label: "{1}").');
 
   static const SecurityErrorCode UNSUPPORTED_DART_FEATURE =
       const SecurityErrorCode('UNSUPPORTED_DART_FEATURE',

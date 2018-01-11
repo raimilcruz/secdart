@@ -51,4 +51,27 @@ class ImplicitFlowsTest extends AbstractSecDartTest {
 
     assert(!containsInvalidFlow(result));
   }
+
+  void test_implicitFlow2() {
+    var program = '''
+        import "package:secdart/secdart.dart";
+        @latent("L","L")
+        @low foo (@high bool s) {
+          @low bool a = true;
+          @low bool b = false;
+          @low bool r = false;
+          if(s){
+            r = a; //Must be rejected (pc here must be H)
+          }
+          else{
+            r = b;
+          }
+          return 1;
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.IMPLICIT_FLOW));
+  }
 }

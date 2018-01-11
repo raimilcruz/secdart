@@ -5,6 +5,7 @@ import 'sec_analysis/high_order_tests.dart' as high_order;
 import 'sec_analysis/implicit_flow_tests.dart' as implicit;
 import 'sec_analysis/identfier_tests.dart' as identifier;
 import 'sec_analysis/ds_ecoop.dart' as ds_ecoop;
+import 'sec_analysis/dart_standard_test.dart' as dart_errors;
 
 import 'lattice/lh_lattice_test.dart' as lattice;
 import 'parser/annotation_test.dart' as parser;
@@ -34,6 +35,7 @@ void main() {
     implicit.main();
     identifier.main();
     ds_ecoop.main();
+    dart_errors.main();
 
     client.main();
     //tests configurable option properties for the plugin

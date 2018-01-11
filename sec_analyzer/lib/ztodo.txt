@@ -2,10 +2,11 @@ Current state:
 - The plugin is loaded by the analysis server
 
 TODO:
+- avoid to use the method computeNode(). To think about where to store the security information at the Element level.
 - [Done] Separate analysis in different phases (e.g. detection of sec-syntactic errors, unsupported features, semantic checks)
 - [Partially done] Design how to exclude some files from the analysis
     - e.g. test files
-- Design how to recognize custom settings from the analysis_options.yaml file.
+- [Done] Design how to recognize custom settings from the analysis_options.yaml file.
 - Implements secdartanalyzer: a console application that uses the security analysis.
     
 Next extensions:

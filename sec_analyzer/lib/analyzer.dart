@@ -1,15 +1,17 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/error/error.dart';
 import 'package:analyzer/file_system/file_system.dart';
 import 'package:analyzer/file_system/memory_file_system.dart';
 import 'package:analyzer/source/package_map_resolver.dart';
 import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/src/generated/source.dart';
+import 'package:analyzer/task/dart.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart'
-    show SecurityVisitor;
+    show SecurityResolverVisitor, SecurityCheckerVisitor;
 import 'package:analyzer/analyzer.dart' show AnalysisError, CompilationUnit;
 import 'dart:io' as io show File;
 import 'package:path/path.dart' as pathos;
@@ -27,14 +29,16 @@ class SecAnalyzer {
 
   bool returnDartErrors = false;
 
-  SecAnalyzer() {
+  bool addTasks;
+
+  SecAnalyzer([this.addTasks = false]) {
     _setUp();
   }
 
   void _setUp() {
     sdk = getDarkSdk();
 
-    context = createAnalysisContext();
+    context = createAnalysisContext(addTasks);
     final packageMap = <String, List<Folder>>{
       "secdart": [resourceProvider.getFolder("/secdart")]
     };
@@ -58,6 +62,11 @@ class SecAnalyzer {
     final file = resourceProvider.newFile(path, content);
     final source = file.createSource();
     return source;
+  }
+
+  void addSource(Source source) {
+    ChangeSet changeSet = new ChangeSet()..addedSource(source);
+    context.applyChanges(changeSet);
   }
 
   String _getSecDartContent() {
@@ -122,7 +131,15 @@ class DynLabel{
   }
 
   SecAnalysisResult analyze(String program, [bool useInterval = false]) {
+    Source test1Source = _newSource("/anothertest.dart", '''
+    bool g(){
+      return 1;
+      throw new Exception():
+    }
+    ''');
+    addSource(test1Source);
     Source programSource = _newSource("/test.dart", program);
+
     return computeAllErrors(context, programSource, intervalMode: useInterval);
   }
 
@@ -142,11 +159,17 @@ class DynLabel{
   static SecAnalysisResult computeAllErrors(
       AnalysisContext context, Source source,
       {bool returnDartErrors: true, bool intervalMode: false}) {
-    var libraryElement = context.computeLibraryElement(source);
-    var unit = context.resolveCompilationUnit(source, libraryElement);
+    //var libraryElement = context.computeLibraryElement(source);
+    var libraryElement = context.computeResult(source, LIBRARY_ELEMENT);
+    var unit = libraryElement.unit;
+    //var libraryElement = context.computeLibraryElement(source);
+    //var unit = context.resolveCompilationUnit(source, libraryElement);
 
-    var dartErrors = context.getErrors(source).errors;
-    if (dartErrors.length > 0 && returnDartErrors)
+    var dartErrors = context.computeErrors(source);
+    var badErrors = dartErrors.where((e) =>
+        e.errorCode.errorSeverity == ErrorSeverity.ERROR ||
+        e.errorCode.errorSeverity == ErrorSeverity.WARNING);
+    if (badErrors.length > 0 && returnDartErrors)
       return new SecAnalysisResult(dartErrors, unit);
 
     return new SecAnalysisResult(computeErrors(unit, intervalMode), unit);
@@ -170,9 +193,12 @@ class DynLabel{
     resolvedUnit.accept(supportedDart);
     if (errorListener.errors.length > 0) return errorListener.errors;
 
-    GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
+    var secResolver = new SecurityResolverVisitor(errorListener, intervalMode);
+    resolvedUnit.accept(secResolver);
 
-    var visitor = new SecurityVisitor(typeSystem, errorListener, intervalMode);
+    GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
+    var visitor =
+        new SecurityCheckerVisitor(typeSystem, errorListener, intervalMode);
     resolvedUnit.accept(visitor);
 
     return errorListener.errors;

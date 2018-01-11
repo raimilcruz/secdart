@@ -119,9 +119,12 @@ class DynLabel{
   }
 
   List<AnalysisError> typeCheckSecurityForSource(Source source,
-      {bool intervalMode: false, bool printError: true}) {
+      {bool intervalMode: false,
+      bool printError: true,
+      bool includeDartErrors: false}) {
     var errors = SecAnalyzer
-        .computeAllErrors(context, source, intervalMode: intervalMode)
+        .computeAllErrors(context, source,
+            intervalMode: intervalMode, returnDartErrors: includeDartErrors)
         .errors;
     if (printError) {
       for (AnalysisError error in errors) {
