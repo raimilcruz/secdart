@@ -77,10 +77,11 @@ class ResolveSecurityAnnotationTask extends SourceBasedAnalysisTask {
     if (SecAnalyzer.isValidSecDartFile(unit)) {
       var parserVisitor = new SecurityParserVisitor(errorListener, false);
       unit.accept(parserVisitor);
-    }
-    if (errorListener.errors.isEmpty) {
-      var resolverVisitor = new SecurityResolverVisitor(errorListener, false);
-      unit.accept(resolverVisitor);
+
+      if (errorListener.errors.isEmpty) {
+        var resolverVisitor = new SecurityResolverVisitor(errorListener, false);
+        unit.accept(resolverVisitor);
+      }
     }
 
     outputs[SEC_PARSER_ERRORS] = errorListener.errors;

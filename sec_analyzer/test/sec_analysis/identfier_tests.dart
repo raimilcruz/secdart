@@ -38,7 +38,7 @@ class IdentifierTests extends AbstractSecDartTest {
       ''';
     var program2 = '''
           import "package:secdart/secdart.dart";
-          import "secdart/test3.dart";
+          import "/test1.dart";
           void f(){
             g();
           }
@@ -46,11 +46,34 @@ class IdentifierTests extends AbstractSecDartTest {
     var source1 = newSource("/test1.dart", program1);
     addSource(source1);
     var source2 = newSource("/test2.dart", program2);
-    typeCheckSecurityForSource(source1);
+    //typeCheckSecurityForSource(source1);
 
     var result = typeCheckSecurityForSource(source2);
 
     assert(!containsInvalidFlow(result));
+  }
+
+  void test_callToFunctionInAnotherFileError() {
+    var program1 = '''
+          import "package:secdart/secdart.dart";          
+          void g(@low int a){
+          }
+      ''';
+    var program2 = '''
+          import "package:secdart/secdart.dart";
+          import "/test1.dart";
+          void f(@high int b){
+            g(b);
+          }
+      ''';
+    var source1 = newSource("/test1.dart", program1);
+    addSource(source1);
+    var source2 = newSource("/test2.dart", program2);
+    //typeCheckSecurityForSource(source1);
+
+    var result = typeCheckSecurityForSource(source2);
+
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 
   void test_callToStandardLibraryFunction() {

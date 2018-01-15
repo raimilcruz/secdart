@@ -1,4 +1,5 @@
 import 'package:analyzer/error/listener.dart';
+import 'package:secdart_analyzer/src/annotations/parser_element.dart';
 
 import 'errors.dart';
 import 'gs_typesystem.dart';
@@ -29,7 +30,7 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
    * The element representing the function containing the current node,
    * or `null` if the current node is not contained in a function.
    */
-  ExecutableElement _enclosingExecutableElement;
+  SecurityFunctionType _enclosingExecutableElementSecurityType;
 
   final AnalysisErrorListener reporter;
 
@@ -82,15 +83,15 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
     var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
 
     var currentPc = _pc;
-    ExecutableElement outerFunction = _enclosingExecutableElement;
-    _enclosingExecutableElement = node.element;
+    var outerFunctionType = _enclosingExecutableElementSecurityType;
+    _enclosingExecutableElementSecurityType = _getSecurityType(node);
 
     //TODO: update pc or join?
     _pc = secType.beginLabel;
 
     var result = super.visitFunctionDeclaration(node);
 
-    _enclosingExecutableElement = outerFunction;
+    _enclosingExecutableElementSecurityType = outerFunctionType;
     _pc = currentPc;
     return result;
   }
@@ -100,15 +101,15 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
     var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
 
     var currentPc = _pc;
-    ExecutableElement outerFunction = _enclosingExecutableElement;
-    _enclosingExecutableElement = node.element;
+    var outerFunctionType = _enclosingExecutableElementSecurityType;
+    _enclosingExecutableElementSecurityType = _getSecurityType(node);
 
     //TODO: update pc or join?
     _pc = secType.beginLabel;
 
     var result = super.visitMethodDeclaration(node);
 
-    _enclosingExecutableElement = outerFunction;
+    _enclosingExecutableElementSecurityType = outerFunctionType;
     _pc = currentPc;
     return result;
   }
@@ -139,9 +140,13 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
  * It basically computes labels for expressions.
  */
 class SecurityResolverVisitor extends AbstractSecurityVisitor {
+  ElementAnnotationParserHelper _elementParser;
+
   SecurityResolverVisitor(AnalysisErrorListener reporter,
       [bool intervalMode = false])
-      : super(reporter, intervalMode);
+      : super(reporter, intervalMode) {
+    _elementParser = new ElementAnnotationParserHelper(intervalMode);
+  }
 
   @override
   bool visitConditionalExpression(ConditionalExpression node) {
@@ -221,9 +226,20 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
           if (node.parent is FunctionDeclaration) {
             return false;
           }
-          var referredNode = node.staticElement.computeNode();
-          node.setProperty(
-              SEC_TYPE_PROPERTY, referredNode.getProperty(SEC_TYPE_PROPERTY));
+          SecurityType securityType = null;
+          if (node.staticElement is FunctionElement) {
+            //take the security scheme from the function annotations
+            securityType = _elementParser
+                .securityTypeForFunctionElement(node.staticElement);
+          } else if (node.staticElement is ParameterElement) {
+            securityType =
+                _elementParser.getSecurityTypeForParameter(node.staticElement);
+          } else if (node.staticElement is LocalVariableElement) {
+            securityType =
+                _elementParser.securityTypeForLocalVariable(node.staticElement);
+          }
+
+          node.setProperty(SEC_TYPE_PROPERTY, securityType);
         }
       }
     } else if (node.inSetterContext()) {
@@ -527,9 +543,7 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
       node.expression.accept(this);
       var secType = _getSecurityType(node.expression);
 
-      var functionSecType = _enclosingExecutableElement
-          .computeNode()
-          .getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
+      var functionSecType = _enclosingExecutableElementSecurityType;
       if (secTypeSystem.isSubtypeOf(secType, functionSecType.returnType)) {
         return true;
       }

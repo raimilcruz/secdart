@@ -17,7 +17,6 @@ We just need to re-process the AST to include security
 annotations.
 */
 class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
-  static const String FUNCTION_LATENT_LABEL = "latent";
   final AnalysisErrorListener reporter;
 
   /**
@@ -134,13 +133,11 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
   }
 
   SecurityFunctionType getFunctionSecType(FunctionDeclaration node) {
-    return getFunctionSecType2(node, node.functionExpression.parameters,
-        getFunctionDartReturnType(node));
+    return getFunctionSecType2(node, node.functionExpression.parameters);
   }
 
   SecurityFunctionType getMethodSecType(MethodDeclaration node) {
-    return getFunctionSecType2(
-        node, node.parameters, getFunctionDartReturnType(node));
+    return getFunctionSecType2(node, node.parameters);
   }
 
   /**
@@ -161,7 +158,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
   }
 
   SecurityFunctionType getFunctionSecType2(
-      dynamic node, FormalParameterList parameters, DartType funReturnType) {
+      dynamic node, FormalParameterList parameters) {
     if (!(node is FunctionDeclaration) &&
         !(node is MethodDeclaration) &&
         !(node is FunctionTypedFormalParameter)) return null;

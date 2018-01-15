@@ -8,6 +8,7 @@ import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/task/dart.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
+import 'package:secdart_analyzer/src/experimental/task.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart'
@@ -131,16 +132,10 @@ class DynLabel{
   }
 
   SecAnalysisResult analyze(String program, [bool useInterval = false]) {
-    Source test1Source = _newSource("/anothertest.dart", '''
-    bool g(){
-      return 1;
-      throw new Exception():
-    }
-    ''');
-    addSource(test1Source);
     Source programSource = _newSource("/test.dart", program);
 
-    return computeAllErrors(context, programSource, intervalMode: useInterval);
+    return computeAllErrors(context, programSource,
+        intervalMode: useInterval, addTask: addTasks);
   }
 
   SecAnalysisResult analyzeFile(String filePath, [bool useInterval = false]) {
@@ -153,14 +148,21 @@ class DynLabel{
     Source source =
         context.sourceFactory.forUri(pathos.toUri(absolutePath).toString());
 
-    return computeAllErrors(context, source);
+    return computeAllErrors(context, source, addTask: addTasks);
   }
 
   static SecAnalysisResult computeAllErrors(
       AnalysisContext context, Source source,
-      {bool returnDartErrors: true, bool intervalMode: false}) {
+      {bool returnDartErrors: true,
+      bool intervalMode: false,
+      bool addTask: false}) {
     //var libraryElement = context.computeLibraryElement(source);
-    var libraryElement = context.computeResult(source, LIBRARY_ELEMENT);
+    var libraryElement = null;
+    if (addTask) {
+      libraryElement = context.computeResult(source, SEC_ELEMENT);
+    } else {
+      libraryElement = context.computeResult(source, LIBRARY_ELEMENT);
+    }
     var unit = libraryElement.unit;
     //var libraryElement = context.computeLibraryElement(source);
     //var unit = context.resolveCompilationUnit(source, libraryElement);

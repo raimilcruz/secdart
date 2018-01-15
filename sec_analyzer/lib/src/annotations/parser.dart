@@ -1,8 +1,13 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/analyzer.dart';
+import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/src/dart/element/element.dart';
+import 'package:secdart_analyzer/src/error_collector.dart';
 import '../security_label.dart';
 import '../security_type.dart';
 import '../errors.dart';
+
+const String FUNCTION_LATENT_LABEL = "latent";
 
 /**
  * An abstract parser for Dart annotations that represent security labels
@@ -26,8 +31,6 @@ abstract class SecAnnotationParser2 {
 class FlatLatticeParser extends SecAnnotationParser {
   AnalysisErrorListener errorListener;
   bool intervalMode;
-
-  static const String FUNCTION_LATENT_LABEL = "latent";
 
   FlatLatticeParser(AnalysisErrorListener this.errorListener,
       [bool intervalMode = false]) {
@@ -130,4 +133,52 @@ class SecCompilationException implements SecDartException {
 
   @override
   String getMessage() => message;
+}
+
+abstract class SecElementAnnotationParser {
+  /**
+   * When is implemented returns the dynamic label
+   */
+  get dynamicLabel;
+
+  SecurityLabel parseLabel(ElementAnnotation n);
+  FunctionAnnotationLabel parseFunctionLabel(ElementAnnotation n);
+
+  isLabel(ElementAnnotation a);
+}
+
+class FlatLatticeElementParser extends SecElementAnnotationParser {
+  FlatLatticeParser _parser;
+  bool intervalMode;
+
+  FlatLatticeElementParser([bool intervalMode = false]) {
+    this.intervalMode = intervalMode;
+    _parser = new FlatLatticeParser(new ErrorCollector(), intervalMode);
+  }
+
+  @override
+  SecurityLabel parseLabel(ElementAnnotation n) {
+    ElementAnnotationImpl elementAnnotationImpl = n;
+    var annotationAst = elementAnnotationImpl.annotationAst;
+    return _parser.parseLabel(annotationAst);
+  }
+
+  FunctionAnnotationLabel parseFunctionLabel(ElementAnnotation n) {
+    ElementAnnotationImpl elementAnnotationImpl = n;
+    var annotationAst = elementAnnotationImpl.annotationAst;
+    return _parser.parseFunctionLabel(annotationAst);
+  }
+
+  @override
+  get dynamicLabel {
+    if (intervalMode) return new IntervalLabel(new BotLabel(), new TopLabel());
+    return new DynamicLabel();
+  }
+
+  @override
+  isLabel(ElementAnnotation a) {
+    ElementAnnotationImpl elementAnnotationImpl = a;
+    var annotationAst = elementAnnotationImpl.annotationAst;
+    return _parser.isLabel(annotationAst);
+  }
 }
