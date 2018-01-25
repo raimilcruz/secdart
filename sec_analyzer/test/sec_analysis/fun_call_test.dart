@@ -68,17 +68,4 @@ class FunctionCallTest extends AbstractSecDartTest {
 
     assert(!containsInvalidFlow(result));
   }
-
-  void test_basicTest() {
-    var program = '''
-        import "package:secdart/secdart.dart";
-        void callFoo(foo){
-          foo();
-        }
-      ''';
-    var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source);
-
-    assert(!containsInvalidFlow(result));
-  }
 }

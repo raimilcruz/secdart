@@ -68,4 +68,80 @@ class ClassDeclaration extends AbstractSecDartTest {
 
     assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
+
+  void test_ImplicitFlow() {
+    var program = '''
+         import "package:secdart/secdart.dart";
+         
+         class A{
+           @latent("L","L")
+           @low int f(){
+            return 1;
+           }
+         }
+         class B extends A{           
+           @low int f(){
+            return 2;
+           } 
+         }
+         @latent("H","H")         
+         g(@high bool a){
+           @high A c = a? new A():new B();
+           @low int f = c.f();           
+         }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
+
+  void test_ImplicitFlow2() {
+    var program = '''
+         import "package:secdart/secdart.dart";
+         
+         class A{
+           @low int f(){
+            return 1;
+           }
+         }
+         class B extends A{                      
+           @low int f(){
+            return 2;
+           } 
+         }                  
+         g(@high bool a){           
+           @low int f = (a? new A():new B()).f();           
+         }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source, intervalMode: true);
+
+    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
+
+  void test_ImplicitFlow3() {
+    var program = '''
+         import "package:secdart/secdart.dart";
+         
+         class A{
+           @low int f(){
+            return 1;
+           }
+         }
+         class B extends A{                      
+           @low int f(){
+            return 2;
+           } 
+         }                        
+         g(@high bool a){           
+           //remember A.f has implicitly @latent("?","?")
+           @low int f = (a? new A():new B()).f();           
+         }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(result.isEmpty);
+  }
 }

@@ -321,35 +321,37 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
   @override
   bool visitMethodInvocation(MethodInvocation node) {
     //case: method invocation over object instance (eg.  a.f(1))
-    var fSecType = null;
+    SecurityFunctionType fSecType = null;
+    SecurityType resultInvocationType = null;
     if (node.target != null) {
       node.target.accept(this);
+      SecurityType receiverSType = _getSecurityType(node.target);
       //find the type
       final classDecl =
           node.target.bestType.element.computeNode() as ClassDeclaration;
       //find the method in the class
       var methDecl = classDecl.getMethod(node.methodName.staticElement.name);
+      //include the security value of the target object
       fSecType = _getSecurityType(methDecl);
+      resultInvocationType = fSecType.returnType
+          .stampLabel(fSecType.endLabel)
+          .stampLabel(receiverSType.label);
     } else {
       //visit the function expression
       node.function.accept(this);
       // get the function sec type.
-      // This does not work when the function is another file.
       // TODO: We need to solve problem with library references
       fSecType = _getSecurityType(node.function);
+      resultInvocationType = fSecType.returnType.stampLabel(fSecType.endLabel);
     }
+    //TODO: move
     if (!(fSecType is SecurityFunctionType)) {
       reportError(SecurityTypeError.getCallNoFunction(node));
       return false;
     }
-
     node.argumentList.accept(this);
 
-    SecurityFunctionType functionSecType = fSecType;
-
-    //TODO: Should we include the label of target?
-    node.setProperty(SEC_TYPE_PROPERTY,
-        functionSecType.returnType.stampLabel(functionSecType.endLabel));
+    node.setProperty(SEC_TYPE_PROPERTY, resultInvocationType);
     return true;
   }
 }
@@ -456,6 +458,7 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     if (node.target != null) {
       node.target.accept(this);
       //find the type
+      //TODO: avoid to use computeNode();
       final classDecl =
           node.target.bestType.element.computeNode() as ClassDeclaration;
       //find the method in the class
@@ -496,10 +499,6 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     //foreach function formal argument type, ensure each actual argument
     //type is a subtype
     _checkArgumentList(node.argumentList, functionSecType);
-
-    //TODO: Should we include the label of target?
-    node.setProperty(SEC_TYPE_PROPERTY,
-        functionSecType.returnType.stampLabel(functionSecType.endLabel));
     return true;
   }
 

@@ -4,41 +4,43 @@ This file contains the annotations that represents labels in a flat lattice of s
 */
 
 const high = const High();
-const low= const Low();
-const top= const Top();
-const bot= const Bot();
+const low = const Low();
+const top = const Top();
+const bot = const Bot();
 const dynl = const DynLabel();
 
 /**
  * Represents a high confidentiality label
  */
-class High{
+class High {
   const High();
 }
+
 /**
  * Represents a low confidentiality label
  */
-class Low{
+class Low {
   const Low();
 }
 
 /**
  * Represents the top in the lattice
  */
-class Top{
+class Top {
   const Top();
 }
+
 /**
  * Represents the bottom in the lattice
  */
-class Bot{
+class Bot {
   const Bot();
 }
 
 /**
  * Label for function annotations
  */
-class latent{
+class latent {
   /**
    * The label required to invoke the function
    */
@@ -48,9 +50,9 @@ class latent{
    * The label of the return value of the function can not be higher than the [endlabel]
    */
   final String endLabel;
-  const latent(this.beginLabel,this.endLabel);
+  const latent(this.beginLabel, this.endLabel);
 }
 
-class DynLabel{
+class DynLabel {
   const DynLabel();
 }

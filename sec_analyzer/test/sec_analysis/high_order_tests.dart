@@ -10,7 +10,7 @@ void main() {
 
 @reflectiveTest
 class HighOrderFunctionTest extends AbstractSecDartTest {
-  void test_callingFunctionPassedAsParameter() {
+  void test_callingDynamicFunctionPassedAsParameter() {
     var program = '''
         import "package:secdart/secdart.dart";
         void foo (f) {
