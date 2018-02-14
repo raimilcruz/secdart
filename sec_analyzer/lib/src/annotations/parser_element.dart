@@ -13,11 +13,10 @@ class ElementAnnotationParserHelper {
     _parser = new FlatLatticeParser(new ErrorCollector(), intervalMode);
   }
 
-  SecurityFunctionType getFunctionSecType2(
-      FunctionElement element, List<ParameterElement> parameters) {
-    var metadataList =
-        element.metadata.map((m) => (m as ElementAnnotationImpl).annotationAst);
+  SecurityLabel get dynamicLabel => _parser.dynamicLabel;
 
+  SecurityFunctionType getFunctionSecType2(
+      Iterable<Annotation> metadataList, List<ParameterElement> parameters) {
     //label are dynamic by default
     var returnLabel = _parser.dynamicLabel;
     var beginLabel = _parser.dynamicLabel;
@@ -45,7 +44,7 @@ class ElementAnnotationParserHelper {
     }
     //TODO: This is not ok for functions
     var returnType = new GroundSecurityType(returnLabel);
-    return new SecurityFunctionType(
+    return new SecurityFunctionTypeImpl(
         beginLabel, parameterSecTypes, returnType, endLabel);
   }
 
@@ -58,15 +57,19 @@ class ElementAnnotationParserHelper {
     //case where the parameter is a function type
     if (node.type is FunctionType) {
       FunctionType functionType = node.type;
-      return new SecurityFunctionType(
-          new DynamicLabel(),
+      return new SecurityFunctionTypeImpl(
+          dynamicLabel,
           functionType.parameters
               .map((t) => getSecurityTypeForParameter(t))
               .toList(),
-          new GroundSecurityType(new DynamicLabel()),
+          new GroundSecurityType(dynamicLabel),
           label);
     }
-    return new GroundSecurityType(label);
+    if (node.type.element is ClassElement) {
+      return securityTypeFromClass(node.type.element, label);
+    }
+    //it must be a function alias then
+    return new DynamicSecurityType(label);
   }
 
   SecurityLabel getSecurityLabel(ParameterElement parameter) {
@@ -80,8 +83,10 @@ class ElementAnnotationParserHelper {
     return label;
   }
 
-  SecurityType securityTypeForFunctionElement(FunctionElement staticElement) {
-    return getFunctionSecType2(staticElement, staticElement.parameters);
+  SecurityType securityTypeForFunctionElement(FunctionElement element) {
+    var metadataList =
+        element.metadata.map((m) => (m as ElementAnnotationImpl).annotationAst);
+    return getFunctionSecType2(metadataList, element.parameters);
   }
 
   SecurityType securityTypeForLocalVariable(
@@ -89,10 +94,46 @@ class ElementAnnotationParserHelper {
     var labelAnnotations = staticElement.metadata
         .map((e) => (e as ElementAnnotationImpl).annotationAst)
         .where((a) => _parser.isLabel(a));
+
+    //TODO: If the local variable type is a user defined class with security
+    //annotations, then we need to get that information.
     var label = _parser.dynamicLabel;
     if (labelAnnotations.length == 1) {
       label = _parser.parseLabel(labelAnnotations.first);
     }
-    return new GroundSecurityType(label);
+    if (staticElement.type.element is ClassElement) {
+      return securityTypeFromClass(staticElement.type.element, label);
+    }
+    //it must be a function alias then
+    return new DynamicSecurityType(label);
+  }
+
+  SecurityType securityTypeFromClass(
+      ClassElement classElement, SecurityLabel label) {
+    if (classElement.name == 'bool' || classElement.name == 'int') {
+      return new GroundSecurityType(label);
+    }
+    if (classElement.library.imports
+            .where((import) => import.uri.contains("secdart.dart"))
+            .length ==
+        0) {
+      //TODO: Get either a parametric version for the security type or
+      //the unknown security type
+      return new GroundSecurityType(label);
+    }
+    return new InterfaceSecurityTypeImpl(
+        label, securityInfoFromClass(classElement));
+  }
+
+  ClassSecurityInfo securityInfoFromClass(ClassElement classElement) {
+    Map<String, SecurityFunctionType> methodTypes =
+        new Map<String, SecurityFunctionType>();
+    classElement.methods.forEach((mElement) {
+      var metadataList = mElement.metadata
+          .map((m) => (m as ElementAnnotationImpl).annotationAst);
+      methodTypes.putIfAbsent(mElement.name,
+          () => getFunctionSecType2(metadataList, mElement.parameters));
+    });
+    return new ClassSecurityInfo(methodTypes);
   }
 }

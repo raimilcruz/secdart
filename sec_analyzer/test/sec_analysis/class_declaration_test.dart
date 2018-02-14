@@ -117,6 +117,7 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
+    assert(result.isNotEmpty);
     assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
 

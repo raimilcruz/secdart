@@ -9,6 +9,7 @@ import 'package:analyzer/task/dart.dart';
 import 'package:front_end/src/base/source.dart';
 import 'package:secdart_analyzer/analyzer.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
+import 'package:secdart_analyzer/src/security_resolver.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';

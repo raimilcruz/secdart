@@ -19,6 +19,23 @@ abstract class SecurityLabel {
   bool lessOrEqThan(SecurityLabel other) {
     return this.canRelabeledTo(other);
   }
+
+  SecurityLabel substitute(
+      List<String> labelParameter, List<String> securityLabels);
+}
+
+abstract class ParametricSecurityLabel extends SecurityLabel {
+  String get labelParameter;
+}
+
+abstract class JoinSecurityLabel extends SecurityLabel {
+  SecurityLabel get left;
+  SecurityLabel get right;
+}
+
+abstract class MeetSecurityLabel extends SecurityLabel {
+  SecurityLabel get left;
+  SecurityLabel get right;
 }
 
 /*
@@ -42,6 +59,12 @@ class FlatLabel extends SecurityLabel {
   @override
   SecurityLabel meet(SecurityLabel other) {
     return FlatLatticeOperations.meet(this, other);
+  }
+
+  @override
+  SecurityLabel substitute(
+      List<String> labelParameter, List<String> securityLabels) {
+    throw new UnimplementedError();
   }
 }
 
@@ -121,6 +144,12 @@ class IntervalLabel extends UnknownLabel {
   String toString() {
     return "[" + lowerBound.toString() + "," + upperBound.toString() + "]";
   }
+}
+
+abstract class Lattice {
+  SecurityLabel get top;
+  SecurityLabel get bottom;
+  SecurityLabel get dynamic;
 }
 
 class FlatStaticLatticeOperations {

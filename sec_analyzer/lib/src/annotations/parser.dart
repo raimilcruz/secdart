@@ -97,7 +97,7 @@ class FlatLatticeParser extends SecAnnotationParser {
   }
 
   @override
-  get dynamicLabel {
+  SecurityLabel get dynamicLabel {
     if (intervalMode) return new IntervalLabel(new BotLabel(), new TopLabel());
     return new DynamicLabel();
   }
@@ -139,7 +139,7 @@ abstract class SecElementAnnotationParser {
   /**
    * When is implemented returns the dynamic label
    */
-  get dynamicLabel;
+  SecurityLabel get dynamicLabel;
 
   SecurityLabel parseLabel(ElementAnnotation n);
   FunctionAnnotationLabel parseFunctionLabel(ElementAnnotation n);
@@ -170,7 +170,7 @@ class FlatLatticeElementParser extends SecElementAnnotationParser {
   }
 
   @override
-  get dynamicLabel {
+  SecurityLabel get dynamicLabel {
     if (intervalMode) return new IntervalLabel(new BotLabel(), new TopLabel());
     return new DynamicLabel();
   }

@@ -1,12 +1,10 @@
 import 'package:analyzer/error/listener.dart';
-import 'package:secdart_analyzer/src/annotations/parser_element.dart';
 
 import 'errors.dart';
 import 'gs_typesystem.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
-import 'package:analyzer/dart/element/element.dart';
 
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/src/dart/element/type.dart';
@@ -24,7 +22,7 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
   /**
    * The program counter label
    */
-  SecurityLabel _pc = null;
+  SecurityLabel pc = null;
 
   /**
    * The element representing the function containing the current node,
@@ -41,7 +39,7 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
   /**
    * Get the security type associated to an expression. The security type need to be resolved for the expression
    */
-  SecurityType _getSecurityType(AstNode expr) {
+  SecurityType getSecurityType(AstNode expr) {
     var result = expr.getProperty(SEC_TYPE_PROPERTY);
     if (result == null) {
       reportError(SecurityTypeError.toAnalysisError(
@@ -56,13 +54,6 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
           "Error in SecurityVisitor._getSecurityType");
     }
     return result;
-  }
-
-  /**
-   * Get the label from a security type.
-   */
-  SecurityLabel _getLabel(SecurityType secType) {
-    return secType.label;
   }
 
   /**
@@ -82,17 +73,17 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
     //TODO: Deal with dynamic types (for functions)
     var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
 
-    var currentPc = _pc;
+    var currentPc = pc;
     var outerFunctionType = _enclosingExecutableElementSecurityType;
-    _enclosingExecutableElementSecurityType = _getSecurityType(node);
+    _enclosingExecutableElementSecurityType = getSecurityType(node);
 
     //TODO: update pc or join?
-    _pc = secType.beginLabel;
+    pc = secType.beginLabel;
 
     var result = super.visitFunctionDeclaration(node);
 
     _enclosingExecutableElementSecurityType = outerFunctionType;
-    _pc = currentPc;
+    pc = currentPc;
     return result;
   }
 
@@ -100,17 +91,17 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
   bool visitMethodDeclaration(MethodDeclaration node) {
     var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
 
-    var currentPc = _pc;
+    var currentPc = pc;
     var outerFunctionType = _enclosingExecutableElementSecurityType;
-    _enclosingExecutableElementSecurityType = _getSecurityType(node);
+    _enclosingExecutableElementSecurityType = getSecurityType(node);
 
     //TODO: update pc or join?
-    _pc = secType.beginLabel;
+    pc = secType.beginLabel;
 
     var result = super.visitMethodDeclaration(node);
 
     _enclosingExecutableElementSecurityType = outerFunctionType;
-    _pc = currentPc;
+    pc = currentPc;
     return result;
   }
 
@@ -118,10 +109,10 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
   bool visitIfStatement(IfStatement node) {
     //visit the if node
     node.condition.accept(this);
-    var secType = _getSecurityType(node.condition);
+    var secType = getSecurityType(node.condition);
     //increase the pc
-    var currentPc = _pc;
-    _pc = _pc.join(secType.label);
+    var currentPc = pc;
+    pc = pc.join(secType.label);
 
     //visit both branches
     node.thenStatement.accept(this);
@@ -129,229 +120,7 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
     if (node.elseStatement != null) {
       node.elseStatement.accept(this);
     }
-    _pc = currentPc;
-    return true;
-  }
-}
-
-/**
- * This visitor resolves the security types for every supported expression
- *
- * It basically computes labels for expressions.
- */
-class SecurityResolverVisitor extends AbstractSecurityVisitor {
-  ElementAnnotationParserHelper _elementParser;
-
-  SecurityResolverVisitor(AnalysisErrorListener reporter,
-      [bool intervalMode = false])
-      : super(reporter, intervalMode) {
-    _elementParser = new ElementAnnotationParserHelper(intervalMode);
-  }
-
-  @override
-  bool visitConditionalExpression(ConditionalExpression node) {
-    //visit the if node
-    node.condition.accept(this);
-    var secType = _getSecurityType(node.condition);
-    //increase the pc
-    var currentPc = _pc;
-    _pc = _pc.join(_getLabel(secType));
-
-    //visit both branches
-    node.thenExpression.accept(this);
-
-    node.elseExpression.accept(this);
-
-    var secTypeThenExpr = _getSecurityType(node.thenExpression);
-    var secTypeElseExpr = _getSecurityType(node.elseExpression);
-
-    //TODO: This is wrong for high order types
-    var resultType = new GroundSecurityType(
-        secTypeThenExpr.label.join(secTypeElseExpr.label).join(secType.label));
-    node.setProperty(SEC_TYPE_PROPERTY, resultType);
-    _pc = currentPc;
-
-    return true;
-  }
-
-  @override
-  bool visitBooleanLiteral(BooleanLiteral node) {
-    node.setProperty(SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
-    return true;
-  }
-
-  @override
-  bool visitIntegerLiteral(IntegerLiteral node) {
-    node.setProperty(SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
-    return true;
-  }
-
-  @override
-  bool visitSimpleStringLiteral(SimpleStringLiteral node) {
-    node.setProperty(SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
-    return true;
-  }
-
-  @override
-  bool visitBinaryExpression(BinaryExpression node) {
-    //TODO: Check if we should treat && and || in an special way
-    node.leftOperand.accept(this);
-    var leftSecType = _getSecurityType(node.leftOperand);
-    var leftSecLabel = _getLabel(leftSecType);
-
-    node.rightOperand.accept(this);
-
-    var rightSecType = _getSecurityType(node.rightOperand);
-    var rightSecLabel = _getLabel(rightSecType);
-
-    var resultType = new GroundSecurityType(leftSecLabel.join(rightSecLabel));
-    node.setProperty(SEC_TYPE_PROPERTY, resultType);
-    return true;
-  }
-
-  @override
-  bool visitSimpleIdentifier(SimpleIdentifier node) {
-    if (node.inGetterContext()) {
-      if (node.staticElement is ParameterElement ||
-          node.staticElement is LocalVariableElement ||
-          node.staticElement is FunctionElement) {
-        //handle calls to Standard library
-        if (node.staticElement is FunctionElement &&
-            node.staticElement.library.name.contains("dart.core")) {
-          //read annotation from dsl file
-          node.setProperty(SEC_TYPE_PROPERTY,
-              ExternalLibraryAnnotations.getSecTypeForFunction(node.name));
-        } else {
-          //resolved type by this visitor
-          if (node.parent is FunctionDeclaration) {
-            return false;
-          }
-          SecurityType securityType = null;
-          if (node.staticElement is FunctionElement) {
-            //take the security scheme from the function annotations
-            securityType = _elementParser
-                .securityTypeForFunctionElement(node.staticElement);
-          } else if (node.staticElement is ParameterElement) {
-            securityType =
-                _elementParser.getSecurityTypeForParameter(node.staticElement);
-          } else if (node.staticElement is LocalVariableElement) {
-            securityType =
-                _elementParser.securityTypeForLocalVariable(node.staticElement);
-          }
-
-          node.setProperty(SEC_TYPE_PROPERTY, securityType);
-        }
-      }
-    } else if (node.inSetterContext()) {
-      if (node.staticElement is LocalVariableElement) {
-        var referedNode = node.staticElement.computeNode();
-        node.setProperty(
-            SEC_TYPE_PROPERTY, referedNode.getProperty(SEC_TYPE_PROPERTY));
-      }
-    }
-    return true;
-  }
-
-  @override
-  bool visitParenthesizedExpression(ParenthesizedExpression node) {
-    node.expression.accept(this);
-    node.setProperty(SEC_TYPE_PROPERTY, _getSecurityType(node.expression));
-    return true;
-  }
-
-  @override
-  bool visitInstanceCreationExpression(InstanceCreationExpression node) {
-    //we only deal with "new C(...)"
-    if (!node.isConst) {
-      node.setProperty(SEC_TYPE_PROPERTY, new GroundSecurityType(_pc));
-    }
-    return true;
-  }
-
-  @override
-  visitAssignmentExpression(AssignmentExpression node) {
-    //visit left part
-    node.leftHandSide.accept(this);
-    //visit right side
-    node.rightHandSide.accept(this);
-    return true;
-  }
-
-  @override
-  bool visitReturnStatement(ReturnStatement node) {
-    if (node.expression != null) {
-      node.expression.accept(this);
-    }
-    return false;
-  }
-
-  @override
-  visitVariableDeclarationList(VariableDeclarationList node) {
-    for (VariableDeclaration variable in node.variables) {
-      var initializer = variable.initializer;
-      if (initializer != null) {
-        //in the case the initializer  is constant, the label is the current
-        // pc at that moment
-        initializer.accept(this);
-      }
-    }
-    node.visitChildren(this);
-  }
-
-  @override
-  bool visitFunctionExpressionInvocation(FunctionExpressionInvocation node) {
-    //visit the function expression
-    node.function.accept(this);
-    //get the function sec type
-    var fSecType = _getSecurityType(node.function);
-    if (!(fSecType is SecurityFunctionType)) {
-      reportError(SecurityTypeError.getCallNoFunction(node));
-      return false;
-    }
-
-    node.argumentList.accept(this);
-
-    SecurityFunctionType functionSecType = fSecType;
-    node.setProperty(SEC_TYPE_PROPERTY,
-        functionSecType.returnType.stampLabel(functionSecType.endLabel));
-    return true;
-  }
-
-  //this apply to a.f() and f().
-  @override
-  bool visitMethodInvocation(MethodInvocation node) {
-    //case: method invocation over object instance (eg.  a.f(1))
-    SecurityFunctionType fSecType = null;
-    SecurityType resultInvocationType = null;
-    if (node.target != null) {
-      node.target.accept(this);
-      SecurityType receiverSType = _getSecurityType(node.target);
-      //find the type
-      final classDecl =
-          node.target.bestType.element.computeNode() as ClassDeclaration;
-      //find the method in the class
-      var methDecl = classDecl.getMethod(node.methodName.staticElement.name);
-      //include the security value of the target object
-      fSecType = _getSecurityType(methDecl);
-      resultInvocationType = fSecType.returnType
-          .stampLabel(fSecType.endLabel)
-          .stampLabel(receiverSType.label);
-    } else {
-      //visit the function expression
-      node.function.accept(this);
-      // get the function sec type.
-      // TODO: We need to solve problem with library references
-      fSecType = _getSecurityType(node.function);
-      resultInvocationType = fSecType.returnType.stampLabel(fSecType.endLabel);
-    }
-    //TODO: move
-    if (!(fSecType is SecurityFunctionType)) {
-      reportError(SecurityTypeError.getCallNoFunction(node));
-      return false;
-    }
-    node.argumentList.accept(this);
-
-    node.setProperty(SEC_TYPE_PROPERTY, resultInvocationType);
+    pc = currentPc;
     return true;
   }
 }
@@ -418,7 +187,7 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     //visit the function expression
     node.function.accept(this);
     //get the function sec type
-    var fSecType = _getSecurityType(node.function);
+    var fSecType = getSecurityType(node.function);
     if (!(fSecType is SecurityFunctionType)) {
       reportError(SecurityTypeError.getCallNoFunction(node));
       return false;
@@ -428,11 +197,10 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     var endLabel = functionSecType.endLabel;
     //the current pc (joined with the function label) must be
     //less or equal than the function static pc (beginLabel)
-    if (!(_pc.join(endLabel).lessOrEqThan(beginLabel))) {
+    if (!(pc.join(endLabel).lessOrEqThan(beginLabel))) {
       //personalization of errors
-      if (!_pc.lessOrEqThan(beginLabel)) {
-        reportError(
-            SecurityTypeError.getBadFunctionCall(node, _pc, beginLabel));
+      if (!pc.lessOrEqThan(beginLabel)) {
+        reportError(SecurityTypeError.getBadFunctionCall(node, pc, beginLabel));
       }
       if (!endLabel.lessOrEqThan(beginLabel)) {
         reportError(SecurityTypeError.getBadLatentConstraintAtFunctionCall(
@@ -457,20 +225,22 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     var fSecType = null;
     if (node.target != null) {
       node.target.accept(this);
+      final SecurityType receiverSecType = getSecurityType(node.target);
+      if (receiverSecType is DynamicSecurityType) {
+        return true;
+      }
       //find the type
-      //TODO: avoid to use computeNode();
-      final classDecl =
-          node.target.bestType.element.computeNode() as ClassDeclaration;
-      //find the method in the class
-      var methDecl = classDecl.getMethod(node.methodName.staticElement.name);
-      fSecType = _getSecurityType(methDecl);
+      fSecType = (receiverSecType as InterfaceSecurityType)
+          .getMethodSecurityType(node.methodName.staticElement.name);
     } else {
       //visit the function expression
       node.function.accept(this);
       // get the function sec type.
-      // This does not work when the function is another file.
       // TODO: We need to solve problem with library references
-      fSecType = _getSecurityType(node.function);
+      fSecType = getSecurityType(node.function);
+      if (fSecType is DynamicSecurityType) {
+        return true;
+      }
     }
     if (!(fSecType is SecurityFunctionType)) {
       reportError(SecurityTypeError.getCallNoFunction(node));
@@ -481,11 +251,10 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     var endLabel = functionSecType.endLabel;
     //the current pc (joined with the function label) must be
     //less or equal than the function static pc (beginLabel)
-    if (!(_pc.join(endLabel).lessOrEqThan(beginLabel))) {
+    if (!(pc.join(endLabel).lessOrEqThan(beginLabel))) {
       //personalization of errors
-      if (!_pc.lessOrEqThan(beginLabel)) {
-        reportError(
-            SecurityTypeError.getBadFunctionCall(node, _pc, beginLabel));
+      if (!pc.lessOrEqThan(beginLabel)) {
+        reportError(SecurityTypeError.getBadFunctionCall(node, pc, beginLabel));
       }
       if (!endLabel.lessOrEqThan(beginLabel)) {
         reportError(SecurityTypeError.getBadLatentConstraintAtFunctionCall(
@@ -508,7 +277,7 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
       final Expression expr = node.arguments[i];
       var secTypeFormalArg = functionSecType.argumentTypes[i];
 
-      _checkSubtype(expr, _getSecurityType(expr), secTypeFormalArg);
+      _checkSubtype(expr, getSecurityType(expr), secTypeFormalArg);
     }
   }
 
@@ -540,7 +309,7 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
   bool visitReturnStatement(ReturnStatement node) {
     if (node.expression != null) {
       node.expression.accept(this);
-      var secType = _getSecurityType(node.expression);
+      var secType = getSecurityType(node.expression);
 
       var functionSecType = _enclosingExecutableElementSecurityType;
       if (secTypeSystem.isSubtypeOf(secType, functionSecType.returnType)) {
@@ -557,15 +326,15 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
   bool visitConditionalExpression(ConditionalExpression node) {
     //visit the if node
     node.condition.accept(this);
-    var secType = _getSecurityType(node.condition);
+    var secType = getSecurityType(node.condition);
     //increase the pc
-    var currentPc = _pc;
-    _pc = _pc.join(_getLabel(secType));
+    var currentPc = pc;
+    pc = pc.join(secType.label);
     //visit both branches
     node.thenExpression.accept(this);
     node.elseExpression.accept(this);
 
-    _pc = currentPc;
+    pc = currentPc;
 
     return true;
   }
@@ -576,40 +345,40 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
   void _checkAssignment(Expression expr, VariableDeclaration node,
       {SecurityType from}) {
     if (from == null) {
-      from = _getSecurityType(expr);
+      from = getSecurityType(expr);
     }
-    final secTypeVariable = _getSecurityType(node);
+    final secTypeVariable = getSecurityType(node);
     // fromT <: toT, no coercion needed.
     if (!secTypeSystem.isSubtypeOf(from, secTypeVariable)) {
       reportError(
           SecurityTypeError.getExplicitFlowError(node, from, secTypeVariable));
       return;
     }
-    if (!_pc.canRelabeledTo(_getLabel(secTypeVariable))) {
+    if (!pc.canRelabeledTo(secTypeVariable.label)) {
       reportError(SecurityTypeError.getImplicitFlowError(
-          node, node, _pc, secTypeVariable));
+          node, node, pc, secTypeVariable));
     }
   }
 
   void _checkAssignment2(Expression expr, AssignmentExpression node) {
-    SecurityType to = _getSecurityType(node.leftHandSide);
-    SecurityType from = _getSecurityType(node.rightHandSide);
+    SecurityType to = getSecurityType(node.leftHandSide);
+    SecurityType from = getSecurityType(node.rightHandSide);
 
     if (!secTypeSystem.isSubtypeOf(from, to)) {
       reportError(SecurityTypeError.getExplicitFlowError(node, from, to));
       return;
     }
-    if (!_pc.canRelabeledTo(_getLabel(to))) {
+    if (!pc.canRelabeledTo(to.label)) {
       reportError(SecurityTypeError.getImplicitFlowError(
-          node, node.leftHandSide, _pc, to));
+          node, node.leftHandSide, pc, to));
     }
   }
 
   void _checkSubtype(Expression expr, SecurityType from, SecurityType to) {
     if (secTypeSystem.isSubtypeOf(from, to)) {
-      var labelTo = _getLabel(to);
+      var labelTo = to.label;
       //var labelFrom = _getLabel(from);
-      if (_pc.canRelabeledTo(labelTo)) return;
+      if (pc.canRelabeledTo(labelTo)) return;
     }
     reportError(SecurityTypeError.getExplicitFlowError(expr, from, to));
   }
@@ -640,17 +409,15 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
 }
 
 class ExternalLibraryAnnotations {
-  static SecurityType getSecTypeForFunction(String name) {
+  static SecurityType getSecTypeForFunction(
+      String name, SecurityLabel dynamicLabel) {
     if (name == "print")
-      return new SecurityFunctionType(
+      return new SecurityFunctionTypeImpl(
           new LowLabel(),
           [new GroundSecurityType(new LowLabel())],
           new GroundSecurityType(new LowLabel()),
           new LowLabel());
-    return new SecurityFunctionType(
-        new DynamicLabel(),
-        new List<SecurityType>(),
-        new GroundSecurityType(new DynamicLabel()),
-        new DynamicLabel());
+    return new SecurityFunctionTypeImpl(dynamicLabel, new List<SecurityType>(),
+        new DynamicSecurityType(dynamicLabel), dynamicLabel);
   }
 }

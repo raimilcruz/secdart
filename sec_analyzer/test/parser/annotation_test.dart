@@ -83,7 +83,7 @@ class ParserTest extends AbstractSecDartTest {
     //FunctionDeclaration must be populated.
     expect(
         funDecltype.toString(),
-        new SecurityFunctionType(
+        new SecurityFunctionTypeImpl(
                 new HighLabel(),
                 <SecurityType>[
                   new GroundSecurityType(new BotLabel()),
@@ -158,7 +158,7 @@ class ParserTest extends AbstractSecDartTest {
     //FunctionDeclaration must be populated.
     expect(
         funDecltype.toString(),
-        new SecurityFunctionType(
+        new SecurityFunctionTypeImpl(
                 new HighLabel(),
                 <SecurityType>[
                   new GroundSecurityType(new BotLabel()),

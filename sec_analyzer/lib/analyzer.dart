@@ -11,8 +11,9 @@ import 'package:secdart_analyzer/src/error_collector.dart';
 import 'package:secdart_analyzer/src/experimental/task.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
+import 'package:secdart_analyzer/src/security_resolver.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart'
-    show SecurityResolverVisitor, SecurityCheckerVisitor;
+    show SecurityCheckerVisitor;
 import 'package:analyzer/analyzer.dart' show AnalysisError, CompilationUnit;
 import 'dart:io' as io show File;
 import 'package:path/path.dart' as pathos;

@@ -110,9 +110,9 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object> {
   @override
   Object visitTryStatement(TryStatement node) => _reportError(node, "try");
 
-  void _reportError(AstNode node, String nodeDisplyName) {
+  Object _reportError(AstNode node, String nodeDisplayName) {
     AnalysisError error =
-        SecurityTypeError.getUnsupportedDartFeature(node, nodeDisplyName);
+        SecurityTypeError.getUnsupportedDartFeature(node, nodeDisplayName);
     reporter.onError(error);
     return null;
   }

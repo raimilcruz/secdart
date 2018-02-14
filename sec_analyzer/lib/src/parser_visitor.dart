@@ -197,7 +197,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
     }
     //TODO: This is not ok for functions
     var returnType = new GroundSecurityType(returnLabel);
-    return new SecurityFunctionType(
+    return new SecurityFunctionTypeImpl(
         beginLabel, parameterSecTypes, returnType, endLabel);
   }
 
@@ -208,7 +208,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
   SecurityType _getSecurityType(FormalParameter node) {
     var label = getSecurityLabel(node);
     if (node is FunctionTypedFormalParameter) {
-      return new SecurityFunctionType(
+      return new SecurityFunctionTypeImpl(
           new DynamicLabel(),
           node.parameters.parameters.map((t) => _getSecurityType(t)).toList(),
           new GroundSecurityType(new DynamicLabel()),
