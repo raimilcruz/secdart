@@ -1,28 +1,4 @@
-/**
- * Abstract class to represent a security label
- */
-abstract class SecurityLabel {
-  /**
-   * When is implemented in a derived class returns a boolean value indicating
-   * if the current label can flow to the specific label
-   */
-  bool canRelabeledTo(SecurityLabel l);
-  /**
-   * When is implemented in a derived class returns the meet 
-   */
-  SecurityLabel meet(SecurityLabel other);
-  /**
-   * When is implemented in a derived class returns the join
-   */
-  SecurityLabel join(SecurityLabel other);
-
-  bool lessOrEqThan(SecurityLabel other) {
-    return this.canRelabeledTo(other);
-  }
-
-  SecurityLabel substitute(
-      List<String> labelParameter, List<String> securityLabels);
-}
+import 'package:secdart_analyzer/security_label.dart';
 
 abstract class ParametricSecurityLabel extends SecurityLabel {
   String get labelParameter;
@@ -36,6 +12,34 @@ abstract class JoinSecurityLabel extends SecurityLabel {
 abstract class MeetSecurityLabel extends SecurityLabel {
   SecurityLabel get left;
   SecurityLabel get right;
+}
+
+class FlatLattice extends Lattice {
+  FlatLattice._();
+  factory FlatLattice() {
+    return new FlatLattice._();
+  }
+
+  @override
+  SecurityLabel get bottom => new BotLabel();
+
+  @override
+  SecurityLabel get dynamic => new DynamicLabel();
+
+  @override
+  SecurityLabel get top => new TopLabel();
+}
+
+class IntervalFlatLattice extends Lattice {
+  @override
+  SecurityLabel get bottom => new IntervalLabel(new BotLabel(), new BotLabel());
+
+  @override
+  SecurityLabel get dynamic =>
+      new IntervalLabel(new BotLabel(), new TopLabel());
+
+  @override
+  SecurityLabel get top => new IntervalLabel(new TopLabel(), new TopLabel());
 }
 
 /*
@@ -66,9 +70,17 @@ class FlatLabel extends SecurityLabel {
       List<String> labelParameter, List<String> securityLabels) {
     throw new UnimplementedError();
   }
+
+  @override
+  Lattice get lattice => new FlatLattice();
 }
 
 class HighLabel extends FlatLabel {
+  static final HighLabel _instance = new HighLabel._();
+  factory HighLabel() => _instance;
+
+  HighLabel._();
+
   @override
   String toString() {
     return "H";
@@ -76,6 +88,11 @@ class HighLabel extends FlatLabel {
 }
 
 class LowLabel extends FlatLabel {
+  static final LowLabel _instance = new LowLabel._();
+  factory LowLabel() => _instance;
+
+  LowLabel._();
+
   @override
   String toString() {
     return "L";
@@ -83,11 +100,9 @@ class LowLabel extends FlatLabel {
 }
 
 class TopLabel extends FlatLabel {
-  static TopLabel _instance;
-  factory TopLabel() {
-    if (_instance == null) _instance = new TopLabel._internal();
-    return _instance;
-  }
+  static final TopLabel _instance = new TopLabel._internal();
+
+  factory TopLabel() => _instance;
 
   TopLabel._internal();
 
@@ -98,11 +113,8 @@ class TopLabel extends FlatLabel {
 }
 
 class BotLabel extends FlatLabel {
-  static BotLabel _instance;
-  factory BotLabel() {
-    if (_instance == null) _instance = new BotLabel._internal();
-    return _instance;
-  }
+  static BotLabel _instance = new BotLabel._internal();
+  factory BotLabel() => _instance;
 
   BotLabel._internal();
 
@@ -115,19 +127,16 @@ class BotLabel extends FlatLabel {
 abstract class UnknownLabel extends FlatLabel {}
 
 class DynamicLabel extends UnknownLabel {
-  static DynamicLabel _instance;
-  factory DynamicLabel() {
-    if (_instance == null) {
-      _instance = new DynamicLabel._internal();
-    }
-    return _instance;
-  }
+  static DynamicLabel _instance = new DynamicLabel._internal();
+
+  factory DynamicLabel() => _instance;
+
+  DynamicLabel._internal();
+
   @override
   String toString() {
     return "?";
   }
-
-  DynamicLabel._internal();
 }
 
 class IntervalLabel extends UnknownLabel {
@@ -144,12 +153,6 @@ class IntervalLabel extends UnknownLabel {
   String toString() {
     return "[" + lowerBound.toString() + "," + upperBound.toString() + "]";
   }
-}
-
-abstract class Lattice {
-  SecurityLabel get top;
-  SecurityLabel get bottom;
-  SecurityLabel get dynamic;
 }
 
 class FlatStaticLatticeOperations {

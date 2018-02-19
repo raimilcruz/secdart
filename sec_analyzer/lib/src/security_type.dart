@@ -1,102 +1,118 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
-import 'security_label.dart';
-
-/**
- * A security type in SecDart.
- */
-abstract class SecurityType {
-  SecurityType();
-
-  SecurityLabel get label;
-  SecurityType stampLabel(SecurityLabel label);
-
-  SecurityType join(SecurityType other);
-  SecurityType meet(SecurityType other);
-}
-
-abstract class InterfaceSecurityType extends SecurityType {
-  SecurityFunctionType getMethodSecurityType(String name);
-}
-
-abstract class SecurityFunctionType extends SecurityType {
-  SecurityLabel get beginLabel;
-  List<SecurityType> get argumentTypes;
-  SecurityType get returnType;
-  SecurityLabel get endLabel;
-}
+import 'package:secdart_analyzer/security_label.dart';
+import 'package:secdart_analyzer/security_type.dart';
 
 /**
  * Represents a security type for a [InterfaceType] (eg. a class)
  */
 class InterfaceSecurityTypeImpl extends InterfaceSecurityType {
-  ClassElement classElement;
+  InterfaceType classType;
   ClassSecurityInfo classSecurityInfo;
   SecurityLabel _label;
-  InterfaceSecurityTypeImpl(this._label, this.classSecurityInfo);
+  bool _isExternalClass = false;
+
+  bool get isExternalClass => _isExternalClass;
+
+  /**
+   * Use this constructor for custom defined classes (with security concerns)
+   */
+  InterfaceSecurityTypeImpl(
+      this._label, this.classType, this.classSecurityInfo);
+
+  /**
+   * Use this factory method for library classes (that were programmed without
+   * security concerns)
+   */
+  InterfaceSecurityTypeImpl.forExternalClass(
+      this._label, InterfaceType this.classType) {
+    _isExternalClass = true;
+    classSecurityInfo = new ClassSecurityInfo(
+        new Map<String, SecurityFunctionType>(),
+        new Map<String, SecurityType>());
+  }
+
   @override
   SecurityLabel get label => _label;
 
   @override
   SecurityType stampLabel(SecurityLabel label) {
-    return new InterfaceSecurityTypeImpl(_label.join(label), classSecurityInfo);
+    return isExternalClass
+        ? new InterfaceSecurityTypeImpl.forExternalClass(
+            _label.join(label), classType)
+        : new InterfaceSecurityTypeImpl(
+            _label.join(label), classType, classSecurityInfo);
   }
 
   SecurityFunctionType getMethodSecurityType(String name) {
+    if (!classSecurityInfo.methods.containsKey(name)) {
+      SecurityFunctionType methodSecType = _methodSecurityType(name);
+      classSecurityInfo.methods.putIfAbsent(name, () => methodSecType);
+    }
     return classSecurityInfo.methods[name];
   }
 
-  @override
-  SecurityType join(SecurityType other) {
-    // TODO: implement join
-    throw new Exception("Not implemented yet");
+  SecurityType getFieldSecurityType(String accessorName) {
+    if (!classSecurityInfo.accessors.containsKey(accessorName)) {
+      final fieldSecType = _fieldSecurityType(accessorName);
+      classSecurityInfo.accessors.putIfAbsent(accessorName, () => fieldSecType);
+    }
+    return classSecurityInfo.accessors[accessorName];
+  }
+
+  SecurityFunctionType _methodSecurityType(String name) {
+    var method = classType.lookUpInheritedMethod(name);
+    var parameterSecTypes = new List<SecurityType>();
+    for (ParameterElement p in method.parameters) {
+      if (p.type is InterfaceType) {
+        parameterSecTypes.add(new InterfaceSecurityTypeImpl.forExternalClass(
+            _label.lattice.top, p.type));
+      }
+      if (p.type is FunctionType) {
+        //TODO: fix this
+        parameterSecTypes.add(new DynamicSecurityType(_label.lattice.top));
+      }
+    }
+
+    SecurityLabel returnLabel = _label.lattice.bottom;
+
+    SecurityType returnType = new DynamicSecurityType(returnLabel);
+    if (method.returnType is FunctionType) {
+      //TODO: fix this
+      returnType = new DynamicSecurityType(returnLabel);
+    }
+    if (method.returnType is InterfaceType) {
+      returnType = new InterfaceSecurityTypeImpl.forExternalClass(
+          returnLabel, method.returnType);
+    }
+    return new SecurityFunctionTypeImpl(
+        _label.lattice.top, parameterSecTypes, returnType, returnLabel);
+  }
+
+  SecurityType _fieldSecurityType(String fieldName) {
+    //PropertyAccessorElement property =
+    //    classType.lookUpInheritedGetter(fieldName);
+
+    return new DynamicSecurityType(_label.lattice.bottom);
   }
 
   @override
-  SecurityType meet(SecurityType other) {
-    // TODO: implement meet
-    throw new Exception("Not implemented yet");
+  String toString() {
+    return "${classType!=null?classType.name:"CLASS"}@$_label";
+  }
+
+  @override
+  SecurityType downgradeLabel(SecurityLabel label) {
+    return isExternalClass
+        ? new InterfaceSecurityTypeImpl.forExternalClass(label, classType)
+        : new InterfaceSecurityTypeImpl(label, classType, classSecurityInfo);
   }
 }
 
 class ClassSecurityInfo {
   Map<String, SecurityFunctionType> methods;
-  ClassSecurityInfo(this.methods);
-}
-
-/**
- * Represents a security type for "builtin types" (eg. Int, Bool)
- */
-class GroundSecurityType extends SecurityType {
-  SecurityLabel _label;
-  GroundSecurityType(this._label);
-
-  @override
-  SecurityLabel get label => this._label;
-
-  @override
-  SecurityType stampLabel(SecurityLabel label) {
-    return new GroundSecurityType(this._label.join(label));
-  }
-
-  @override
-  String toString() {
-    return "$_label";
-  }
-
-  @override
-  SecurityType join(SecurityType other) {
-    if (!(other is GroundSecurityType))
-      throw new ArgumentError("Expected argument of type GroundSecurityType");
-    return new GroundSecurityType(_label.join(other.label));
-  }
-
-  @override
-  SecurityType meet(SecurityType other) {
-    if (!(other is GroundSecurityType))
-      throw new ArgumentError("Expected argument of type GroundSecurityType");
-    return new GroundSecurityType(_label.meet(other.label));
-  }
+  Map<String, SecurityType> accessors;
+  ClassSecurityInfo(this.methods, this.accessors);
 }
 
 /**
@@ -127,49 +143,10 @@ class SecurityFunctionTypeImpl extends SecurityFunctionType {
     return "($argumentTypes->[$_beginLabel]->$_returnType)@$_endLabel";
   }
 
-  SecurityType join(SecurityType other) {
-    if (!(other is SecurityFunctionType))
-      throw new ArgumentError("Expected argument of type SecurityFunctionType");
-    SecurityFunctionType otherSecFunType = other;
-    return new SecurityFunctionTypeImpl(
-        beginLabel.meet(otherSecFunType.beginLabel),
-        _meetParameters(argumentTypes, otherSecFunType.argumentTypes),
-        returnType.join(otherSecFunType.returnType),
-        endLabel.join(otherSecFunType.endLabel));
-  }
-
   @override
-  SecurityType meet(SecurityType other) {
-    if (!(other is SecurityFunctionType))
-      throw new ArgumentError("Expected argument of type SecurityFunctionType");
-    SecurityFunctionType otherSecFunType = other;
+  SecurityType downgradeLabel(SecurityLabel label) {
     return new SecurityFunctionTypeImpl(
-        beginLabel.join(otherSecFunType.beginLabel),
-        _joinParameters(argumentTypes, otherSecFunType.argumentTypes),
-        returnType.meet(otherSecFunType.returnType),
-        endLabel.meet(otherSecFunType.endLabel));
-  }
-
-  List<SecurityType> _meetParameters(
-      List<SecurityType> l1, List<SecurityType> l2) {
-    if (l1.length != l2.length)
-      throw new ArgumentError("Distinct argument size");
-    List<SecurityType> result = [];
-    for (int i = 0; i < l1.length; i++) {
-      result.add(l1[i].meet(l2[i]));
-    }
-    return result;
-  }
-
-  List<SecurityType> _joinParameters(
-      List<SecurityType> l1, List<SecurityType> l2) {
-    if (l1.length != l2.length)
-      throw new ArgumentError("Distinct argument size");
-    List<SecurityType> result = [];
-    for (int i = 0; i < l1.length; i++) {
-      result.add(l1[i].join(l2[i]));
-    }
-    return result;
+        _beginLabel, _argumentTypes, _returnType, label);
   }
 }
 
@@ -185,25 +162,16 @@ class DynamicSecurityType extends SecurityType {
 
   @override
   SecurityType stampLabel(SecurityLabel label) {
-    return new GroundSecurityType(this._label.join(label));
+    return new DynamicSecurityType(this._label.join(label));
   }
 
   @override
   String toString() {
-    return "$_label";
+    return "Dyn@$_label";
   }
 
   @override
-  SecurityType join(SecurityType other) {
-    if (!(other is DynamicSecurityType))
-      throw new ArgumentError("Expected argument of type DynamicSecurityType");
-    return new DynamicSecurityType(label.join(other.label));
-  }
-
-  @override
-  SecurityType meet(SecurityType other) {
-    if (!(other is DynamicSecurityType))
-      throw new ArgumentError("Expected argument of type DynamicSecurityType");
-    return new DynamicSecurityType(label.meet(other.label));
+  SecurityType downgradeLabel(SecurityLabel label) {
+    return new DynamicSecurityType(label);
   }
 }

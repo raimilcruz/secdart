@@ -56,3 +56,12 @@ class latent {
 class DynLabel {
   const DynLabel();
 }
+
+/**
+ * Represents a label annotation. Its interpretation is open.
+ * eg. Lab("H"), Lab("Alice -> Bob")
+ */
+class Lab {
+  final String labelRep;
+  const Lab(String this.labelRep);
+}

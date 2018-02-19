@@ -20,12 +20,6 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object> {
   }*/
 
   @override
-  Object visitFieldDeclaration(FieldDeclaration node) {
-    _reportError(node, "fields");
-    return null;
-  }
-
-  @override
   Object visitConstructorDeclaration(ConstructorDeclaration node) {
     _reportError(node, "explicit constructor");
     return null;
@@ -58,12 +52,6 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object> {
   @override
   Object visitAwaitExpression(AwaitExpression node) =>
       _reportError(node, "await");
-
-  @override
-  Object visitFunctionTypeAlias(FunctionTypeAlias node) {
-    _reportError(node, "function type alias");
-    return null;
-  }
 
   //loops
   @override

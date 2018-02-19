@@ -4,3 +4,11 @@
 library secdart;
 
 export 'src/flat_lattice.dart';
+
+/**
+ * Downgrades the security label of the given expression.
+ *
+ * It behaves as an identity function, however the security analysis recognizes
+ * it and perform the necessary downgrade.
+ */
+T declassify<T>(T expression, label) => expression;

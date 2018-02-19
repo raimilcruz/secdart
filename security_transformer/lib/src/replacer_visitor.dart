@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:secdart_analyzer/sec_analyzer.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
 
 import 'package:security_transformer/src/utils.dart';
@@ -1195,8 +1196,7 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
 
   @override
   AstNode visitVariableDeclaration(VariableDeclaration node) {
-    final securityLabel =
-        (node.getProperty('sec-type') as GroundSecurityType).label.toString();
+    final securityLabel = node.getProperty('sec-type').label.toString();
     replaceNodeInAst(
         node.initializer,
         createFunctionInvocation('SecurityContext.declare', [

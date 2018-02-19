@@ -1,4 +1,5 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/security_label.dart';
@@ -74,24 +75,27 @@ class ParserTest extends AbstractSecDartTest {
         AstQuery.toList(unit).where((n) => n is FormalParameter).skip(1).first;
 
     //formal parameters need to be populated
-    expect(parameter1.getProperty(SEC_TYPE_PROPERTY).toString(),
-        new GroundSecurityType(new BotLabel()).toString());
+    final parameter1Type = parameter1.getProperty(SEC_TYPE_PROPERTY);
+    assert(parameter1Type is InterfaceSecurityType);
+    expect(parameter1Type.label, new BotLabel());
 
-    expect(parameter2.getProperty(SEC_TYPE_PROPERTY).toString(),
-        new GroundSecurityType(new TopLabel()).toString());
+    final parameter2Type = parameter2.getProperty(SEC_TYPE_PROPERTY);
+    assert(parameter2Type is InterfaceSecurityType);
+    expect(parameter2Type.label, new TopLabel());
 
     //FunctionDeclaration must be populated.
-    expect(
-        funDecltype.toString(),
-        new SecurityFunctionTypeImpl(
-                new HighLabel(),
-                <SecurityType>[
-                  new GroundSecurityType(new BotLabel()),
-                  new GroundSecurityType(new TopLabel()),
-                ],
-                new GroundSecurityType(new LowLabel()),
-                new LowLabel())
-            .toString());
+    assert(funDecltype is SecurityFunctionType);
+
+    if (funDecltype is SecurityFunctionType) {
+      //arguments
+      expect(funDecltype.beginLabel, new HighLabel());
+      expect(funDecltype.argumentTypes.length, 2);
+      //return type
+      assert(funDecltype.returnType is DynamicSecurityType);
+      expect(funDecltype.returnType.label, new LowLabel());
+      //end label
+      expect(funDecltype.endLabel, new LowLabel());
+    }
   }
 
   void test_functionAnnotatedType2() {
@@ -116,10 +120,12 @@ class ParserTest extends AbstractSecDartTest {
     var varDeclType = varDecl.getProperty(SEC_TYPE_PROPERTY);
 
     //we do not fill literals during parsing,
-    //Labels for literals are is computed during the security analysis.
+    //Labels for literals are computed for the security resolver.
     assert(numLitDeclType == null);
-    expect(varDeclType.toString(),
-        new GroundSecurityType(new HighLabel()).toString());
+    //here we based on the standard Dart inference to infer type Int for the
+    //variable
+    assert(varDeclType is InterfaceSecurityType);
+    expect(varDeclType.label, new HighLabel());
   }
 
   void test_classDeclaration() {
@@ -149,23 +155,26 @@ class ParserTest extends AbstractSecDartTest {
         AstQuery.toList(unit).where((n) => n is FormalParameter).skip(1).first;
 
     //formal parameters need to be populated
-    expect(parameter1.getProperty(SEC_TYPE_PROPERTY).toString(),
-        new GroundSecurityType(new BotLabel()).toString());
+    final parameter1Type = parameter1.getProperty(SEC_TYPE_PROPERTY);
+    assert(parameter1Type is InterfaceSecurityType);
+    expect(parameter1Type.label, new BotLabel());
 
-    expect(parameter2.getProperty(SEC_TYPE_PROPERTY).toString(),
-        new GroundSecurityType(new TopLabel()).toString());
+    final parameter2Type = parameter2.getProperty(SEC_TYPE_PROPERTY);
+    assert(parameter2Type is InterfaceSecurityType);
+    expect(parameter2Type.label, new TopLabel());
 
-    //FunctionDeclaration must be populated.
-    expect(
-        funDecltype.toString(),
-        new SecurityFunctionTypeImpl(
-                new HighLabel(),
-                <SecurityType>[
-                  new GroundSecurityType(new BotLabel()),
-                  new GroundSecurityType(new TopLabel()),
-                ],
-                new GroundSecurityType(new LowLabel()),
-                new LowLabel())
-            .toString());
+    //MethodDeclaration must be populated.
+    assert(funDecltype is SecurityFunctionType);
+
+    if (funDecltype is SecurityFunctionType) {
+      //arguments
+      expect(funDecltype.beginLabel, new HighLabel());
+      expect(funDecltype.argumentTypes.length, 2);
+      //return type
+      assert(funDecltype.returnType is DynamicSecurityType);
+      expect(funDecltype.returnType.label, new LowLabel());
+      //end label
+      expect(funDecltype.endLabel, new LowLabel());
+    }
   }
 }

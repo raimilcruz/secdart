@@ -129,6 +129,7 @@ class latent{
 class DynLabel{
   const DynLabel();
 }
+T declassify<T>(T expression,label) => expression;
     ''';
   }
 

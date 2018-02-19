@@ -1,7 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/error/error.dart';
-import 'package:secdart_analyzer/sec_analyzer.dart';
-import 'package:secdart_analyzer/src/security_type.dart';
+import 'package:secdart_analyzer/security_label.dart';
+import 'package:secdart_analyzer/security_type.dart';
 
 /**
  * A helper class with static methods to report errors
@@ -113,6 +113,11 @@ class SecurityTypeError {
       (md.parent as ClassDeclaration).element.supertype.element.name
     ]);
   }
+
+  static AnalysisError getInvalidDeclassifyCall(AstNode node) {
+    var errorCode = SecurityErrorCode.INVAlID_DECLASSIFY_CALL;
+    return toAnalysisError(node, errorCode, []);
+  }
 }
 
 /**
@@ -179,6 +184,10 @@ class SecurityErrorCode extends ErrorCode {
           'The security signature of method "{0}" in class "{1}" '
           'is not a valid override for the security signature of the method '
           'in the class "{2}" (more details soon...)');
+
+  static const SecurityErrorCode INVAlID_DECLASSIFY_CALL =
+      const SecurityErrorCode('INVAlID_DECLASSIFY_CALL',
+          'To call to the "declassify" operator you must use a literal string');
 
   const SecurityErrorCode(String name, String message, [String correction])
       : super(name, message, correction);

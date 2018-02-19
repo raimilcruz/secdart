@@ -1,4 +1,6 @@
 import 'package:analyzer/error/listener.dart';
+import 'package:secdart_analyzer/security_label.dart';
+import 'package:secdart_analyzer/security_type.dart';
 
 import 'errors.dart';
 import 'gs_typesystem.dart';
@@ -9,7 +11,6 @@ import 'package:analyzer/error/error.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/src/dart/element/type.dart';
 import 'security_type.dart';
-import 'security_label.dart';
 
 final String SEC_TYPE_PROPERTY = "sec-type";
 
@@ -225,6 +226,7 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     var fSecType = null;
     if (node.target != null) {
       node.target.accept(this);
+
       final SecurityType receiverSecType = getSecurityType(node.target);
       if (receiverSecType is DynamicSecurityType) {
         return true;
@@ -235,6 +237,7 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     } else {
       //visit the function expression
       node.function.accept(this);
+
       // get the function sec type.
       // TODO: We need to solve problem with library references
       fSecType = getSecurityType(node.function);
@@ -246,6 +249,8 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
       reportError(SecurityTypeError.getCallNoFunction(node));
       return false;
     }
+    node.argumentList.accept(this);
+
     SecurityFunctionType functionSecType = fSecType;
     var beginLabel = functionSecType.beginLabel;
     var endLabel = functionSecType.endLabel;
@@ -263,8 +268,6 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
       return false;
     }
 
-    node.argumentList.accept(this);
-
     //foreach function formal argument type, ensure each actual argument
     //type is a subtype
     _checkArgumentList(node.argumentList, functionSecType);
@@ -273,7 +276,7 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
 
   void _checkArgumentList(
       ArgumentList node, SecurityFunctionType functionSecType) {
-    for (int i = 0; i < node.arguments.length; ++i) {
+    for (int i = 0; i < node.arguments.length; i++) {
       final Expression expr = node.arguments[i];
       var secTypeFormalArg = functionSecType.argumentTypes[i];
 
@@ -405,19 +408,5 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
       reportError(SecurityTypeError.getInvalidMethodOverride(localMd));
 
     return false;
-  }
-}
-
-class ExternalLibraryAnnotations {
-  static SecurityType getSecTypeForFunction(
-      String name, SecurityLabel dynamicLabel) {
-    if (name == "print")
-      return new SecurityFunctionTypeImpl(
-          new LowLabel(),
-          [new GroundSecurityType(new LowLabel())],
-          new GroundSecurityType(new LowLabel()),
-          new LowLabel());
-    return new SecurityFunctionTypeImpl(dynamicLabel, new List<SecurityType>(),
-        new DynamicSecurityType(dynamicLabel), dynamicLabel);
   }
 }

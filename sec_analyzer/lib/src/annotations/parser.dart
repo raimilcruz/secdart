@@ -1,10 +1,7 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/analyzer.dart';
-import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/src/dart/element/element.dart';
-import 'package:secdart_analyzer/src/error_collector.dart';
+import 'package:secdart_analyzer/security_label.dart';
 import '../security_label.dart';
-import '../security_type.dart';
 import '../errors.dart';
 
 const String FUNCTION_LATENT_LABEL = "latent";
@@ -14,23 +11,40 @@ const String FUNCTION_LATENT_LABEL = "latent";
  */
 abstract class SecAnnotationParser {
   /**
-   * When is implemented returns the dynamic label
+   * A general representation of the lattice this parser parses
    */
-  get dynamicLabel;
+  Lattice get lattice;
 
+  /**
+   * Parsers a [SecurityLabel] from an annotation
+   */
   SecurityLabel parseLabel(Annotation n);
+
+  /**
+   * Parses function labels from an annotation
+   */
   FunctionAnnotationLabel parseFunctionLabel(Annotation n);
 
   isLabel(Annotation a);
+
+  SecurityLabel parseString(String value);
 }
 
-abstract class SecAnnotationParser2 {
-  SecurityFunctionType getFunctionSecType(FunctionDeclaration node);
-}
-
+/**
+ * Parses a lattice with four element: BOT < LOW < HIGH < TOP and the
+ * dynamic label (dyn)
+ */
 class FlatLatticeParser extends SecAnnotationParser {
   AnalysisErrorListener errorListener;
   bool intervalMode;
+  Lattice _lattice;
+  @override
+  Lattice get lattice {
+    if (_lattice == null) {
+      _lattice = intervalMode ? new IntervalFlatLattice() : new FlatLattice();
+    }
+    return _lattice;
+  }
 
   FlatLatticeParser(AnalysisErrorListener this.errorListener,
       [bool intervalMode = false]) {
@@ -53,8 +67,8 @@ class FlatLatticeParser extends SecAnnotationParser {
     var beginLabelString = arguments[0] as SimpleStringLiteral;
     var endLabelString = arguments[1] as SimpleStringLiteral;
 
-    var beginLabel = _parseFunctionLabelArgument(beginLabelString.stringValue);
-    var endLabel = _parseFunctionLabelArgument(endLabelString.stringValue);
+    var beginLabel = _parseLiteralLabel(beginLabelString.stringValue);
+    var endLabel = _parseLiteralLabel(endLabelString.stringValue);
     return new FunctionAnnotationLabel(beginLabel, endLabel);
   }
 
@@ -71,14 +85,14 @@ class FlatLatticeParser extends SecAnnotationParser {
       case 'bot':
         return new BotLabel();
       case 'dynl':
-        return this.dynamicLabel;
+        return this.lattice.dynamic;
       default:
         throw new SecCompilationException(
             "Annotation does not represent a label for me!");
     }
   }
 
-  SecurityLabel _parseFunctionLabelArgument(String label) {
+  SecurityLabel _parseLiteralLabel(String label) {
     switch (label) {
       case 'H':
         return new HighLabel();
@@ -89,17 +103,11 @@ class FlatLatticeParser extends SecAnnotationParser {
       case 'bot':
         return new BotLabel();
       case 'dynl':
-        return this.dynamicLabel;
+        return this.lattice.dynamic;
       default:
         throw new SecCompilationException(
             "String does not represent a label for me!");
     }
-  }
-
-  @override
-  SecurityLabel get dynamicLabel {
-    if (intervalMode) return new IntervalLabel(new BotLabel(), new TopLabel());
-    return new DynamicLabel();
   }
 
   @override
@@ -115,16 +123,29 @@ class FlatLatticeParser extends SecAnnotationParser {
         return false;
     }
   }
+
+  @override
+  SecurityLabel parseString(String value) {
+    return _parseLiteralLabel(value);
+  }
 }
 
+/**
+ * Represents the security labels associated to a function.
+ */
 class FunctionAnnotationLabel {
+  /**
+   * We use the same name than in JIF to name the label that is an upper bound
+   * of the caller context pc.
+   */
   SecurityLabel beginLabel;
+
+  /**
+   *
+   */
   SecurityLabel endLabel;
   FunctionAnnotationLabel(
       SecurityLabel this.beginLabel, SecurityLabel this.endLabel);
-
-  SecurityLabel getBeginLabel() => beginLabel;
-  SecurityLabel getEndLabel() => endLabel;
 }
 
 class SecCompilationException implements SecDartException {
@@ -133,52 +154,4 @@ class SecCompilationException implements SecDartException {
 
   @override
   String getMessage() => message;
-}
-
-abstract class SecElementAnnotationParser {
-  /**
-   * When is implemented returns the dynamic label
-   */
-  SecurityLabel get dynamicLabel;
-
-  SecurityLabel parseLabel(ElementAnnotation n);
-  FunctionAnnotationLabel parseFunctionLabel(ElementAnnotation n);
-
-  isLabel(ElementAnnotation a);
-}
-
-class FlatLatticeElementParser extends SecElementAnnotationParser {
-  FlatLatticeParser _parser;
-  bool intervalMode;
-
-  FlatLatticeElementParser([bool intervalMode = false]) {
-    this.intervalMode = intervalMode;
-    _parser = new FlatLatticeParser(new ErrorCollector(), intervalMode);
-  }
-
-  @override
-  SecurityLabel parseLabel(ElementAnnotation n) {
-    ElementAnnotationImpl elementAnnotationImpl = n;
-    var annotationAst = elementAnnotationImpl.annotationAst;
-    return _parser.parseLabel(annotationAst);
-  }
-
-  FunctionAnnotationLabel parseFunctionLabel(ElementAnnotation n) {
-    ElementAnnotationImpl elementAnnotationImpl = n;
-    var annotationAst = elementAnnotationImpl.annotationAst;
-    return _parser.parseFunctionLabel(annotationAst);
-  }
-
-  @override
-  SecurityLabel get dynamicLabel {
-    if (intervalMode) return new IntervalLabel(new BotLabel(), new TopLabel());
-    return new DynamicLabel();
-  }
-
-  @override
-  isLabel(ElementAnnotation a) {
-    ElementAnnotationImpl elementAnnotationImpl = a;
-    var annotationAst = elementAnnotationImpl.annotationAst;
-    return _parser.isLabel(annotationAst);
-  }
 }

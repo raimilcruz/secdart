@@ -7,6 +7,7 @@ import 'sec_analysis/identfier_tests.dart' as identifier;
 import 'sec_analysis/ds_ecoop.dart' as ds_ecoop;
 import 'sec_analysis/dart_standard_test.dart' as dart_errors;
 import 'sec_analysis/class_declaration_test.dart' as class_decl;
+import 'sec_analysis/using_class_test.dart' as using_classes;
 
 import 'lattice/lh_lattice_test.dart' as lattice;
 import 'parser/annotation_test.dart' as parser;
@@ -38,6 +39,7 @@ void main() {
     ds_ecoop.main();
     dart_errors.main();
     class_decl.main();
+    using_classes.main();
 
     client.main();
     //tests configurable option properties for the plugin

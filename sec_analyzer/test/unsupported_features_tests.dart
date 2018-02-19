@@ -9,16 +9,6 @@ void main() {
 
 @reflectiveTest
 class UnsupportedFeaturesTest extends AbstractSecDartTest {
-  void test_fieldMemberAreNotSupported() {
-    var program = '''
-      class A{
-        int a;
-      }
-      ''';
-    var source = newSource("/test.dart", program);
-    assert(!containsOnlySupportedFeatures(source));
-  }
-
   void test_explicitClassConstructorAreNotSupported() {
     var program = '''
       class C{
@@ -44,13 +34,6 @@ class UnsupportedFeaturesTest extends AbstractSecDartTest {
     var program = '''void A(){
         throw new UnimplementedError();
       }
-      ''';
-    var source = newSource("/test.dart", program);
-    assert(!containsOnlySupportedFeatures(source));
-  }
-
-  void test_functionTypeAliasIsNotSupported() {
-    var program = '''typedef int Compare(int a, int b);
       ''';
     var source = newSource("/test.dart", program);
     assert(!containsOnlySupportedFeatures(source));

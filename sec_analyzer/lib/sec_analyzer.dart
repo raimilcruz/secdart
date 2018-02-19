@@ -4,6 +4,6 @@
 library secdart_analyzer;
 
 export "package:secdart_analyzer/src/errors.dart";
-export "package:secdart_analyzer/src/security_label.dart";
-export "package:secdart_analyzer/src/security_type.dart";
+export "package:secdart_analyzer/security_label.dart";
+export "package:secdart_analyzer/security_type.dart";
 export "analyzer.dart";
