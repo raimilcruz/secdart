@@ -23,6 +23,8 @@ abstract class ElementAnnotationParser {
 
 class ElementAnnotationParserImpl extends ElementAnnotationParser {
   SecAnnotationParser _parser;
+  Map<String, ClassSecurityInfo> _classCache = {};
+
   ElementAnnotationParserImpl([bool intervalMode = false]) {
     _parser = new FlatLatticeParser(new ErrorCollector(), intervalMode);
   }
@@ -117,7 +119,16 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
   }
 
   ClassSecurityInfo securityInfoFromClass(InterfaceType classType) {
+    if (_classCache.containsKey(classType.name)) {
+      return _classCache[classType.name];
+    }
     Map<String, SecurityFunctionType> methodTypes = {};
+    Map<String, SecurityType> accessors = {};
+    Map<String, SecurityFunctionType> constructors = {};
+    var result = new ClassSecurityInfo(methodTypes, accessors, constructors);
+
+    _classCache.putIfAbsent(classType.name, () => result);
+
     classType.methods.forEach((mElement) {
       var metadataList = mElement.metadata
           .map((m) => (m as ElementAnnotationImpl).annotationAst);
@@ -126,28 +137,41 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
           () => getFunctionSecType(
               metadataList, mElement.parameters, mElement.returnType));
     });
-    Map<String, SecurityType> accessors = {};
+
     classType.accessors.forEach((property) {
       //it means the getter or setter was generated from a field
-      var metadata;
-      if (property.isSynthetic) {
-        metadata = property.variable.metadata;
-      } else {
-        metadata = property.metadata;
-      }
-      var dartType = null;
-      if (property.isGetter) {
-        dartType = property.returnType;
-      }
-      //property.isSetter
-      else {
-        dartType = property.type.parameters.first.type;
-      }
-      accessors.putIfAbsent(property.name,
-          () => fromDartType(dartType, _getSecurityLabel(property, metadata)));
+      accessors.putIfAbsent(
+          property.name, () => securityTypeForProperty(property));
     });
 
-    return new ClassSecurityInfo(methodTypes, accessors);
+    classType.constructors.forEach((cElement) {
+      var metadataList = cElement.metadata
+          .map((m) => (m as ElementAnnotationImpl).annotationAst);
+      constructors.putIfAbsent(
+          cElement.name,
+          () => getFunctionSecType(
+              metadataList, cElement.parameters, cElement.returnType));
+    });
+
+    return result;
+  }
+
+  SecurityType securityTypeForProperty(PropertyAccessorElement property) {
+    var metadata;
+    if (property.isSynthetic) {
+      metadata = property.variable.metadata;
+    } else {
+      metadata = property.metadata;
+    }
+    var dartType = null;
+    if (property.isGetter) {
+      dartType = property.returnType;
+    }
+    //property.isSetter
+    else {
+      dartType = property.type.parameters.first.type;
+    }
+    return fromDartType(dartType, _getSecurityLabel(property, metadata));
   }
 
   SecurityType securityTypeForFunctionElement(FunctionElement element) {

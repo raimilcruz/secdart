@@ -110,4 +110,52 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
 
     assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
+
+  void test_functionAsParameterWithInLineSignature() {
+    var program = '''
+         import "package:secdart/secdart.dart";
+         
+          @latent("H","H")
+          @high
+          typedef int BinOp(@low int a,@low int b);         
+        
+          @latent("H","L")
+          @bot int g(int f(@high int a,@high int b)){            
+            return f(1,2);
+          }
+          @bot int h(){
+            BinOp f = (x,y)=> x + y;
+            //error here BinOp is not subtype of the type of g's argument
+            return g(f); 
+          }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
+
+  void test_functionAsParameterWithInLineSignatureOk() {
+    var program = '''
+         import "package:secdart/secdart.dart";
+         
+          @latent("H","H")
+          @high
+          typedef int BinOp(@top int a,@top int b);         
+        
+          @latent("H","L")
+          @bot int g(int f(@high int a,@high int b)){            
+            return f(1,2);
+          }
+          @low int h(){
+            BinOp f = (x,y)=> x + y;
+            //BinOp IS subtype of the type of g's argument
+            return g(f); 
+          }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(result.isEmpty);
+  }
 }

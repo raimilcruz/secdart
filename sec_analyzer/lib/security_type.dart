@@ -1,3 +1,5 @@
+import 'package:analyzer/dart/element/element.dart';
+
 import 'security_label.dart';
 
 /**
@@ -15,6 +17,8 @@ abstract class SecurityType {
 abstract class InterfaceSecurityType extends SecurityType {
   SecurityFunctionType getMethodSecurityType(String methodName);
   SecurityType getFieldSecurityType(String fieldName);
+  SecurityFunctionType getConstructorSecurityType(
+      String constructorName, LibraryElement library);
 }
 
 abstract class SecurityFunctionType extends SecurityType {

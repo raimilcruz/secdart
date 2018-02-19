@@ -150,7 +150,8 @@ T declassify<T>(T expression,label) => expression;
     Source source =
         context.sourceFactory.forUri(pathos.toUri(absolutePath).toString());
 
-    return computeAllErrors(context, source, addTask: addTasks);
+    return computeAllErrors(context, source,
+        intervalMode: useInterval, addTask: addTasks);
   }
 
   static SecAnalysisResult computeAllErrors(

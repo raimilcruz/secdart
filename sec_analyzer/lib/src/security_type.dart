@@ -27,9 +27,7 @@ class InterfaceSecurityTypeImpl extends InterfaceSecurityType {
   InterfaceSecurityTypeImpl.forExternalClass(
       this._label, InterfaceType this.classType) {
     _isExternalClass = true;
-    classSecurityInfo = new ClassSecurityInfo(
-        new Map<String, SecurityFunctionType>(),
-        new Map<String, SecurityType>());
+    classSecurityInfo = new ClassSecurityInfo({}, {}, {});
   }
 
   @override
@@ -44,14 +42,18 @@ class InterfaceSecurityTypeImpl extends InterfaceSecurityType {
             _label.join(label), classType, classSecurityInfo);
   }
 
+  @override
   SecurityFunctionType getMethodSecurityType(String name) {
     if (!classSecurityInfo.methods.containsKey(name)) {
-      SecurityFunctionType methodSecType = _methodSecurityType(name);
+      var method = classType.lookUpInheritedMethod(name);
+      SecurityFunctionType methodSecType =
+          _methodOrConstructorSecurityType(method);
       classSecurityInfo.methods.putIfAbsent(name, () => methodSecType);
     }
     return classSecurityInfo.methods[name];
   }
 
+  @override
   SecurityType getFieldSecurityType(String accessorName) {
     if (!classSecurityInfo.accessors.containsKey(accessorName)) {
       final fieldSecType = _fieldSecurityType(accessorName);
@@ -60,10 +62,23 @@ class InterfaceSecurityTypeImpl extends InterfaceSecurityType {
     return classSecurityInfo.accessors[accessorName];
   }
 
-  SecurityFunctionType _methodSecurityType(String name) {
-    var method = classType.lookUpInheritedMethod(name);
+  @override
+  SecurityFunctionType getConstructorSecurityType(
+      String constructorName, LibraryElement library) {
+    var lookupName = constructorName == "" ? null : constructorName;
+    if (!classSecurityInfo.constructors.containsKey(constructorName)) {
+      var constructor = classType.lookUpConstructor(lookupName, library);
+      final fieldSecType = _methodOrConstructorSecurityType(constructor);
+      classSecurityInfo.constructors
+          .putIfAbsent(constructorName, () => fieldSecType);
+    }
+    return classSecurityInfo.constructors[constructorName];
+  }
+
+  SecurityFunctionType _methodOrConstructorSecurityType(
+      FunctionTypedElement element) {
     var parameterSecTypes = new List<SecurityType>();
-    for (ParameterElement p in method.parameters) {
+    for (ParameterElement p in element.parameters) {
       if (p.type is InterfaceType) {
         parameterSecTypes.add(new InterfaceSecurityTypeImpl.forExternalClass(
             _label.lattice.top, p.type));
@@ -77,13 +92,13 @@ class InterfaceSecurityTypeImpl extends InterfaceSecurityType {
     SecurityLabel returnLabel = _label.lattice.bottom;
 
     SecurityType returnType = new DynamicSecurityType(returnLabel);
-    if (method.returnType is FunctionType) {
+    if (element.returnType is FunctionType) {
       //TODO: fix this
       returnType = new DynamicSecurityType(returnLabel);
     }
-    if (method.returnType is InterfaceType) {
+    if (element.returnType is InterfaceType) {
       returnType = new InterfaceSecurityTypeImpl.forExternalClass(
-          returnLabel, method.returnType);
+          returnLabel, element.returnType);
     }
     return new SecurityFunctionTypeImpl(
         _label.lattice.top, parameterSecTypes, returnType, returnLabel);
@@ -112,7 +127,8 @@ class InterfaceSecurityTypeImpl extends InterfaceSecurityType {
 class ClassSecurityInfo {
   Map<String, SecurityFunctionType> methods;
   Map<String, SecurityType> accessors;
-  ClassSecurityInfo(this.methods, this.accessors);
+  Map<String, SecurityFunctionType> constructors;
+  ClassSecurityInfo(this.methods, this.accessors, this.constructors);
 }
 
 /**

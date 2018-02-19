@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:analyzer/src/dart/element/element.dart';
@@ -51,7 +52,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
   @override
   bool visitMethodDeclaration(MethodDeclaration node) {
-    var secType = getMethodSecType(node);
+    var secType = _getMethodSecType(node);
     node.setProperty(SEC_TYPE_PROPERTY, secType);
 
     super.visitMethodDeclaration(node);
@@ -60,9 +61,18 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
   @override
   bool visitFunctionDeclaration(FunctionDeclaration node) {
-    final secType = getFunctionSecType(node);
+    final secType = _getFunctionSecType(node);
     node.setProperty(SEC_TYPE_PROPERTY, secType);
     super.visitFunctionDeclaration(node);
+    return true;
+  }
+
+  @override
+  bool visitConstructorDeclaration(ConstructorDeclaration node) {
+    var secType = _getConstructorSecType(node);
+    node.setProperty(SEC_TYPE_PROPERTY, secType);
+
+    super.visitConstructorDeclaration(node);
     return true;
   }
 
@@ -128,21 +138,31 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
     return DynamicTypeImpl.instance;
   }
 
-  SecurityFunctionType getFunctionSecType(FunctionDeclaration node) {
-    if (!_checkFunctionSecurityAnnotations(
-        node, node.functionExpression.parameters)) {
-      return null;
-    }
-    return _elementParser.getFunctionSecType(
-        node.metadata, node.element.parameters, node.element.returnType);
+  SecurityFunctionType _getFunctionSecType(FunctionDeclaration node) {
+    return _getExecutableNodeSecType(
+        node, node.functionExpression.parameters, node.metadata, node.element);
   }
 
-  SecurityFunctionType getMethodSecType(MethodDeclaration node) {
-    if (!_checkFunctionSecurityAnnotations(node, node.parameters)) {
+  SecurityFunctionType _getMethodSecType(MethodDeclaration node) {
+    return _getExecutableNodeSecType(
+        node, node.parameters, node.metadata, node.element);
+  }
+
+  SecurityFunctionType _getConstructorSecType(ConstructorDeclaration node) {
+    return _getExecutableNodeSecType(
+        node, node.parameters, node.metadata, node.element);
+  }
+
+  SecurityFunctionType _getExecutableNodeSecType(
+      AstNode node,
+      FormalParameterList parameters,
+      NodeList<Annotation> metadata,
+      ExecutableElement element) {
+    if (!_checkFunctionSecurityAnnotations(node, parameters)) {
       return null;
     }
     return _elementParser.getFunctionSecType(
-        node.metadata, node.element.parameters, node.element.returnType);
+        metadata, element.parameters, element.returnType);
   }
 
   /**
@@ -165,7 +185,14 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
       dynamic node, FormalParameterList parameters) {
     if (!(node is FunctionDeclaration) &&
         !(node is MethodDeclaration) &&
-        !(node is FunctionTypedFormalParameter)) return null;
+        !(node is FunctionTypedFormalParameter) &&
+        !(node is ConstructorDeclaration)) {
+      reporter.onError(SecurityTypeError.getImplementationError(
+          node,
+          "I do "
+          "not recognize this node. [Method:_checkFunctionSecurityAnnotations]"));
+      return false;
+    }
     var metadataList = node.metadata;
 
     if (metadataList != null) {

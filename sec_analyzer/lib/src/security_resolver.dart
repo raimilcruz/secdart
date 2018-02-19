@@ -105,10 +105,13 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
 
   @override
   bool visitSimpleIdentifier(SimpleIdentifier node) {
+    //TODO: refactor this method. Basically we do the same thing when
+    //node.staticElement is a Parameter, LocalVariable or Property
     if (node.inGetterContext()) {
       if (node.staticElement is ParameterElement ||
           node.staticElement is LocalVariableElement ||
-          node.staticElement is FunctionElement) {
+          node.staticElement is FunctionElement ||
+          node.staticElement is PropertyAccessorElement) {
         //handle calls to Standard library
         if (node.staticElement is FunctionElement &&
             node.staticElement.library.name.contains("dart.core")) {
@@ -134,16 +137,30 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
           } else if (node.staticElement is LocalVariableElement) {
             securityType = _elementParser.fromIdentifierDeclaration(
                 node.staticElement, node.bestType);
+          } else if (node.staticElement is PropertyAccessorElement) {
+            securityType =
+                _elementParser.securityTypeForProperty(node.staticElement);
           }
 
           node.setProperty(SEC_TYPE_PROPERTY, securityType);
         }
       }
     } else if (node.inSetterContext()) {
-      if (node.staticElement is LocalVariableElement) {
-        var referredNode = node.staticElement.computeNode();
-        node.setProperty(
-            SEC_TYPE_PROPERTY, referredNode.getProperty(SEC_TYPE_PROPERTY));
+      if (node.staticElement is ParameterElement ||
+          node.staticElement is LocalVariableElement ||
+          node.staticElement is PropertyAccessorElement) {
+        SecurityType securityType = null;
+        if (node.staticElement is LocalVariableElement) {
+          securityType = _elementParser.fromIdentifierDeclaration(
+              node.staticElement, node.bestType);
+        } else if (node.staticElement is ParameterElement) {
+          securityType = _elementParser.fromIdentifierDeclaration(
+              node.staticElement, node.bestType);
+        } else if (node.staticElement is PropertyAccessorElement) {
+          securityType =
+              _elementParser.securityTypeForProperty(node.staticElement);
+        }
+        node.setProperty(SEC_TYPE_PROPERTY, securityType);
       }
     }
     return true;
@@ -158,6 +175,8 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
 
   @override
   bool visitInstanceCreationExpression(InstanceCreationExpression node) {
+    //resolve argument security types
+    node.argumentList.accept(this);
     //we only deal with "new C(...)"
     node.setProperty(
         SEC_TYPE_PROPERTY,

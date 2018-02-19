@@ -56,4 +56,23 @@ class DeclassifyTest extends AbstractSecDartTest {
     assert(
         result.any((x) => x.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR));
   }
+
+  void test_declassifyPassword() {
+    var program = '''
+                   
+          import "package:secdart/secdart.dart";
+          
+          @latent("bot","bot")
+          @low String login(@high String password, @low String guess){
+            if(declassify(password == guess,"L")){
+              return "Login successful";
+            }
+            return "Invalid login";
+          }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+
+    assert(result.isEmpty);
+  }
 }

@@ -145,4 +145,116 @@ class ClassDeclaration extends AbstractSecDartTest {
 
     assert(result.isEmpty);
   }
+
+  void test_explicitConstructorOk() {
+    var program = '''
+       import "package:secdart/secdart.dart";
+        void f(@low int b){
+        }
+        class A{
+          A.other(@high int a){
+            f(a);
+          }
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source, intervalMode: true);
+
+    assert(result.isNotEmpty);
+    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
+
+  void test_callConstructor() {
+    var program = '''
+       import "package:secdart/secdart.dart";
+        class A{
+          A(@high int a){            
+          }
+        }
+        void main(@top int x){
+          A a = new A(x);
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source, intervalMode: true);
+
+    assert(result.isNotEmpty);
+    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
+
+  void test_setInstanceFieldInvalidFlow() {
+    var program = '''
+       import "package:secdart/secdart.dart";        
+        class A{
+          @high int _age;
+          void setAge(@top int age){
+            _age = age;
+          }
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source, intervalMode: true);
+
+    assert(result.isNotEmpty);
+    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
+
+  void test_getInstanceFieldInvalidFlow() {
+    var program = '''
+       import "package:secdart/secdart.dart";
+        void leak(@bot b){          
+        }        
+        class A{
+          @high int _age;
+          void callLeak(){
+            leak(_age);
+          }
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source, intervalMode: true);
+
+    assert(result.isNotEmpty);
+    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
+
+  void test_clientSetFieldInvalidFlow() {
+    var program = '''
+       import "package:secdart/secdart.dart";
+                 
+        class A{
+          @high int age;          
+        }
+        void main(){
+          @bot A a = new A();
+          @top var secret = 42;
+          a.age = secret;
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source, intervalMode: true);
+
+    assert(result.isNotEmpty);
+    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
+
+  void test_clientGetFieldInvalidFlow() {
+    var program = '''
+       import "package:secdart/secdart.dart";
+         void leak(@bot b){          
+        }        
+        class A{
+          @high int age;          
+        }
+        void main(){
+          @bot A a = new A();          
+          leak(a.age);
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source, intervalMode: true);
+
+    assert(result.isNotEmpty);
+    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
 }

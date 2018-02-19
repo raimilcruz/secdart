@@ -94,4 +94,21 @@ class FunctionDefinitionTest extends AbstractSecDartTest {
     assert(resultWithInterval
         .any((e) => e.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR));
   }
+
+  void test_cannotLeakUsingFunctionArguments() {
+    var program = '''
+        import "package:secdart/secdart.dart";
+        foo (@high String pass ,@low String guess) {
+          guess = pass;
+          //todo something public with guess           
+        }
+        ''';
+
+    var source = newSource("/test.dart", program);
+    var resultWithInterval =
+        typeCheckSecurityForSource(source, intervalMode: true);
+
+    assert(resultWithInterval
+        .any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+  }
 }

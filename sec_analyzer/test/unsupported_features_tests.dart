@@ -9,16 +9,6 @@ void main() {
 
 @reflectiveTest
 class UnsupportedFeaturesTest extends AbstractSecDartTest {
-  void test_explicitClassConstructorAreNotSupported() {
-    var program = '''
-      class C{
-        C(int a){}
-      }
-      ''';
-    var source = newSource("/test.dart", program);
-    assert(!containsOnlySupportedFeatures(source));
-  }
-
   void test_enumIsNotSupported() {
     var program = '''enum Color {
           red,

@@ -1,3 +1,4 @@
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
@@ -71,7 +72,6 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
   @override
   visitFunctionDeclaration(FunctionDeclaration node) {
     //we assume that that labels were already parsed
-    //TODO: Deal with dynamic types (for functions)
     var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
 
     var currentPc = pc;
@@ -90,6 +90,7 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
 
   @override
   bool visitMethodDeclaration(MethodDeclaration node) {
+    //we assume that that labels were already parsed
     var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
 
     var currentPc = pc;
@@ -100,6 +101,25 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
     pc = secType.beginLabel;
 
     var result = super.visitMethodDeclaration(node);
+
+    _enclosingExecutableElementSecurityType = outerFunctionType;
+    pc = currentPc;
+    return result;
+  }
+
+  @override
+  bool visitConstructorDeclaration(ConstructorDeclaration node) {
+    //we assume that that labels were already parsed
+    var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
+
+    var currentPc = pc;
+    var outerFunctionType = _enclosingExecutableElementSecurityType;
+    _enclosingExecutableElementSecurityType = getSecurityType(node);
+
+    //TODO: update pc or join?
+    pc = secType.beginLabel;
+
+    var result = super.visitConstructorDeclaration(node);
 
     _enclosingExecutableElementSecurityType = outerFunctionType;
     pc = currentPc;
@@ -140,6 +160,7 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
 class SecurityCheckerVisitor extends AbstractSecurityVisitor {
   //The implementation of the security type system
   final GradualSecurityTypeSystem secTypeSystem;
+  LibraryElement _library;
 
   SecurityCheckerVisitor(this.secTypeSystem, AnalysisErrorListener reporter,
       [bool intervalMode = false])
@@ -147,6 +168,8 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
 
   @override
   bool visitCompilationUnit(CompilationUnit node) {
+    //TODO: receive as parameter
+    _library = node.element.library;
     try {
       node.visitChildren(this);
     } on SecDartException catch (e) {
@@ -268,6 +291,38 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
       return false;
     }
 
+    //foreach function formal argument type, ensure each actual argument
+    //type is a subtype
+    _checkArgumentList(node.argumentList, functionSecType);
+    return true;
+  }
+
+  @override
+  bool visitInstanceCreationExpression(InstanceCreationExpression node) {
+    //check argument expressions
+    node.argumentList.accept(this);
+
+    //the security type for this node was already computed, so we can access
+    //to the constructor name hare and gets its security type
+    InterfaceSecurityType classSecType = getSecurityType(node);
+    SecurityFunctionType functionSecType = classSecType
+        .getConstructorSecurityType(node.staticElement.name, _library);
+
+    var beginLabel = functionSecType.beginLabel;
+    var endLabel = functionSecType.endLabel;
+    //the current pc (joined with the function label) must be
+    //less or equal than the function static pc (beginLabel)
+    if (!(pc.join(endLabel).lessOrEqThan(beginLabel))) {
+      //personalization of errors
+      if (!pc.lessOrEqThan(beginLabel)) {
+        reportError(SecurityTypeError.getBadFunctionCall(node, pc, beginLabel));
+      }
+      if (!endLabel.lessOrEqThan(beginLabel)) {
+        reportError(SecurityTypeError.getBadLatentConstraintAtFunctionCall(
+            node, endLabel, beginLabel));
+      }
+      return false;
+    }
     //foreach function formal argument type, ensure each actual argument
     //type is a subtype
     _checkArgumentList(node.argumentList, functionSecType);
