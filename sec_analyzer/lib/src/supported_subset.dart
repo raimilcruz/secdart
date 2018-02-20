@@ -64,13 +64,6 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object> {
       _reportError(node, "do... while");
 
   @override
-  Object visitForEachStatement(ForEachStatement node) =>
-      _reportError(node, "foreach");
-
-  @override
-  Object visitForStatement(ForStatement node) => _reportError(node, "for");
-
-  @override
   Object visitFunctionDeclarationStatement(FunctionDeclarationStatement node) =>
       _reportError(node, "function declaration statement");
 

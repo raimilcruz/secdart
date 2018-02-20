@@ -162,13 +162,27 @@ T declassify<T>(T expression,label) => expression;
         .isEmpty;
   }
 
+  SecAnalysisResult parse(Source source,
+      {bool intervalMode: false, bool includeDartErrors: false}) {
+    var result = resolveDart(source);
+    if (includeDartErrors) {
+      return result;
+    }
+    ErrorCollector errorListener = new ErrorCollector();
+    var unit = result.astNode;
+    var visitor = new SecurityParserVisitor(errorListener, unit, false, true);
+    unit.accept(visitor);
+
+    return new SecAnalysisResult(errorListener.errors, unit);
+  }
+
   bool containsParseErrors(Source source, {bool printError: true}) {
     var libraryElement = context.computeLibraryElement(source);
     var unit = context.resolveCompilationUnit(source, libraryElement);
 
     ErrorCollector errorListener = new ErrorCollector();
 
-    var visitor = new SecurityParserVisitor(errorListener);
+    var visitor = new SecurityParserVisitor(errorListener, unit);
     unit.accept(visitor);
 
     if (printError) {

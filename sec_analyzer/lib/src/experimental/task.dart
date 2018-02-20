@@ -8,6 +8,7 @@ import 'package:analyzer/task/model.dart';
 import 'package:analyzer/task/dart.dart';
 import 'package:front_end/src/base/source.dart';
 import 'package:secdart_analyzer/analyzer.dart';
+import 'package:secdart_analyzer/src/annotations/parser_element.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
 import 'package:secdart_analyzer/src/security_resolver.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
@@ -76,11 +77,15 @@ class ResolveSecurityAnnotationTask extends SourceBasedAnalysisTask {
     ErrorCollector errorListener = new ErrorCollector();
 
     if (SecAnalyzer.isValidSecDartFile(unit)) {
-      var parserVisitor = new SecurityParserVisitor(errorListener, false);
+      var parserVisitor = new SecurityParserVisitor(errorListener, unit, false);
       unit.accept(parserVisitor);
 
+      //TODO: Identify interface for ElementAnnotationParse
+      var elementParser =
+          new ElementAnnotationParserImpl(unit, errorListener, false);
       if (errorListener.errors.isEmpty) {
-        var resolverVisitor = new SecurityResolverVisitor(errorListener, false);
+        var resolverVisitor =
+            new SecurityResolverVisitor(errorListener, elementParser);
         unit.accept(resolverVisitor);
       }
     }
@@ -227,10 +232,14 @@ class GradualSecurityVerifyUnitTask extends SourceBasedAnalysisTask {
     var supportedDart = new UnSupportedDartSubsetVisitor(errorListener);
     unit.accept(supportedDart);
 
+    //TODO: Identify interface for ElementAnnotationParse
+    var elementParser =
+        new ElementAnnotationParserImpl(unit, errorListener, false);
+
     if (errorListener.errors.isEmpty) {
       GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
-      var visitor =
-          new SecurityCheckerVisitor(typeSystem, errorListener, false);
+      var visitor = new SecurityCheckerVisitor(
+          typeSystem, errorListener, elementParser.lattice.dynamic);
       unit.accept(visitor);
     }
 

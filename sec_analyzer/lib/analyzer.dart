@@ -6,6 +6,7 @@ import 'package:analyzer/source/package_map_resolver.dart';
 import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/task/dart.dart';
+import 'package:secdart_analyzer/src/annotations/parser_element.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
 import 'package:secdart_analyzer/src/experimental/task.dart';
@@ -190,7 +191,8 @@ T declassify<T>(T expression,label) => expression;
     }
 
     //parse element
-    var parserVisitor = new SecurityParserVisitor(errorListener, intervalMode);
+    var parserVisitor =
+        new SecurityParserVisitor(errorListener, resolvedUnit, intervalMode);
     resolvedUnit.accept(parserVisitor);
     if (errorListener.errors.length > 0) return errorListener.errors;
 
@@ -198,12 +200,17 @@ T declassify<T>(T expression,label) => expression;
     resolvedUnit.accept(supportedDart);
     if (errorListener.errors.length > 0) return errorListener.errors;
 
-    var secResolver = new SecurityResolverVisitor(errorListener, intervalMode);
+    //TODO: Identify interface for ElementAnnotationParse
+    var elementParser = new ElementAnnotationParserImpl(
+        resolvedUnit, errorListener, intervalMode);
+
+    var secResolver =
+        new SecurityResolverVisitor(errorListener, elementParser, intervalMode);
     resolvedUnit.accept(secResolver);
 
     GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
     var visitor =
-        new SecurityCheckerVisitor(typeSystem, errorListener, intervalMode);
+        new SecurityCheckerVisitor(typeSystem, errorListener, secResolver.pc);
     resolvedUnit.accept(visitor);
 
     return errorListener.errors;

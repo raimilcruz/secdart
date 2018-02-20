@@ -13,8 +13,6 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/src/dart/element/type.dart';
 import 'security_type.dart';
 
-final String SEC_TYPE_PROPERTY = "sec-type";
-
 /**
  * Abstract visitor to track the program counter and
  * factorize common operations for [SecurityResolverVisitor]
@@ -25,6 +23,7 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
    * The program counter label
    */
   SecurityLabel pc = null;
+  LibraryElement _library;
 
   /**
    * The element representing the function containing the current node,
@@ -34,9 +33,7 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
 
   final AnalysisErrorListener reporter;
 
-  final bool intervalMode;
-
-  AbstractSecurityVisitor(this.reporter, [bool this.intervalMode = false]) {}
+  AbstractSecurityVisitor(this.reporter);
 
   /**
    * Get the security type associated to an expression. The security type need to be resolved for the expression
@@ -53,7 +50,7 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
                 "function in another library, we do not how to deal"
                 "with multiple file yet)")));
       throw new UnsupportedFeatureException(
-          "Error in SecurityVisitor._getSecurityType");
+          expr, "Error in SecurityVisitor._getSecurityType");
     }
     return result;
   }
@@ -70,7 +67,29 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
   }
 
   @override
-  visitFunctionDeclaration(FunctionDeclaration node) {
+  bool visitCompilationUnit(CompilationUnit node) {
+    //TODO: receive as parameter
+    _library = node.element.library;
+    try {
+      node.visitChildren(this);
+    } on UnsupportedFeatureException catch (e) {
+      reportError(SecurityTypeError.toAnalysisError(e.node,
+          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.getMessage()]));
+    } on SecDartException catch (e) {
+      reportError(SecurityTypeError.toAnalysisError(node,
+          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.getMessage()]));
+    } on Exception catch (e) {
+      reportError(SecurityTypeError.toAnalysisError(node,
+          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.toString()]));
+    } catch (e) {
+      reportError(SecurityTypeError.toAnalysisError(node,
+          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.toString()]));
+    }
+    return true;
+  }
+
+  @override
+  bool visitFunctionDeclaration(FunctionDeclaration node) {
     //we assume that that labels were already parsed
     var secType = node.getProperty(SEC_TYPE_PROPERTY) as SecurityFunctionType;
 
@@ -81,11 +100,11 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
     //TODO: update pc or join?
     pc = secType.beginLabel;
 
-    var result = super.visitFunctionDeclaration(node);
+    super.visitFunctionDeclaration(node);
 
     _enclosingExecutableElementSecurityType = outerFunctionType;
     pc = currentPc;
-    return result;
+    return true;
   }
 
   @override
@@ -144,6 +163,33 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
     pc = currentPc;
     return true;
   }
+
+  @override
+  bool visitForStatement(ForStatement node) {
+    if (node.condition != null) {
+      node.condition.accept(this);
+      var secType = getSecurityType(node.condition);
+      //increase the pc
+      var currentPc = pc;
+      pc = pc.join(secType.label);
+
+      //visit both branches
+      node.body.accept(this);
+
+      pc = currentPc;
+    }
+    if (node.variables != null) {
+      node.variables.accept(this);
+    }
+    //eg. for(1+3;;){}
+    if (node.initialization != null) {
+      node.initialization.accept(this);
+    }
+    if (node.updaters != null) {
+      node.updaters.accept(this);
+    }
+    return true;
+  }
 }
 
 /**
@@ -160,29 +206,11 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
 class SecurityCheckerVisitor extends AbstractSecurityVisitor {
   //The implementation of the security type system
   final GradualSecurityTypeSystem secTypeSystem;
-  LibraryElement _library;
 
   SecurityCheckerVisitor(this.secTypeSystem, AnalysisErrorListener reporter,
-      [bool intervalMode = false])
-      : super(reporter, intervalMode = intervalMode) {}
-
-  @override
-  bool visitCompilationUnit(CompilationUnit node) {
-    //TODO: receive as parameter
-    _library = node.element.library;
-    try {
-      node.visitChildren(this);
-    } on SecDartException catch (e) {
-      reportError(SecurityTypeError.toAnalysisError(node,
-          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.getMessage()]));
-    } on Exception catch (e) {
-      reportError(SecurityTypeError.toAnalysisError(node,
-          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.toString()]));
-    } catch (e) {
-      reportError(SecurityTypeError.toAnalysisError(node,
-          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.toString()]));
-    }
-    return null;
+      SecurityLabel globalPc)
+      : super(reporter) {
+    pc = globalPc;
   }
 
   @override
@@ -340,26 +368,25 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
   }
 
   @override
-  visitVariableDeclarationList(VariableDeclarationList node) {
+  bool visitVariableDeclarationList(VariableDeclarationList node) {
+    node.visitChildren(this);
+
+    //check that all assignments for initialization are ok
     for (VariableDeclaration variable in node.variables) {
-      var initializer = variable.initializer;
-      if (initializer != null) {
-        //in the case the initializer  is constant, the label is the current
-        // pc at that moment
-        initializer.accept(this);
-        _checkAssignment(initializer, variable);
+      if (variable.initializer != null) {
+        _checkAssignment(variable.initializer, variable);
       }
     }
-    node.visitChildren(this);
+    return true;
   }
 
   @override
-  visitAssignmentExpression(AssignmentExpression node) {
+  bool visitAssignmentExpression(AssignmentExpression node) {
     //check security of both expressions
     node.leftHandSide.accept(this);
     node.rightHandSide.accept(this);
 
-    _checkAssignment2(node.leftHandSide, node);
+    _checkAssignment2(node);
     return true;
   }
 
@@ -397,11 +424,18 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     return true;
   }
 
+  @override
+  bool visitForEachStatement(ForEachStatement node) {
+    node.visitChildren(this);
+    //check that iterable expression can flow to identifier
+    _checkAssignment(node.iterable, node.loopVariable);
+    return true;
+  }
+
   /**
    * Checks that an expression can be assigned to a type
    */
-  void _checkAssignment(Expression expr, VariableDeclaration node,
-      {SecurityType from}) {
+  void _checkAssignment(Expression expr, AstNode node, {SecurityType from}) {
     if (from == null) {
       from = getSecurityType(expr);
     }
@@ -418,7 +452,7 @@ class SecurityCheckerVisitor extends AbstractSecurityVisitor {
     }
   }
 
-  void _checkAssignment2(Expression expr, AssignmentExpression node) {
+  void _checkAssignment2(AssignmentExpression node) {
     SecurityType to = getSecurityType(node.leftHandSide);
     SecurityType from = getSecurityType(node.rightHandSide);
 

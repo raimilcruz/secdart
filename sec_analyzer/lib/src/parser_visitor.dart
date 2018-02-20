@@ -5,13 +5,13 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:analyzer/src/dart/element/element.dart';
 import 'package:analyzer/src/dart/element/type.dart';
+import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/annotations/parser.dart';
 import 'package:secdart_analyzer/src/annotations/parser_element.dart';
 import 'package:secdart_analyzer/src/errors.dart';
+import 'package:secdart_analyzer/src/helper.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
-
-const String SEC_TYPE_PROPERTY = "sec-type";
 
 /*
 It parses security elements, that is annotations of security labels
@@ -20,7 +20,7 @@ We just need to re-process the AST to include security
 annotations.
 */
 class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
-  final AnalysisErrorListener reporter;
+  AnalysisErrorListener _reporter;
 
   /**
    * The parser used to get label from annotation
@@ -35,10 +35,31 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
   final bool astIsResolved;
 
-  SecurityParserVisitor(this.reporter,
+  SecurityParserVisitor(reporter, CompilationUnit unit,
       [this.intervalMode = false, this.astIsResolved = true]) {
-    _parser = new FlatLatticeParser(reporter, intervalMode);
-    _elementParser = new ElementAnnotationParserImpl(intervalMode);
+    _reporter = reporter;
+    _parser = new FlatLatticeParser(reporter, unit, intervalMode);
+    _elementParser =
+        new ElementAnnotationParserImpl(unit, reporter, intervalMode);
+  }
+
+  @override
+  bool visitCompilationUnit(CompilationUnit node) {
+    try {
+      node.visitChildren(this);
+    } on SecDartException catch (e) {
+      var astNode =
+          e.node != null && e.node.root is CompilationUnit ? e.node : node;
+      _reporter.onError(SecurityTypeError.toAnalysisError(astNode,
+          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.getMessage()]));
+    } on Exception catch (e) {
+      _reporter.onError(SecurityTypeError.toAnalysisError(node,
+          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.toString()]));
+    } catch (e) {
+      _reporter.onError(SecurityTypeError.toAnalysisError(node,
+          SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR, [e.toString()]));
+    }
+    return true;
   }
 
   @override
@@ -63,7 +84,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
   bool visitFunctionDeclaration(FunctionDeclaration node) {
     final secType = _getFunctionSecType(node);
     node.setProperty(SEC_TYPE_PROPERTY, secType);
-    super.visitFunctionDeclaration(node);
+    node.visitChildren(this);
     return true;
   }
 
@@ -73,6 +94,25 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
     node.setProperty(SEC_TYPE_PROPERTY, secType);
 
     super.visitConstructorDeclaration(node);
+    return true;
+  }
+
+  @override
+  bool visitMethodInvocation(MethodInvocation node) {
+    node.visitChildren(this);
+    if (isDeclassifyOperator(node.function)) {
+      assert(node.argumentList.arguments.length == 2);
+      final secondArgument = node.argumentList.arguments[1];
+      if (secondArgument is SimpleStringLiteral) {
+        var label = _elementParser.parseLiteralLabel(
+            secondArgument, secondArgument.value);
+
+        secondArgument.setProperty(SEC_LABEL_PROPERTY, label);
+        return true;
+      }
+      _reporter
+          .onError(SecurityTypeError.getInvalidDeclassifyCall(secondArgument));
+    }
     return true;
   }
 
@@ -90,11 +130,18 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
   @override
   bool visitFunctionExpression(FunctionExpression node) {
-    var secType = _elementParser.getFunctionSecType(
-        node.element.metadata
-            .map((m) => (m as ElementAnnotationImpl).annotationAst),
-        node.element.parameters,
-        node.element.returnType);
+    var secType = null;
+    if (node.parent is FunctionDeclaration &&
+        node.parent.getProperty(SEC_TYPE_PROPERTY) != null) {
+      secType = node.getProperty(SEC_TYPE_PROPERTY);
+    } else {
+      secType = _elementParser.getFunctionSecType(
+          node.element.metadata
+              .map((m) => (m as ElementAnnotationImpl).annotationAst),
+          node.element.parameters,
+          node.element.returnType);
+    }
+
     node.setProperty(SEC_TYPE_PROPERTY, secType);
 
     super.visitFunctionExpression(node);
@@ -172,7 +219,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
     var secLabelAnnotations =
         parameter.metadata.where((x) => _parser.isLabel(x));
     if (secLabelAnnotations.length > 1) {
-      reporter.onError(
+      _reporter.onError(
           SecurityTypeError.getDuplicatedLabelOnParameterError(parameter));
       return false;
     } else if (secLabelAnnotations.length == 1) {
@@ -187,7 +234,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
         !(node is MethodDeclaration) &&
         !(node is FunctionTypedFormalParameter) &&
         !(node is ConstructorDeclaration)) {
-      reporter.onError(SecurityTypeError.getImplementationError(
+      _reporter.onError(SecurityTypeError.getImplementationError(
           node,
           "I do "
           "not recognize this node. [Method:_checkFunctionSecurityAnnotations]"));
@@ -200,12 +247,12 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
           metadataList.where((a) => a.name.name == FUNCTION_LATENT_LABEL);
 
       if (latentAnnotations.length > 1) {
-        reporter.onError(SecurityTypeError.getDuplicatedLatentError(node));
+        _reporter.onError(SecurityTypeError.getDuplicatedLatentError(node));
         return false;
       }
       var returnAnnotations = metadataList.where((a) => _parser.isLabel(a));
       if (returnAnnotations.length > 1) {
-        reporter.onError(SecurityTypeError.getDuplicatedLatentError(node));
+        _reporter.onError(SecurityTypeError.getDuplicatedLatentError(node));
         return false;
       }
       if (returnAnnotations.length == 1) {

@@ -13,7 +13,12 @@ class SecurityTypeError {
         ? node.firstTokenAfterCommentAndMetadata.offset
         : node.offset;
     int length = node.end - begin;
-    var source = (node.root as CompilationUnit).element.source;
+    var source = null;
+    if (node.root is CompilationUnit) {
+      source = (node.root as CompilationUnit).element.source;
+    } else if (node.root is Annotation) {
+      source = (node.root as Annotation).element.source;
+    }
     return new AnalysisError(source, begin, length, code, arguments);
   }
 
@@ -118,6 +123,17 @@ class SecurityTypeError {
     var errorCode = SecurityErrorCode.INVAlID_DECLASSIFY_CALL;
     return toAnalysisError(node, errorCode, []);
   }
+
+  static AnalysisError getInvalidLabel(AstNode node) {
+    var errorCode = SecurityErrorCode.INVAlID_LABEL;
+    return toAnalysisError(node, errorCode, [node]);
+  }
+
+  static AnalysisError getInvalidLiteralLabel(
+      AstNode node, String literalLabel) {
+    var errorCode = SecurityErrorCode.INVAlID_LABEL;
+    return toAnalysisError(node, errorCode, [literalLabel]);
+  }
 }
 
 /**
@@ -189,6 +205,9 @@ class SecurityErrorCode extends ErrorCode {
       const SecurityErrorCode('INVAlID_DECLASSIFY_CALL',
           'To call to the "declassify" operator you must use a literal string');
 
+  static const SecurityErrorCode INVAlID_LABEL = const SecurityErrorCode(
+      'INVAlID_LABEL', '{0} does not represent a label for me!');
+
   const SecurityErrorCode(String name, String message, [String correction])
       : super(name, message, correction);
 
@@ -256,12 +275,15 @@ class ImplementationErrorCode extends ErrorCode {
 }
 
 abstract class SecDartException implements Exception {
+  AstNode node;
   String getMessage();
 }
 
 class UnsupportedFeatureException implements SecDartException {
+  AstNode node;
   final String message;
-  UnsupportedFeatureException([this.message]);
+
+  UnsupportedFeatureException(AstNode this.node, [this.message]);
 
   @override
   String getMessage() => message;

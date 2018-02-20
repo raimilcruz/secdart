@@ -45,3 +45,9 @@ abstract class Lattice {
    */
   SecurityLabel get dynamic;
 }
+
+/**
+ * The name of the property that we use to store the security label of
+ * an [AstNode]
+ */
+const String SEC_LABEL_PROPERTY = "sec-label";

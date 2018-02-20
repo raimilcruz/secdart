@@ -24,19 +24,31 @@ abstract class ElementAnnotationParser {
 class ElementAnnotationParserImpl extends ElementAnnotationParser {
   SecAnnotationParser _parser;
   Map<String, ClassSecurityInfo> _classCache = {};
+  Map<DartType, SecurityType> _secDartCache = {};
+  Map<Element, SecurityLabel> _labelCache = {};
 
-  ElementAnnotationParserImpl([bool intervalMode = false]) {
-    _parser = new FlatLatticeParser(new ErrorCollector(), intervalMode);
+  ElementAnnotationParserImpl(
+      CompilationUnit unit, ErrorCollector errorCollector,
+      [bool intervalMode = false]) {
+    _parser = new FlatLatticeParser(errorCollector, unit, intervalMode);
   }
 
   Lattice get lattice => _parser.lattice;
 
   SecurityType fromDartType(DartType type, SecurityLabel label) {
+    if (_secDartCache.containsKey(type)) {
+      print("cached");
+      //we use here downgradeLabel, but we really want to say 'setLabel'
+      var cachedSecType = _secDartCache[type].downgradeLabel(label);
+      return cachedSecType;
+    }
+    SecurityType result = new DynamicSecurityType(label);
+    ;
     if (type is InterfaceType) {
-      return securityTypeFromClass(type, label);
+      result = securityTypeFromClass(type, label);
     }
     //if it is a function type is should be defined as type alias
-    if (type is FunctionType) {
+    else if (type is FunctionType) {
       if (_isDeclaredAsTypeAlias(type)) {
         return _fromFunctionTypeAlias(type.element.enclosingElement);
       }
@@ -50,7 +62,8 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
           returnType,
           label);
     }
-    return new DynamicSecurityType(label);
+    _secDartCache.putIfAbsent(type, () => result);
+    return result;
   }
 
   /**
@@ -60,30 +73,7 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
   SecurityType fromIdentifierDeclaration(Element element, DartType type) {
     //get the label ascribed via annotations
     var label = _getSecurityLabel(element, element.metadata);
-    //case where the parameter is a function type
-    if (type is FunctionType) {
-      if (_isDeclaredAsTypeAlias(type)) {
-        return _fromFunctionTypeAlias(type.element.enclosingElement);
-      }
-      //the function signature is inlined (this is the case where [element]
-      //correspond to a [ParameterElement]
-      else {
-        SecurityType returnType = fromDartType(type.returnType, label);
-        return new SecurityFunctionTypeImpl(
-            //TODO: find a way to specify labels for functions types
-            lattice.dynamic,
-            type.parameters
-                .map((t) => fromIdentifierDeclaration(t, t.type))
-                .toList(),
-            returnType,
-            label);
-      }
-    }
-    if (type.element is ClassElement) {
-      return securityTypeFromClass(type, label);
-    }
-    //it must be a function alias then
-    return new DynamicSecurityType(label);
+    return fromDartType(type, label);
   }
 
   SecurityFunctionType getFunctionSecType(Iterable<Annotation> metadataList,
@@ -223,6 +213,11 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
 
   SecurityLabel _getSecurityLabel(
       dynamic element, List<ElementAnnotation> metadata) {
+    if (_labelCache.containsKey(element)) {
+      print("label cached");
+      return _labelCache[element];
+    }
+
     var secLabelAnnotations = metadata
         .map((e) => (e as ElementAnnotationImpl).annotationAst)
         .where((x) => _parser.isLabel(x));
@@ -230,6 +225,7 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
     if (secLabelAnnotations.length == 1) {
       label = _parser.parseLabel(secLabelAnnotations.first);
     }
+    _labelCache.putIfAbsent(element, () => label);
     return label;
   }
 
@@ -237,7 +233,7 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
     return type.element.enclosingElement is FunctionTypeAliasElement;
   }
 
-  SecurityLabel parseLiteralLabel(String value) {
-    return _parser.parseString(value);
+  SecurityLabel parseLiteralLabel(AstNode node, String value) {
+    return _parser.parseString(node, value);
   }
 }

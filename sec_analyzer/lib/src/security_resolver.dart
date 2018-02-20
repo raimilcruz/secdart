@@ -1,9 +1,11 @@
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/error/listener.dart';
+import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/annotations/parser_element.dart';
 import 'package:secdart_analyzer/src/external_library.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';
+import 'package:secdart_analyzer/src/helper.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart';
 
 import 'errors.dart';
@@ -21,11 +23,13 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
   ElementAnnotationParserImpl _elementParser;
   GradualSecurityTypeSystem typeSystem;
 
-  SecurityResolverVisitor(AnalysisErrorListener reporter,
+  SecurityResolverVisitor(
+      AnalysisErrorListener reporter, ElementAnnotationParserImpl elementParser,
       [bool intervalMode = false])
-      : super(reporter, intervalMode) {
-    _elementParser = new ElementAnnotationParserImpl(intervalMode);
+      : super(reporter) {
+    _elementParser = elementParser;
     typeSystem = new GradualSecurityTypeSystem();
+    pc = _elementParser.lattice.dynamic;
   }
 
   @override
@@ -82,6 +86,34 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
   }
 
   @override
+  bool visitListLiteral(ListLiteral node) {
+    node.visitChildren(this);
+
+    var listSecType =
+        new InterfaceSecurityTypeImpl.forExternalClass(pc, node.bestType);
+    for (var elem in node.elements) {
+      listSecType = listSecType.stampLabel(getSecurityType(elem).label);
+    }
+    node.setProperty(SEC_TYPE_PROPERTY, listSecType);
+    return true;
+  }
+
+  @override
+  bool visitDoubleLiteral(DoubleLiteral node) {
+    node.setProperty(SEC_TYPE_PROPERTY,
+        new InterfaceSecurityTypeImpl.forExternalClass(pc, node.bestType));
+    return true;
+  }
+
+  @override
+  bool visitDeclaredIdentifier(DeclaredIdentifier node) {
+    node.visitChildren(this);
+    node.setProperty(
+        SEC_TYPE_PROPERTY, node.identifier.getProperty(SEC_TYPE_PROPERTY));
+    return true;
+  }
+
+  @override
   bool visitBinaryExpression(BinaryExpression node) {
     //TODO: Check if we should treat && and || in an special way
     node.leftOperand.accept(this);
@@ -100,6 +132,22 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
           resultLabel, node.bestType);
     }
     node.setProperty(SEC_TYPE_PROPERTY, resultType);
+    return true;
+  }
+
+  @override
+  bool visitPrefixExpression(PrefixExpression node) {
+    node.operand.accept(this);
+    node.setProperty(
+        SEC_TYPE_PROPERTY, node.operand.getProperty(SEC_TYPE_PROPERTY));
+    return true;
+  }
+
+  @override
+  bool visitPostfixExpression(PostfixExpression node) {
+    node.operand.accept(this);
+    node.setProperty(
+        SEC_TYPE_PROPERTY, node.operand.getProperty(SEC_TYPE_PROPERTY));
     return true;
   }
 
@@ -192,6 +240,9 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
     node.leftHandSide.accept(this);
     //visit right side
     node.rightHandSide.accept(this);
+
+    node.setProperty(
+        SEC_TYPE_PROPERTY, node.leftHandSide.getProperty(SEC_TYPE_PROPERTY));
     return true;
   }
 
@@ -265,7 +316,7 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
       node.function.accept(this);
       node.argumentList.accept(this);
       //visit the function expression
-      if (_isDeclassifyOperator(node.function)) {
+      if (isDeclassifyOperator(node.function)) {
         resultInvocationType =
             _getSecTypeForInvocationToDeclassify(node.argumentList.arguments);
       } else {
@@ -328,26 +379,13 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
     return true;
   }
 
-  bool _isDeclassifyOperator(SimpleIdentifier functionNode) {
-    if (functionNode.staticElement is FunctionElement) {
-      return (functionNode.staticElement.name == "declassify"
-          //&& functionNode.staticElement.library.name.contains("secdart")
-          );
-    }
-    return false;
-  }
-
   SecurityType _getSecTypeForInvocationToDeclassify(
       NodeList<Expression> argumentList) {
     assert(argumentList.length == 2);
-    var actualArgumentToDeclassify = argumentList[0];
-    var secType = getSecurityType(actualArgumentToDeclassify);
-    var stringLabel = argumentList[1];
-    if (stringLabel is SimpleStringLiteral) {
-      var label = _elementParser.parseLiteralLabel(stringLabel.value);
-      return secType.downgradeLabel(label);
-    }
-    reportError(SecurityTypeError.getInvalidDeclassifyCall(stringLabel));
-    return new DynamicSecurityType(_elementParser.lattice.dynamic);
+    final actualArgumentToDeclassify = argumentList[0];
+    final secType = getSecurityType(actualArgumentToDeclassify);
+    final stringLabel = argumentList[1];
+    final label = stringLabel.getProperty(SEC_LABEL_PROPERTY);
+    return secType.downgradeLabel(label);
   }
 }

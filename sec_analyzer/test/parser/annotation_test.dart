@@ -9,6 +9,8 @@ import 'package:test/test.dart';
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 
+import 'package:secdart_analyzer/src/errors.dart';
+
 void main() {
   defineReflectiveSuite(() {
     defineReflectiveTests(ParserTest);
@@ -62,7 +64,7 @@ class ParserTest extends AbstractSecDartTest {
     ErrorCollector errorListener = new ErrorCollector();
 
     var unit = result.astNode;
-    var visitor = new SecurityParserVisitor(errorListener, false, true);
+    var visitor = new SecurityParserVisitor(errorListener, unit, false, true);
     unit.accept(visitor);
 
     var funDecl =
@@ -109,7 +111,7 @@ class ParserTest extends AbstractSecDartTest {
     ErrorCollector errorListener = new ErrorCollector();
 
     var unit = result.astNode;
-    var visitor = new SecurityParserVisitor(errorListener, false, true);
+    var visitor = new SecurityParserVisitor(errorListener, unit, false, true);
     unit.accept(visitor);
 
     var numLit = AstQuery.toList(unit).where((n) => n is IntegerLiteral).first;
@@ -138,12 +140,9 @@ class ParserTest extends AbstractSecDartTest {
          }         
     ''';
     var source = newSource("/test.dart", function);
-    var result = resolveDart(source);
-    ErrorCollector errorListener = new ErrorCollector();
 
-    var unit = result.astNode;
-    var visitor = new SecurityParserVisitor(errorListener, false, true);
-    unit.accept(visitor);
+    final result = parse(source);
+    final unit = result.astNode;
 
     var methDecl =
         AstQuery.toList(unit).where((n) => n is MethodDeclaration).first;
@@ -176,5 +175,38 @@ class ParserTest extends AbstractSecDartTest {
       //end label
       expect(funDecltype.endLabel, new LowLabel());
     }
+  }
+
+  void test_notAValidLabel() {
+    var program = '''
+         import "package:secdart/secdart.dart";
+         @latent("H2","K")         
+         int foo () {
+         }
+      ''';
+    var source = newSource("/test.dart", program);
+
+    final result = parse(source);
+    final unit = result.astNode;
+
+    assert(result.errors
+        .any((e) => e.errorCode == SecurityErrorCode.INVAlID_LABEL));
+  }
+
+  void test_notAValidLabel2() {
+    var program = '''
+         import "package:secdart/secdart.dart";
+                 
+         int foo () {
+            return declassify(1,"H2");
+         }
+      ''';
+    var source = newSource("/test.dart", program);
+
+    final result = parse(source);
+    final unit = result.astNode;
+
+    assert(result.errors
+        .any((e) => e.errorCode == SecurityErrorCode.INVAlID_LABEL));
   }
 }

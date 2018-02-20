@@ -27,7 +27,7 @@ abstract class SecAnnotationParser {
 
   isLabel(Annotation a);
 
-  SecurityLabel parseString(String value);
+  SecurityLabel parseString(AstNode nodeToReportError, String value);
 }
 
 /**
@@ -36,6 +36,7 @@ abstract class SecAnnotationParser {
  */
 class FlatLatticeParser extends SecAnnotationParser {
   AnalysisErrorListener errorListener;
+  CompilationUnit _unit;
   bool intervalMode;
   Lattice _lattice;
   @override
@@ -46,8 +47,10 @@ class FlatLatticeParser extends SecAnnotationParser {
     return _lattice;
   }
 
-  FlatLatticeParser(AnalysisErrorListener this.errorListener,
+  FlatLatticeParser(
+      AnalysisErrorListener this.errorListener, CompilationUnit unit,
       [bool intervalMode = false]) {
+    _unit = unit;
     this.intervalMode = intervalMode;
   }
 
@@ -67,8 +70,10 @@ class FlatLatticeParser extends SecAnnotationParser {
     var beginLabelString = arguments[0] as SimpleStringLiteral;
     var endLabelString = arguments[1] as SimpleStringLiteral;
 
-    var beginLabel = _parseLiteralLabel(beginLabelString.stringValue);
-    var endLabel = _parseLiteralLabel(endLabelString.stringValue);
+    var beginLabel =
+        _parseLiteralLabel(beginLabelString, beginLabelString.stringValue);
+    var endLabel =
+        _parseLiteralLabel(endLabelString, endLabelString.stringValue);
     return new FunctionAnnotationLabel(beginLabel, endLabel);
   }
 
@@ -87,12 +92,12 @@ class FlatLatticeParser extends SecAnnotationParser {
       case 'dynl':
         return this.lattice.dynamic;
       default:
-        throw new SecCompilationException(
-            "Annotation does not represent a label for me!");
+        errorListener.onError(SecurityTypeError.getInvalidLabel(n));
+        return this.lattice.dynamic;
     }
   }
 
-  SecurityLabel _parseLiteralLabel(String label) {
+  SecurityLabel _parseLiteralLabel(AstNode node, String label) {
     switch (label) {
       case 'H':
         return new HighLabel();
@@ -105,8 +110,9 @@ class FlatLatticeParser extends SecAnnotationParser {
       case 'dynl':
         return this.lattice.dynamic;
       default:
-        throw new SecCompilationException(
-            "String does not represent a label for me!");
+        errorListener
+            .onError(SecurityTypeError.getInvalidLiteralLabel(node, label));
+        return this.lattice.dynamic;
     }
   }
 
@@ -125,8 +131,8 @@ class FlatLatticeParser extends SecAnnotationParser {
   }
 
   @override
-  SecurityLabel parseString(String value) {
-    return _parseLiteralLabel(value);
+  SecurityLabel parseString(AstNode nodeToReportError, String value) {
+    return _parseLiteralLabel(nodeToReportError, value);
   }
 }
 
@@ -149,8 +155,9 @@ class FunctionAnnotationLabel {
 }
 
 class SecCompilationException implements SecDartException {
+  AstNode node;
   final String message;
-  SecCompilationException([this.message]);
+  SecCompilationException(AstNode this.node, [this.message]);
 
   @override
   String getMessage() => message;

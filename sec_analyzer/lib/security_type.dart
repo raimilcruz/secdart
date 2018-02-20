@@ -27,3 +27,9 @@ abstract class SecurityFunctionType extends SecurityType {
   SecurityType get returnType;
   SecurityLabel get endLabel;
 }
+
+/**
+ * The name of the property that we use to store the security type of
+ * an [AstNode]
+ */
+const String SEC_TYPE_PROPERTY = "sec-type";
