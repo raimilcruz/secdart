@@ -133,7 +133,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
     var secType = null;
     if (node.parent is FunctionDeclaration &&
         node.parent.getProperty(SEC_TYPE_PROPERTY) != null) {
-      secType = node.getProperty(SEC_TYPE_PROPERTY);
+      secType = node.parent.getProperty(SEC_TYPE_PROPERTY);
     } else {
       secType = _elementParser.getFunctionSecType(
           node.element.metadata
