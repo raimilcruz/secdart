@@ -86,6 +86,35 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
   }
 
   @override
+  bool visitAdjacentStrings(AdjacentStrings node) {
+    node.visitChildren(this);
+    SecurityType securityType = _elementParser.fromDartType(node.bestType, pc);
+    for (var str in node.strings) {
+      securityType = securityType.stampLabel(getSecurityType(str).label);
+    }
+    node.setProperty(SEC_TYPE_PROPERTY, securityType);
+    return true;
+  }
+
+  @override
+  bool visitStringInterpolation(StringInterpolation node) {
+    node.visitChildren(this);
+    SecurityType securityType = _elementParser.fromDartType(node.bestType, pc);
+    for (var elem in node.elements.where((e) => e is InterpolationExpression)) {
+      securityType = securityType.stampLabel(getSecurityType(elem).label);
+    }
+    node.setProperty(SEC_TYPE_PROPERTY, securityType);
+    return true;
+  }
+
+  @override
+  bool visitInterpolationExpression(InterpolationExpression node) {
+    node.visitChildren(this);
+    node.setProperty(SEC_TYPE_PROPERTY, getSecurityType(node.expression));
+    return true;
+  }
+
+  @override
   bool visitListLiteral(ListLiteral node) {
     node.visitChildren(this);
 

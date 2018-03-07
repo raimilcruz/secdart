@@ -45,10 +45,9 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
           expr,
           SecurityErrorCode.INTERNAL_IMPLEMENTATION_ERROR,
           new List<Object>()
-            ..add("Expression does not "
-                "have a security type (For instance it happens when a calling a "
-                "function in another library, we do not how to deal"
-                "with multiple file yet)")));
+            ..add("Expression $expr does not "
+                "have a security type. This happens with expressions that "
+                "the security analysis does not support")));
       throw new UnsupportedFeatureException(
           expr, "Error in SecurityVisitor._getSecurityType");
     }
