@@ -1,7 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:secdart_analyzer/sec_analyzer.dart';
-import 'package:secdart_analyzer/src/security_type.dart';
 import 'package:security_transformer/src/utils.dart';
 
 class ReplacerVisitor extends SimpleAstVisitor {
