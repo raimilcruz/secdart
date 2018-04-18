@@ -50,3 +50,4 @@ pub get
 
 dartanalyzer lib test
 
+dart --checked test/test_all.dart

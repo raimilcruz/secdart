@@ -1,3 +1,5 @@
+import 'package:test/test.dart';
+
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 
@@ -67,5 +69,18 @@ class FunctionCallTest extends AbstractSecDartTest {
     var result = typeCheckSecurityForSource(source);
 
     assert(!containsInvalidFlow(result));
+  }
+
+  void test_callToFunctionInstance() {
+    var program = '''
+       import "package:secdart/secdart.dart";
+        void foo(Function comp) {
+           comp(1,2);
+        }
+
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+    expect(result.isEmpty, isTrue);
   }
 }

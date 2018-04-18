@@ -64,10 +64,6 @@ class UnSupportedDartSubsetVisitor extends GeneralizingAstVisitor<Object> {
       _reportError(node, "do... while");
 
   @override
-  Object visitFunctionDeclarationStatement(FunctionDeclarationStatement node) =>
-      _reportError(node, "function declaration statement");
-
-  @override
   Object visitRethrowExpression(RethrowExpression node) =>
       _reportError(node, "rethrow");
 

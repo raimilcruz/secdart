@@ -1,3 +1,5 @@
+import 'package:test/test.dart';
+
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import "package:secdart_analyzer/src/errors.dart";
@@ -22,28 +24,32 @@ class StrictModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_ecoopds_2() {
     var program = EcoopDsPaperExamples.second();
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_ecoopds_3() {
     var program = EcoopDsPaperExamples.third();
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_ecoopds_4() {
     var program = EcoopDsPaperExamples.fourth();
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_ecoopds_5() {
@@ -51,7 +57,8 @@ class StrictModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 }
 
@@ -62,7 +69,8 @@ class FlexibleModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: false);
 
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_ecoopds_2() {
@@ -70,7 +78,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: false);
 
-    assert(!containsInvalidFlow(result));
+    expect(containsInvalidFlow(result), isFalse);
   }
 
   void test_ecoopds_3() {
@@ -78,7 +86,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: false);
 
-    assert(!containsInvalidFlow(result));
+    expect(containsInvalidFlow(result), isFalse);
   }
 
   void test_ecoopds_4() {
@@ -86,7 +94,8 @@ class FlexibleModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: false);
 
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_ecoopds_5() {
@@ -94,7 +103,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: false);
 
-    assert(!containsInvalidFlow(result));
+    expect(containsInvalidFlow(result), isFalse);
   }
 }
 
@@ -107,6 +116,7 @@ class EcoopDsPaperExamples {
       print(isTheBoss ? salary : baseSalary);
     }
   ''';
+
   static String second() => '''
     import "package:secdart/secdart.dart";
     main(){
@@ -116,6 +126,7 @@ class EcoopDsPaperExamples {
       print(isBoss ? BobSalary : baseSalary);
     }
   ''';
+
   static String third() => '''
     import "package:secdart/secdart.dart";
 
@@ -125,6 +136,7 @@ class EcoopDsPaperExamples {
       print(isTheBoss ? salary : baseSalary);
     }
   ''';
+
   static String fourth() => '''
     import "package:secdart/secdart.dart";
 
@@ -138,6 +150,7 @@ class EcoopDsPaperExamples {
       print(isTheBoss ? discount(bobSalary) : baseSalary);
     }
   ''';
+
   static String fifth() => '''
     import "package:secdart/secdart.dart";
 

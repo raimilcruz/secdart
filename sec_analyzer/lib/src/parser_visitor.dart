@@ -3,30 +3,27 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/error/listener.dart';
-import 'package:analyzer/src/dart/element/element.dart';
 import 'package:analyzer/src/dart/element/type.dart';
 import 'package:secdart_analyzer/security_label.dart';
-import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/annotations/parser.dart';
-import 'package:secdart_analyzer/src/annotations/parser_element.dart';
 import 'package:secdart_analyzer/src/errors.dart';
 import 'package:secdart_analyzer/src/helper.dart';
-import 'package:secdart_analyzer/src/security_type.dart';
 
-/*
-It parses security elements, that is annotations of security labels
-We do not need to manage scope since we do not change Dart scope,
-We just need to re-process the AST to include security
-annotations.
-*/
+/**
+    It parses security elements, that is annotations of security labels
+    We do not need to manage scope since we do not change Dart scope,
+    We just need to re-process the AST to include security
+    annotations.
+ */
 class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
   AnalysisErrorListener _reporter;
+  LabelMap _labelMap;
 
   /**
    * The parser used to get label from annotation
    */
   SecAnnotationParser _parser;
-  ElementAnnotationParserImpl _elementParser;
+  Lattice _lattice;
 
   /**
    * The mode define the internal representation of labels
@@ -35,13 +32,16 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
   final bool astIsResolved;
 
-  SecurityParserVisitor(reporter, CompilationUnit unit,
+  SecurityParserVisitor(AnalysisErrorListener reporter, CompilationUnit unit,
+      SecAnnotationParser parser,
       [this.intervalMode = false, this.astIsResolved = true]) {
     _reporter = reporter;
-    _parser = new FlatLatticeParser(reporter, unit, intervalMode);
-    _elementParser =
-        new ElementAnnotationParserImpl(unit, reporter, intervalMode);
+    _parser = parser;
+    _labelMap = new LabelMap();
+    _lattice = _parser.lattice;
   }
+
+  LabelMap get labeMap => _labelMap;
 
   @override
   bool visitCompilationUnit(CompilationUnit node) {
@@ -66,15 +66,25 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
   bool visitFieldDeclaration(FieldDeclaration node) {
     //we don't need to get here the annotation because the resolver will
     //do anyway
-    _checkSimpleLabelAnnotation(node);
-    //_elementParser.fromDartType(node.el, label)
+    var label = _checkSimpleLabelAnnotation(node);
+    node.setProperty(SEC_LABEL_PROPERTY, label);
+    node.fields.variables.forEach((vd) {
+      vd.setProperty(SEC_LABEL_PROPERTY, label);
+      _labelMap.map
+          .putIfAbsent(vd.element, () => new SimpleAnnotatedLabel(label));
+    });
+    _labelMap.map
+        .putIfAbsent(node.element, () => new SimpleAnnotatedLabel(label));
+
+    node.visitChildren(this);
     return true;
   }
 
   @override
   bool visitMethodDeclaration(MethodDeclaration node) {
-    var secType = _getMethodSecType(node);
-    node.setProperty(SEC_TYPE_PROPERTY, secType);
+    final functionLabelResult = _getFunctionSecurityAnnotations(node);
+
+    setFunctionLabels(functionLabelResult, node, node.element);
 
     super.visitMethodDeclaration(node);
     return true;
@@ -82,19 +92,28 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
   @override
   bool visitFunctionDeclaration(FunctionDeclaration node) {
-    final secType = _getFunctionSecType(node);
-    node.setProperty(SEC_TYPE_PROPERTY, secType);
+    final functionLabelResult = _getFunctionSecurityAnnotations(node);
+
+    setFunctionLabels(functionLabelResult, node, node.element);
+
     node.visitChildren(this);
     return true;
   }
 
-  @override
-  bool visitConstructorDeclaration(ConstructorDeclaration node) {
-    var secType = _getConstructorSecType(node);
-    node.setProperty(SEC_TYPE_PROPERTY, secType);
-
-    super.visitConstructorDeclaration(node);
-    return true;
+  void setFunctionLabels(
+      _FunctionLabelResult functionLabelResult, AstNode node, Element element) {
+    FunctionLevelLabels labels = new FunctionLevelLabels(_lattice.dynamic,
+        new FunctionAnnotationLabel(_lattice.dynamic, _lattice.dynamic));
+    if (!functionLabelResult.errorOnLabel) {
+      if (functionLabelResult.returnLabel != null) {
+        labels.returnLabel = functionLabelResult.returnLabel.label;
+      }
+      if (functionLabelResult.functionLabel != null) {
+        labels.functionLabels = functionLabelResult.functionLabel;
+      }
+    }
+    node.setProperty(SEC_LABEL_PROPERTY, labels);
+    _labelMap.map.putIfAbsent(element, () => labels);
   }
 
   @override
@@ -104,8 +123,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
       assert(node.argumentList.arguments.length == 2);
       final secondArgument = node.argumentList.arguments[1];
       if (secondArgument is SimpleStringLiteral) {
-        var label = _elementParser.parseLiteralLabel(
-            secondArgument, secondArgument.value);
+        var label = _parser.parseString(secondArgument, secondArgument.value);
 
         secondArgument.setProperty(SEC_LABEL_PROPERTY, label);
         return true;
@@ -118,61 +136,52 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
   @override
   bool visitSimpleFormalParameter(SimpleFormalParameter node) {
-    var secType = new DynamicSecurityType(_elementParser.lattice.dynamic);
-    if (!_checkSimpleLabelAnnotation(node)) {
-      return false;
-    }
-    secType = _elementParser.fromIdentifierDeclaration(
-        node.element, node.element.type);
-    node.setProperty(SEC_TYPE_PROPERTY, secType);
+    var annotatedLabel = _checkSimpleLabelAnnotation(node);
+    setSimpleLabel(annotatedLabel, node, node.element);
+
     return true;
+  }
+
+  void setSimpleLabel(
+      SecurityLabel annotatedLabel, AstNode node, Element element) {
+    var label = _lattice.dynamic;
+
+    if (annotatedLabel != null) {
+      label = annotatedLabel;
+    }
+    node.setProperty(SEC_LABEL_PROPERTY, new SimpleAnnotatedLabel(label));
+    _labelMap.map.putIfAbsent(element, () => new SimpleAnnotatedLabel(label));
   }
 
   @override
   bool visitFunctionExpression(FunctionExpression node) {
-    var secType = null;
     if (node.parent is FunctionDeclaration &&
-        node.parent.getProperty(SEC_TYPE_PROPERTY) != null) {
-      secType = node.parent.getProperty(SEC_TYPE_PROPERTY);
+        node.parent.getProperty(SEC_LABEL_PROPERTY) != null) {
+      final secLabel = node.parent.getProperty(SEC_LABEL_PROPERTY);
+      node.setProperty(SEC_LABEL_PROPERTY, secLabel);
+      _labelMap.map.putIfAbsent(node.element, () => secLabel);
     } else {
-      secType = _elementParser.getFunctionSecType(
-          node.element.metadata
-              .map((m) => (m as ElementAnnotationImpl).annotationAst),
-          node.element.parameters,
-          node.element.returnType);
+      //In this case the FunctionExpression node represents a lambda and
+      //it is not possible to annotate lambda (or any value).
+      final functionLabelResult = new _FunctionLabelResult.fromLabels(
+          new FunctionAnnotationLabel(_lattice.dynamic, _lattice.dynamic),
+          new SimpleAnnotatedLabel(_lattice.dynamic));
+
+      setFunctionLabels(functionLabelResult, node, node.element);
     }
 
-    node.setProperty(SEC_TYPE_PROPERTY, secType);
-
-    super.visitFunctionExpression(node);
-    return true;
-  }
-
-  @override
-  bool visitFunctionTypedFormalParameter(FunctionTypedFormalParameter node) {
-    var secType = _elementParser.fromIdentifierDeclaration(
-        node.element, node.element.type);
-    node.setProperty(SEC_TYPE_PROPERTY, secType);
+    node.visitChildren(this);
     return true;
   }
 
   @override
   bool visitVariableDeclarationList(VariableDeclarationList node) {
     for (VariableDeclaration variable in node.variables) {
-      var secType = new DynamicSecurityType(_elementParser.lattice.dynamic);
-      if (_checkSimpleLabelAnnotation(node)) {
-        secType = _elementParser.fromIdentifierDeclaration(
-            variable.element, variable.element.type);
-      }
-      variable.setProperty(SEC_TYPE_PROPERTY, secType);
+      var annotatedLabel = _checkSimpleLabelAnnotation(node);
+      setSimpleLabel(annotatedLabel, node, variable.element);
     }
     node.visitChildren(this);
     return true;
-  }
-
-  DartType getDartTypeFromParameter(FormalParameter parameter) {
-    if (astIsResolved) return parameter.element.type;
-    return DynamicTypeImpl.instance;
   }
 
   DartType getFunctionDartReturnType(dynamic node) {
@@ -180,67 +189,36 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
     return DynamicTypeImpl.instance;
   }
 
-  DartType getDartTypeFromVariable(VariableDeclaration node) {
-    if (astIsResolved) return node.element.type;
-    return DynamicTypeImpl.instance;
-  }
-
-  SecurityFunctionType _getFunctionSecType(FunctionDeclaration node) {
-    return _getExecutableNodeSecType(
-        node, node.functionExpression.parameters, node.metadata, node.element);
-  }
-
-  SecurityFunctionType _getMethodSecType(MethodDeclaration node) {
-    return _getExecutableNodeSecType(
-        node, node.parameters, node.metadata, node.element);
-  }
-
-  SecurityFunctionType _getConstructorSecType(ConstructorDeclaration node) {
-    return _getExecutableNodeSecType(
-        node, node.parameters, node.metadata, node.element);
-  }
-
-  SecurityFunctionType _getExecutableNodeSecType(
-      AstNode node,
-      FormalParameterList parameters,
-      NodeList<Annotation> metadata,
-      ExecutableElement element) {
-    if (!_checkFunctionSecurityAnnotations(node, parameters)) {
-      return null;
-    }
-    return _elementParser.getFunctionSecType(
-        metadata, element.parameters, element.returnType);
-  }
-
   /**
    * Get the security annotation for a formal parameter.
    */
-  bool _checkSimpleLabelAnnotation(dynamic parameter) {
+  SecurityLabel _checkSimpleLabelAnnotation(dynamic parameter) {
     var secLabelAnnotations =
         parameter.metadata.where((x) => _parser.isLabel(x));
     if (secLabelAnnotations.length > 1) {
       _reporter.onError(
           SecurityTypeError.getDuplicatedLabelOnParameterError(parameter));
-      return false;
+      return null;
     } else if (secLabelAnnotations.length == 1) {
-      return _parser.isLabel(secLabelAnnotations.first);
+      return _parser.parseLabel(secLabelAnnotations.first);
     }
-    return true;
+    return null;
   }
 
-  bool _checkFunctionSecurityAnnotations(
-      dynamic node, FormalParameterList parameters) {
+  _FunctionLabelResult _getFunctionSecurityAnnotations(dynamic node) {
     if (!(node is FunctionDeclaration) &&
         !(node is MethodDeclaration) &&
-        !(node is FunctionTypedFormalParameter) &&
-        !(node is ConstructorDeclaration)) {
+        !(node is FunctionTypedFormalParameter)) {
       _reporter.onError(SecurityTypeError.getImplementationError(
           node,
           "I do "
           "not recognize this node. [Method:_checkFunctionSecurityAnnotations]"));
-      return false;
+      return new _FunctionLabelResult.fromError();
     }
     var metadataList = node.metadata;
+
+    FunctionAnnotationLabel functionLabel;
+    SimpleAnnotatedLabel returnLabel;
 
     if (metadataList != null) {
       var latentAnnotations =
@@ -248,17 +226,36 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
       if (latentAnnotations.length > 1) {
         _reporter.onError(SecurityTypeError.getDuplicatedLatentError(node));
-        return false;
+        return new _FunctionLabelResult.fromError();
+      }
+      if (latentAnnotations.length == 1) {
+        functionLabel = _parser.parseFunctionLabel(latentAnnotations.first);
       }
       var returnAnnotations = metadataList.where((a) => _parser.isLabel(a));
       if (returnAnnotations.length > 1) {
-        _reporter.onError(SecurityTypeError.getDuplicatedLatentError(node));
-        return false;
+        _reporter
+            .onError(SecurityTypeError.getDuplicatedReturnLabelError(node));
+        return new _FunctionLabelResult.fromError();
       }
       if (returnAnnotations.length == 1) {
-        return _parser.isLabel(returnAnnotations.first);
+        returnLabel = new SimpleAnnotatedLabel(
+            _parser.parseLabel(returnAnnotations.first));
       }
     }
-    return true;
+    return new _FunctionLabelResult.fromLabels(functionLabel, returnLabel);
+  }
+}
+
+class _FunctionLabelResult {
+  bool errorOnLabel;
+  FunctionAnnotationLabel functionLabel;
+  SimpleAnnotatedLabel returnLabel;
+
+  _FunctionLabelResult.fromError() {
+    errorOnLabel = true;
+  }
+
+  _FunctionLabelResult.fromLabels(this.functionLabel, this.returnLabel) {
+    errorOnLabel = false;
   }
 }

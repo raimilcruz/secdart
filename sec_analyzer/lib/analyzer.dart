@@ -6,13 +6,14 @@ import 'package:analyzer/source/package_map_resolver.dart';
 import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/task/dart.dart';
+import 'package:secdart_analyzer/src/annotations/parser.dart';
 import 'package:secdart_analyzer/src/annotations/parser_element.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
-import 'package:secdart_analyzer/src/experimental/task.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/security_resolver.dart';
+import 'package:secdart_analyzer/src/security_type.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart'
     show SecurityCheckerVisitor;
 import 'package:analyzer/analyzer.dart' show AnalysisError, CompilationUnit;
@@ -32,16 +33,14 @@ class SecAnalyzer {
 
   bool returnDartErrors = false;
 
-  bool addTasks;
-
-  SecAnalyzer([this.addTasks = false]) {
+  SecAnalyzer() {
     _setUp();
   }
 
   void _setUp() {
     sdk = getDarkSdk();
 
-    context = createAnalysisContext(addTasks);
+    context = createAnalysisContext();
     final packageMap = <String, List<Folder>>{
       "secdart": [resourceProvider.getFolder("/secdart")]
     };
@@ -137,8 +136,7 @@ T declassify<T>(T expression,label) => expression;
   SecAnalysisResult analyze(String program, [bool useInterval = false]) {
     Source programSource = _newSource("/test.dart", program);
 
-    return computeAllErrors(context, programSource,
-        intervalMode: useInterval, addTask: addTasks);
+    return computeAllErrors(context, programSource, intervalMode: useInterval);
   }
 
   SecAnalysisResult analyzeFile(String filePath, [bool useInterval = false]) {
@@ -151,22 +149,15 @@ T declassify<T>(T expression,label) => expression;
     Source source =
         context.sourceFactory.forUri(pathos.toUri(absolutePath).toString());
 
-    return computeAllErrors(context, source,
-        intervalMode: useInterval, addTask: addTasks);
+    return computeAllErrors(context, source, intervalMode: useInterval);
   }
 
   static SecAnalysisResult computeAllErrors(
       AnalysisContext context, Source source,
-      {bool returnDartErrors: true,
-      bool intervalMode: false,
-      bool addTask: false}) {
+      {bool returnDartErrors: true, bool intervalMode: false}) {
     //var libraryElement = context.computeLibraryElement(source);
-    var libraryElement = null;
-    if (addTask) {
-      libraryElement = context.computeResult(source, SEC_ELEMENT);
-    } else {
-      libraryElement = context.computeResult(source, LIBRARY_ELEMENT);
-    }
+    var libraryElement = context.computeResult(source, LIBRARY_ELEMENT);
+
     var unit = libraryElement.unit;
     //var libraryElement = context.computeLibraryElement(source);
     //var unit = context.resolveCompilationUnit(source, libraryElement);
@@ -190,27 +181,41 @@ T declassify<T>(T expression,label) => expression;
       return errorListener.errors;
     }
 
+    var secAnnotationParser =
+        new FourLatticeParser(errorListener, resolvedUnit, intervalMode);
+
     //parse element
-    var parserVisitor =
-        new SecurityParserVisitor(errorListener, resolvedUnit, intervalMode);
+    var parserVisitor = new SecurityParserVisitor(
+        errorListener, resolvedUnit, secAnnotationParser, intervalMode);
     resolvedUnit.accept(parserVisitor);
     if (errorListener.errors.length > 0) return errorListener.errors;
+
+    final labelMap = parserVisitor.labeMap;
 
     var supportedDart = new UnSupportedDartSubsetVisitor(errorListener);
     resolvedUnit.accept(supportedDart);
     if (errorListener.errors.length > 0) return errorListener.errors;
 
-    //TODO: Identify interface for ElementAnnotationParse
-    var elementParser = new ElementAnnotationParserImpl(
-        resolvedUnit, errorListener, intervalMode);
+    SecurityCache securityMap = new SecurityCache();
 
-    var secResolver =
-        new SecurityResolverVisitor(errorListener, elementParser, intervalMode);
+    var secDartResolver = new SecDartElementResolver(
+        resolvedUnit, secAnnotationParser, securityMap, labelMap, intervalMode);
+    var nonSecDartResolver =
+        new ExternalLibraryResolver(secAnnotationParser.lattice, securityMap);
+
+    var elementResolver = new DispatcherSecurityElementResolver(
+        secDartResolver, nonSecDartResolver, securityMap);
+
+    var topLevelResolver = new TopLevelDeclarationResolver(elementResolver);
+    resolvedUnit.accept(topLevelResolver);
+
+    var secResolver = new SecurityResolverVisitor(
+        errorListener, elementResolver, securityMap, intervalMode);
     resolvedUnit.accept(secResolver);
 
     GradualSecurityTypeSystem typeSystem = new GradualSecurityTypeSystem();
-    var visitor =
-        new SecurityCheckerVisitor(typeSystem, errorListener, secResolver.pc);
+    var visitor = new SecurityCheckerVisitor(
+        typeSystem, errorListener, secResolver.pc, securityMap);
     resolvedUnit.accept(visitor);
 
     return errorListener.errors;
@@ -229,5 +234,6 @@ T declassify<T>(T expression,label) => expression;
 class SecAnalysisResult {
   List<AnalysisError> errors;
   AstNode astNode;
+
   SecAnalysisResult(this.errors, this.astNode);
 }

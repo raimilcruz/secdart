@@ -6,16 +6,19 @@ abstract class ParametricSecurityLabel extends SecurityLabel {
 
 abstract class JoinSecurityLabel extends SecurityLabel {
   SecurityLabel get left;
+
   SecurityLabel get right;
 }
 
 abstract class MeetSecurityLabel extends SecurityLabel {
   SecurityLabel get left;
+
   SecurityLabel get right;
 }
 
 class FlatLattice extends Lattice {
   FlatLattice._();
+
   factory FlatLattice() {
     return new FlatLattice._();
   }
@@ -77,6 +80,7 @@ class FlatLabel extends SecurityLabel {
 
 class HighLabel extends FlatLabel {
   static final HighLabel _instance = new HighLabel._();
+
   factory HighLabel() => _instance;
 
   HighLabel._();
@@ -89,6 +93,7 @@ class HighLabel extends FlatLabel {
 
 class LowLabel extends FlatLabel {
   static final LowLabel _instance = new LowLabel._();
+
   factory LowLabel() => _instance;
 
   LowLabel._();
@@ -114,6 +119,7 @@ class TopLabel extends FlatLabel {
 
 class BotLabel extends FlatLabel {
   static BotLabel _instance = new BotLabel._internal();
+
   factory BotLabel() => _instance;
 
   BotLabel._internal();
@@ -141,6 +147,7 @@ class DynamicLabel extends UnknownLabel {
 
 class IntervalLabel extends UnknownLabel {
   FlatLabel lowerBound, upperBound;
+
   IntervalLabel(FlatLabel lowerBound, FlatLabel upperBound) {
     if (lowerBound is DynamicLabel || upperBound is DynamicLabel)
       throw new ArgumentError("Bounded unknow must have static label bounds");
@@ -152,6 +159,18 @@ class IntervalLabel extends UnknownLabel {
   @override
   String toString() {
     return "[" + lowerBound.toString() + "," + upperBound.toString() + "]";
+  }
+
+  @override
+  bool operator ==(other) {
+    return (other is IntervalLabel)
+        ? lowerBound == other.lowerBound && upperBound == other.upperBound
+        : false;
+  }
+
+  @override
+  int get hashCode {
+    return toString().hashCode;
   }
 }
 

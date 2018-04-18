@@ -1,4 +1,3 @@
-import 'sec_analysis/bin_expr_test.dart' as bin_expr;
 import 'sec_analysis/fun_call_test.dart' as fun_call;
 import 'sec_analysis/fun_decl_test.dart' as function;
 import 'sec_analysis/high_order_tests.dart' as high_order;
@@ -16,6 +15,14 @@ import 'parser/annotation_test.dart' as parser;
 
 import 'unsupported_features_tests.dart' as unsupported;
 
+import 'resolver/bin_expr_test.dart' as resolver_binExpr;
+import 'resolver/identifier_and_top_decl_test.dart' as resolver_identifiers;
+import 'resolver/variable_declaration.dart' as resolver_variable;
+import 'resolver/literals_and_instances_test.dart' as resolver_values;
+import 'resolver/pc_test.dart' as resolver_pc;
+import 'resolver/class_declaration_test.dart' as resolver_classDeclaration;
+import 'resolver/high_order_test.dart' as resolver_highOrder;
+
 import 'analysis_client_test.dart' as client;
 import 'option_test.dart' as option;
 
@@ -31,10 +38,18 @@ void main() {
     //unsupported features tests
     unsupported.main();
 
+    //resolver security tests
+    resolver_identifiers.main();
+    resolver_binExpr.main();
+    resolver_variable.main();
+    resolver_values.main();
+    resolver_pc.main();
+    resolver_classDeclaration.main();
+    resolver_highOrder.main();
+
     //security analysis tests
-    bin_expr.main();
-    fun_call.main();
     function.main();
+    fun_call.main();
     high_order.main();
     implicit.main();
     identifier.main();

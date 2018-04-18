@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/analyzer.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:secdart_analyzer/security_label.dart';
 import '../security_label.dart';
 import '../errors.dart';
@@ -25,6 +26,12 @@ abstract class SecAnnotationParser {
    */
   FunctionAnnotationLabel parseFunctionLabel(Annotation n);
 
+  /**
+   * This method must assume that there is no error in list of annotations
+   * (eg. repeated function latent error o non-recognizable labels)
+   */
+  FunctionLevelLabels getFunctionLevelLabels(List<Annotation> metadata);
+
   isLabel(Annotation a);
 
   SecurityLabel parseString(AstNode nodeToReportError, String value);
@@ -34,11 +41,11 @@ abstract class SecAnnotationParser {
  * Parses a lattice with four element: BOT < LOW < HIGH < TOP and the
  * dynamic label (dyn)
  */
-class FlatLatticeParser extends SecAnnotationParser {
+class FourLatticeParser extends SecAnnotationParser {
   AnalysisErrorListener errorListener;
-  CompilationUnit _unit;
   bool intervalMode;
   Lattice _lattice;
+
   @override
   Lattice get lattice {
     if (_lattice == null) {
@@ -47,19 +54,19 @@ class FlatLatticeParser extends SecAnnotationParser {
     return _lattice;
   }
 
-  FlatLatticeParser(
+  /**
+   * Creates a [FourLatticeParser] instance
+   */
+  FourLatticeParser(
       AnalysisErrorListener this.errorListener, CompilationUnit unit,
       [bool intervalMode = false]) {
-    _unit = unit;
     this.intervalMode = intervalMode;
   }
 
   @override
   FunctionAnnotationLabel parseFunctionLabel(Annotation n) {
-    // TODO: Report error in a proper way
     if (n.name.name != FUNCTION_LATENT_LABEL) {
-      errorListener
-          .onError(SecurityTypeError.getDuplicatedLabelOnParameterError(n));
+      errorListener.onError(SecurityTypeError.getNotRecognizedFunctionLabel(n));
       throw new Exception();
     }
     var arguments = n.arguments.arguments;
@@ -82,13 +89,13 @@ class FlatLatticeParser extends SecAnnotationParser {
     var annotationName = n.name.name;
     switch (annotationName) {
       case 'high':
-        return new HighLabel();
+        return _liftLabelToIntervalIfNeeded(new HighLabel());
       case 'low':
-        return new LowLabel();
+        return _liftLabelToIntervalIfNeeded(new LowLabel());
       case 'top':
-        return new TopLabel();
+        return _liftLabelToIntervalIfNeeded(new TopLabel());
       case 'bot':
-        return new BotLabel();
+        return _liftLabelToIntervalIfNeeded(new BotLabel());
       case 'dynl':
         return this.lattice.dynamic;
       default:
@@ -100,13 +107,13 @@ class FlatLatticeParser extends SecAnnotationParser {
   SecurityLabel _parseLiteralLabel(AstNode node, String label) {
     switch (label) {
       case 'H':
-        return new HighLabel();
+        return _liftLabelToIntervalIfNeeded(new HighLabel());
       case 'L':
-        return new LowLabel();
+        return _liftLabelToIntervalIfNeeded(new LowLabel());
       case 'top':
-        return new TopLabel();
+        return _liftLabelToIntervalIfNeeded(new TopLabel());
       case 'bot':
-        return new BotLabel();
+        return _liftLabelToIntervalIfNeeded(new BotLabel());
       case 'dynl':
         return this.lattice.dynamic;
       default:
@@ -134,10 +141,58 @@ class FlatLatticeParser extends SecAnnotationParser {
   SecurityLabel parseString(AstNode nodeToReportError, String value) {
     return _parseLiteralLabel(nodeToReportError, value);
   }
+
+  @override
+  FunctionLevelLabels getFunctionLevelLabels(List<Annotation> metadata) {
+    var beginLabel = lattice.dynamic;
+    var endLabel = lattice.dynamic;
+    var returnLabel = lattice.dynamic;
+    if (metadata != null) {
+      var latentAnnotations =
+          metadata.where((a) => a.name.name == FUNCTION_LATENT_LABEL);
+
+      if (latentAnnotations.length == 1) {
+        Annotation securityFunctionAnnotation = latentAnnotations.first;
+        var funAnnotationLabel = parseFunctionLabel(securityFunctionAnnotation);
+        beginLabel = funAnnotationLabel.beginLabel;
+        endLabel = funAnnotationLabel.endLabel;
+      }
+
+      var returnAnnotations = metadata.where((a) => isLabel(a));
+      if (returnAnnotations.length == 1) {
+        returnLabel = parseLabel(returnAnnotations.first);
+      }
+    }
+    return new FunctionLevelLabels(
+        returnLabel, new FunctionAnnotationLabel(beginLabel, endLabel));
+  }
+
+  SecurityLabel _liftLabelToIntervalIfNeeded(SecurityLabel label) {
+    return intervalMode
+        ? (!(label is UnknownLabel)
+            ? new IntervalLabel(label, label)
+            : lattice.dynamic)
+        : label;
+  }
+}
+
+abstract class AnnotatedLabel {}
+
+class SimpleAnnotatedLabel extends AnnotatedLabel {
+  SecurityLabel label;
+
+  SimpleAnnotatedLabel(this.label);
+}
+
+class FunctionLevelLabels extends AnnotatedLabel {
+  SecurityLabel returnLabel;
+  FunctionAnnotationLabel functionLabels;
+
+  FunctionLevelLabels(this.returnLabel, this.functionLabels);
 }
 
 /**
- * Represents the security labels associated to a function.
+ * Contains the security labels annotated to a function.
  */
 class FunctionAnnotationLabel {
   /**
@@ -150,6 +205,7 @@ class FunctionAnnotationLabel {
    *
    */
   SecurityLabel endLabel;
+
   FunctionAnnotationLabel(
       SecurityLabel this.beginLabel, SecurityLabel this.endLabel);
 }
@@ -157,8 +213,14 @@ class FunctionAnnotationLabel {
 class SecCompilationException implements SecDartException {
   AstNode node;
   final String message;
+
   SecCompilationException(AstNode this.node, [this.message]);
 
   @override
   String getMessage() => message;
+}
+
+///The result of the security parser. A map from [Element]s to [AnnotatedLabel].
+class LabelMap {
+  final Map<Element, AnnotatedLabel> map = {};
 }

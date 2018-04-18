@@ -10,6 +10,7 @@ import 'package:analyzer/dart/element/type.dart';
 
 class GradualSecurityTypeSystem {
   String _error;
+
   String get error => _error;
 
   bool isSubtypeOf(SecurityType t1, SecurityType t2) {
@@ -60,50 +61,61 @@ class GradualSecurityTypeSystem {
   }
 
   SecurityType join(SecurityType s1, SecurityType s2, DartType resultHint,
-      ElementAnnotationParserImpl elementParser) {
+      SecurityElementResolver elementResolver) {
     if (s1 is DynamicSecurityType) {
-      return new DynamicSecurityType(s1.label.join(s2.label));
+      return new DynamicSecurityTypeImpl(s1.label.join(s2.label));
     }
     if (s2 is DynamicSecurityType) {
-      return new DynamicSecurityType(s1.label.join(s2.label));
+      return new DynamicSecurityTypeImpl(s1.label.join(s2.label));
     }
     if (s1 is InterfaceSecurityType && s2 is InterfaceSecurityType) {
-      return elementParser.fromDartType(resultHint, s1.label.join(s2.label));
+      return elementResolver
+          .fromDartType(resultHint)
+          .toSecurityType(s1.label.join(s2.label));
     }
+
     if (s1 is SecurityFunctionType &&
         s2 is SecurityFunctionType &&
         resultHint is FunctionType) {
       return new SecurityFunctionTypeImpl(
           s1.beginLabel.meet(s2.beginLabel),
-          _meetParameters(s1.argumentTypes, s2.argumentTypes,
-              resultHint.parameters.map((p) => p.type).toList(), elementParser),
+          _meetParameters(
+              s1.argumentTypes,
+              s2.argumentTypes,
+              resultHint.parameters.map((p) => p.type).toList(),
+              elementResolver),
           join(s1.returnType, s2.returnType, resultHint.returnType,
-              elementParser),
+              elementResolver),
           s1.endLabel.join(s2.endLabel));
     }
     return null;
   }
 
   SecurityType meet(SecurityType s1, SecurityType s2, DartType resultHint,
-      ElementAnnotationParserImpl elementParser) {
+      SecurityElementResolver elementResolver) {
     if (s1 is DynamicSecurityType) {
-      return new DynamicSecurityType(s1.label.meet(s2.label));
+      return new DynamicSecurityTypeImpl(s1.label.meet(s2.label));
     }
     if (s2 is DynamicSecurityType) {
-      return new DynamicSecurityType(s1.label.meet(s2.label));
+      return new DynamicSecurityTypeImpl(s1.label.meet(s2.label));
     }
     if (s1 is InterfaceSecurityType && s2 is InterfaceSecurityType) {
-      return elementParser.fromDartType(resultHint, s1.label.meet(s2.label));
+      return elementResolver
+          .fromDartType(resultHint)
+          .toSecurityType(s1.label.meet(s2.label));
     }
     if (s1 is SecurityFunctionType &&
         s2 is SecurityFunctionType &&
         resultHint is FunctionType) {
       return new SecurityFunctionTypeImpl(
           s1.beginLabel.join(s2.beginLabel),
-          _joinParameters(s1.argumentTypes, s2.argumentTypes,
-              resultHint.parameters.map((p) => p.type).toList(), elementParser),
+          _joinParameters(
+              s1.argumentTypes,
+              s2.argumentTypes,
+              resultHint.parameters.map((p) => p.type).toList(),
+              elementResolver),
           meet(s1.returnType, s2.returnType, resultHint.returnType,
-              elementParser),
+              elementResolver),
           s1.endLabel.meet(s2.endLabel));
     }
     return null;
@@ -113,12 +125,12 @@ class GradualSecurityTypeSystem {
       List<SecurityType> l1,
       List<SecurityType> l2,
       List<DartType> hint,
-      ElementAnnotationParserImpl elementParser) {
+      SecurityElementResolver elementResolver) {
     if (l1.length != l2.length)
       throw new ArgumentError("Distinct argument size");
     List<SecurityType> result = [];
     for (int i = 0; i < l1.length; i++) {
-      result.add(meet(l1[i], l2[i], hint[i], elementParser));
+      result.add(meet(l1[i], l2[i], hint[i], elementResolver));
     }
     return result;
   }
@@ -127,12 +139,12 @@ class GradualSecurityTypeSystem {
       List<SecurityType> l1,
       List<SecurityType> l2,
       List<DartType> hint,
-      ElementAnnotationParserImpl elementParser) {
+      SecurityElementResolver elementResolver) {
     if (l1.length != l2.length)
       throw new ArgumentError("Distinct argument size");
     List<SecurityType> result = [];
     for (int i = 0; i < l1.length; i++) {
-      result.add(join(l1[i], l2[i], hint[i], elementParser));
+      result.add(join(l1[i], l2[i], hint[i], elementResolver));
     }
     return result;
   }

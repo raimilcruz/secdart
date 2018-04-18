@@ -1,3 +1,5 @@
+import 'package:test/test.dart';
+
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import 'package:secdart_analyzer/src/errors.dart';
@@ -26,9 +28,17 @@ class ImplicitFlowsTest extends AbstractSecDartTest {
         }
       ''';
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source);
+    var resultWithIntervals =
+        typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    var resultWithoutNoIntervals = typeCheckSecurityForSource(source);
+
+    expect(
+        resultWithIntervals
+            .where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
+
+    expect(resultWithoutNoIntervals, isEmpty);
   }
 
   void test_noImplicitFlow() {
@@ -49,7 +59,7 @@ class ImplicitFlowsTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(!containsInvalidFlow(result));
+    expect(containsInvalidFlow(result), isFalse);
   }
 
   void test_implicitFlow2() {
@@ -71,7 +81,13 @@ class ImplicitFlowsTest extends AbstractSecDartTest {
       ''';
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
+    var resultWithIntervals =
+        typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.IMPLICIT_FLOW));
+    expect(result, isEmpty);
+    expect(
+        resultWithIntervals
+            .where((e) => e.errorCode == SecurityErrorCode.IMPLICIT_FLOW),
+        isNotEmpty);
   }
 }

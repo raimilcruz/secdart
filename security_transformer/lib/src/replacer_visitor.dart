@@ -963,9 +963,9 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
     replaceNodeInAst(
         node.condition,
         createFunctionInvocation('SecurityContext.evaluateConditionAndUpdatePc',
-            [node.condition.toString(), _size]));
+            [node.condition.toString(), _size.toString()]));
     final recoverStatement = createExpressionStatementWithFunctionInvocation(
-        'SecurityContext.recoverPc', [_size]);
+        'SecurityContext.recoverPc', [_size.toString()]);
     _size++;
     return createBlock([node, recoverStatement]);
   }
@@ -1023,9 +1023,9 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
     replaceNodeInAst(
         node.condition,
         createFunctionInvocation('SecurityContext.evaluateConditionAndUpdatePc',
-            [node.condition.toString(), _size]));
+            [node.condition.toString(), _size.toString()]));
     final recoverStatement = createExpressionStatementWithFunctionInvocation(
-        'SecurityContext.recoverPc', [_size]);
+        'SecurityContext.recoverPc', [_size.toString()]);
     _size++;
     return createBlock([node, recoverStatement]);
   }
@@ -1236,9 +1236,9 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
     replaceNodeInAst(
         node.condition,
         createFunctionInvocation('SecurityContext.evaluateConditionAndUpdatePc',
-            [node.condition.toString(), _size]));
+            [node.condition.toString(), _size.toString()]));
     final recoverStatement = createExpressionStatementWithFunctionInvocation(
-        'SecurityContext.recoverPc', [_size]);
+        'SecurityContext.recoverPc', [_size.toString()]);
     _size++;
     return createBlock([node, recoverStatement]);
   }

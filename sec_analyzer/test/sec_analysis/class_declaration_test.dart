@@ -1,3 +1,5 @@
+import 'package:test/test.dart';
+
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import "package:secdart_analyzer/src/errors.dart";
@@ -15,8 +17,7 @@ class ClassDeclaration extends AbstractSecDartTest {
          import "package:secdart/secdart.dart";
          
          class A{
-           @low void f(){
-           }
+           @low void f() {}
          }
          class B extends A{
            @top void f() {}
@@ -25,8 +26,10 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.any(
-        (x) => x.errorCode == SecurityErrorCode.INVAlID_OVERRIDE_RETURN_LABEL));
+    expect(
+        result.where((x) =>
+            x.errorCode == SecurityErrorCode.INVAlID_OVERRIDE_RETURN_LABEL),
+        isNotEmpty);
   }
 
   void test_classDefinition2() {
@@ -44,8 +47,10 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result
-        .any((x) => x.errorCode == SecurityErrorCode.INVAlID_METHOD_OVERRIDE));
+    expect(
+        result.where(
+            (x) => x.errorCode == SecurityErrorCode.INVAlID_METHOD_OVERRIDE),
+        isNotEmpty);
   }
 
   void test_methodInvocation() {
@@ -66,7 +71,8 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_ImplicitFlow() {
@@ -93,7 +99,8 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_ImplicitFlow2() {
@@ -117,8 +124,9 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.isNotEmpty);
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result, isNotEmpty);
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_ImplicitFlow3() {
@@ -143,7 +151,7 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.isEmpty);
+    expect(result, isEmpty);
   }
 
   void test_explicitConstructorOk() {
@@ -160,8 +168,9 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.isNotEmpty);
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result, isNotEmpty);
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_callConstructor() {
@@ -178,8 +187,9 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.isNotEmpty);
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result, isNotEmpty);
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_setInstanceFieldInvalidFlow() {
@@ -195,8 +205,9 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.isNotEmpty);
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result, isNotEmpty);
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_getInstanceFieldInvalidFlow() {
@@ -214,8 +225,9 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.isNotEmpty);
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.isNotEmpty, isTrue);
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_clientSetFieldInvalidFlow() {
@@ -234,8 +246,9 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.isNotEmpty);
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result, isNotEmpty);
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_clientGetFieldInvalidFlow() {
@@ -254,7 +267,20 @@ class ClassDeclaration extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.isNotEmpty);
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.isNotEmpty, isTrue);
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
+  }
+
+  void test_IndexedExpression() {
+    var program = '''
+        import "package:secdart/secdart.dart";
+        void foo(List l) {
+          var a = l[1];
+        }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source, intervalMode: true);
+    expect(result, isEmpty);
   }
 }

@@ -2,6 +2,7 @@
 // Contains test for global functions with gradual security typing annotations
 //
 
+import 'package:test/test.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import '../test_helpers.dart';
 import "package:secdart_analyzer/src/errors.dart";
@@ -17,61 +18,60 @@ class FunctionDefinitionTest extends AbstractSecDartTest {
   void test_explicitFlow() {
     var program = '''
         import "package:secdart/secdart.dart";
-        int foo (@high int a1) {
-          @low var a = a1;
-          return 1;
+        @low int foo (@high int a1) {
+          return a1;
         }
       ''';
     var source = newSource("/test.dart", program);
 
     var result = typeCheckSecurityForSource(source);
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(
+        result.where((e) => e.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR),
+        isNotEmpty);
   }
 
   void test_secureFlow() {
     var program = '''
         import "package:secdart/secdart.dart";
-        int foo (@high int a1) {
-          @high var a = a1;
-          return 1;
+        @high int foo (@high int a1) {
+          return a1;
         }
         ''';
 
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
-    assert(!containsInvalidFlow(result));
+    expect(containsInvalidFlow(result), isFalse);
   }
 
   void test_secureFlow2() {
     var program = '''
         import "package:secdart/secdart.dart";
-         int foo (int a1) {
-          @low var a = a1;
-          return 1;
+        @low int foo (int a1) {
+          return a1;
         }
         ''';
 
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(!containsInvalidFlow(result));
+    expect(containsInvalidFlow(result), isFalse);
   }
 
   void test_secureFlow3() {
     var program = '''
         import "package:secdart/secdart.dart";
         int foo (int a1) {
-          var a = a1;
-          return 1;
+          return a1;
         }
         ''';
 
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(!containsInvalidFlow(result));
+    expect(containsInvalidFlow(result), isFalse);
   }
 
+  //TODO: Move this for if-statement resolver.
   void test_functionReturnedExpression() {
     var program = '''
         import "package:secdart/secdart.dart";
@@ -90,11 +90,14 @@ class FunctionDefinitionTest extends AbstractSecDartTest {
     var resultWithInterval =
         typeCheckSecurityForSource(source, intervalMode: true);
 
-    assert(result.isEmpty);
-    assert(resultWithInterval
-        .any((e) => e.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR));
+    expect(result, isEmpty);
+    expect(
+        resultWithInterval
+            .where((e) => e.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR),
+        isNotEmpty);
   }
 
+  //TODO: Move this to assignment tests
   void test_cannotLeakUsingFunctionArguments() {
     var program = '''
         import "package:secdart/secdart.dart";

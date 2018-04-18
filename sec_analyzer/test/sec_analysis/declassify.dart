@@ -1,3 +1,5 @@
+import 'package:test/test.dart';
+
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import "package:secdart_analyzer/src/errors.dart";
@@ -38,7 +40,7 @@ class DeclassifyTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.isEmpty);
+    expect(result, isEmpty);
   }
 
   void test_declassifyToIntermediateLabel() {
@@ -53,8 +55,9 @@ class DeclassifyTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(
-        result.any((x) => x.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR));
+    expect(
+        result.where((x) => x.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR),
+        isNotEmpty);
   }
 
   void test_declassifyPassword() {

@@ -2,13 +2,15 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:analyzer/src/dart/element/element.dart';
+import 'package:analyzer/src/dart/element/type.dart';
 import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
+import 'package:secdart_analyzer/src/annotations/external_library.dart';
 import 'package:secdart_analyzer/src/annotations/parser.dart';
-import 'package:secdart_analyzer/src/error_collector.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
 
-abstract class ElementAnnotationParser {
+///Resolve security for program entities.
+abstract class SecurityElementResolver {
   /**
    * A general representation of the lattice this parser parses
    */
@@ -19,33 +21,168 @@ abstract class ElementAnnotationParser {
    * the element has a metadata property.
    */
   SecurityType fromIdentifierDeclaration(Element element, DartType type);
+
+  ///Returns the a [PreSecurityType] from a [DartType].
+  PreSecurityType fromDartType(DartType type);
+
+  SecurityFunctionElement getSecurityFunction(FunctionElement element);
+
+  SecurityMethodElement getSecurityMethod(MethodElement element);
+
+  SecurityPropertyAccessorElement getSecurityPropertyAccessor(
+      PropertyAccessorElement element);
+
+  SecurityClassElement getSecurityClass(ClassElement element);
+
+  SecurityConstructorElement getSecurityConstructor(
+      ConstructorElement constructor);
+
+  /// Returns a boolean value if the element belongs to a library
+  /// that imported "secdart"
+  bool _elementIsDefinedInSecDartLibrary(Element element) {
+    if (element.library == null) {
+      return false;
+    }
+    return !(element is DynamicElementImpl) &&
+        element.library.imports.any((import) =>
+            import.uri != null ? import.uri.contains("secdart.dart") : false);
+  }
+
+  bool _isVoidType(DartType type) {
+    return (type is VoidType);
+  }
 }
 
-class ElementAnnotationParserImpl extends ElementAnnotationParser {
-  SecAnnotationParser _parser;
-  Map<String, ClassSecurityInfo> _classCache = {};
-  Map<DartType, SecurityType> _secDartCache = {};
-  Map<Element, SecurityLabel> _labelCache = {};
+class DispatcherSecurityElementResolver extends SecurityElementResolver {
+  SecDartElementResolver secDartResolver;
+  ExternalLibraryResolver nonSecDartResolver;
+  SecurityCache _securityMap;
 
-  ElementAnnotationParserImpl(
-      CompilationUnit unit, ErrorCollector errorCollector,
+  DispatcherSecurityElementResolver(
+      this.secDartResolver, this.nonSecDartResolver, this._securityMap) {
+    nonSecDartResolver.dispatcherResolver = this;
+    secDartResolver.dispatcherResolver = this;
+  }
+
+  @override
+  PreSecurityType fromDartType(DartType type) {
+    if (_securityMap.typeCache.containsKey(type)) {
+      print("security type for $type obtained from cache");
+      return _securityMap.typeCache[type];
+    }
+    if (_isVoidType(type)) {
+      return nonSecDartResolver.fromDartType(type);
+    }
+    final secType = (_elementIsDefinedInSecDartLibrary(type.element))
+        ? secDartResolver.fromDartType(type)
+        : nonSecDartResolver.fromDartType(type);
+
+    //function type are structural (ie. they are not nominal)
+    if (!(type is FunctionType)) {
+      _securityMap.typeCache.putIfAbsent(type, () => secType);
+    }
+    return secType;
+  }
+
+  @override
+  SecurityType fromIdentifierDeclaration(Element element, DartType type) {
+    return secDartResolver.fromIdentifierDeclaration(element, type);
+  }
+
+  @override
+  SecurityClassElement getSecurityClass(ClassElement element) {
+    if (!_securityMap.map.containsKey(element)) {
+      final securityElement = _elementIsDefinedInSecDartLibrary(element)
+          ? secDartResolver.getSecurityClass(element)
+          : nonSecDartResolver.getSecurityClass(element);
+      _securityMap.map.putIfAbsent(element, () => securityElement);
+    }
+    return _securityMap.map[element];
+  }
+
+  @override
+  SecurityConstructorElement getSecurityConstructor(
+      ConstructorElement element) {
+    if (!_securityMap.map.containsKey(element)) {
+      final securityElement = _elementIsDefinedInSecDartLibrary(element)
+          ? secDartResolver.getSecurityConstructor(element)
+          : nonSecDartResolver.getSecurityConstructor(element);
+
+      _securityMap.map.putIfAbsent(element, () => securityElement);
+    }
+    return _securityMap.map[element];
+  }
+
+  @override
+  SecurityFunctionElement getSecurityFunction(FunctionElement element) {
+    if (!_securityMap.map.containsKey(element)) {
+      final securityFunctionElement = _elementIsDefinedInSecDartLibrary(element)
+          ? secDartResolver.getSecurityFunction(element)
+          : nonSecDartResolver.getSecurityFunction(element);
+
+      _securityMap.map.putIfAbsent(element, () => securityFunctionElement);
+    }
+    return _securityMap.map[element];
+  }
+
+  @override
+  SecurityMethodElement getSecurityMethod(MethodElement element) {
+    if (!_securityMap.map.containsKey(element)) {
+      final securityMethod = _elementIsDefinedInSecDartLibrary(element)
+          ? secDartResolver.getSecurityMethod(element)
+          : nonSecDartResolver.getSecurityMethod(element);
+
+      _securityMap.map.putIfAbsent(element, () => securityMethod);
+    }
+    return _securityMap.map[element];
+  }
+
+  @override
+  SecurityPropertyAccessorElement getSecurityPropertyAccessor(
+      PropertyAccessorElement property) {
+    if (property.name == "_age") {
+      print("in _age");
+    }
+    if (!_securityMap.map.containsKey(property)) {
+      SecurityPropertyAccessorElement securityElement =
+          _elementIsDefinedInSecDartLibrary(property)
+              ? secDartResolver.getSecurityPropertyAccessor(property)
+              : nonSecDartResolver.getSecurityPropertyAccessor(property);
+
+      _securityMap.map.putIfAbsent(property, () => securityElement);
+    }
+    return _securityMap.map[property];
+  }
+
+  @override
+  Lattice get lattice => secDartResolver.lattice;
+}
+
+class SecDartElementResolver extends SecurityElementResolver {
+  DispatcherSecurityElementResolver dispatcherResolver;
+  SecAnnotationParser _parser;
+  SecurityCache _securityMap;
+  LabelMap _labelMap;
+
+  SecDartElementResolver(
+      CompilationUnit unit,
+      SecAnnotationParser annotationParser,
+      SecurityCache securityMap,
+      LabelMap labelMap,
       [bool intervalMode = false]) {
-    _parser = new FlatLatticeParser(errorCollector, unit, intervalMode);
+    _securityMap = securityMap;
+    _labelMap = labelMap;
+    _parser = annotationParser;
   }
 
   Lattice get lattice => _parser.lattice;
 
-  SecurityType fromDartType(DartType type, SecurityLabel label) {
-    if (_secDartCache.containsKey(type)) {
-      print("cached");
-      //we use here downgradeLabel, but we really want to say 'setLabel'
-      var cachedSecType = _secDartCache[type].downgradeLabel(label);
-      return cachedSecType;
-    }
-    SecurityType result = new DynamicSecurityType(label);
-    ;
+  PreSecurityType fromDartType(DartType type) {
+    PreSecurityType result = new PreDynamicTypeImpl();
+
     if (type is InterfaceType) {
-      result = securityTypeFromClass(type, label);
+      result = new PreInterfaceTypeImpl(
+          dispatcherResolver.getSecurityClass(type.element));
     }
     //if it is a function type is should be defined as type alias
     else if (type is FunctionType) {
@@ -53,16 +190,16 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
         return _fromFunctionTypeAlias(type.element.enclosingElement);
       }
       //in this case we do not have type annotations
-      SecurityType returnType = fromDartType(type.returnType, label);
-      return new SecurityFunctionTypeImpl(
-          lattice.dynamic,
-          type.parameters
-              .map((t) => fromIdentifierDeclaration(t, t.type))
-              .toList(),
-          returnType,
-          label);
+      PreSecurityType returnType =
+          dispatcherResolver.fromDartType(type.returnType);
+      return new PreFunctionTypeImpl(
+        lattice.dynamic,
+        type.parameters
+            .map((t) => dispatcherResolver.fromIdentifierDeclaration(t, t.type))
+            .toList(),
+        returnType.toSecurityType(lattice.dynamic),
+      );
     }
-    _secDartCache.putIfAbsent(type, () => result);
     return result;
   }
 
@@ -73,149 +210,194 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
   SecurityType fromIdentifierDeclaration(Element element, DartType type) {
     //get the label ascribed via annotations
     var label = _getSecurityLabel(element, element.metadata);
-    return fromDartType(type, label);
+    return dispatcherResolver.fromDartType(type).toSecurityType(label);
   }
 
-  SecurityFunctionType getFunctionSecType(Iterable<Annotation> metadataList,
-      List<ParameterElement> parameters, DartType returnType) {
-    //label are dynamic by default
-    var returnLabel = lattice.dynamic;
-    var beginLabel = lattice.dynamic;
-    var endLabel = lattice.dynamic;
-    if (metadataList != null) {
-      var latentAnnotations =
-          metadataList.where((a) => a.name.name == FUNCTION_LATENT_LABEL);
-
-      if (latentAnnotations.length == 1) {
-        Annotation securityFunctionAnnotation = latentAnnotations.first;
-        var funAnnotationLabel =
-            _parser.parseFunctionLabel(securityFunctionAnnotation);
-        beginLabel = funAnnotationLabel.beginLabel;
-        endLabel = funAnnotationLabel.endLabel;
-      }
-
-      var returnAnnotations = metadataList.where((a) => _parser.isLabel(a));
-      if (returnAnnotations.length == 1) {
-        returnLabel = _parser.parseLabel(returnAnnotations.first);
-      }
+  PreFunctionType _fromFunctionTypeAlias(FunctionTypeAliasElement element) {
+    if (!_elementIsDefinedInSecDartLibrary(element)) {
+      throw new ArgumentError("We expect a SecDart type alias");
     }
-    var parameterSecTypes = new List<SecurityType>();
-    for (ParameterElement p in parameters) {
-      parameterSecTypes.add(fromIdentifierDeclaration(p, p.type));
-    }
-    var returnSecurityType = fromDartType(returnType, returnLabel);
-    return new SecurityFunctionTypeImpl(
-        beginLabel, parameterSecTypes, returnSecurityType, endLabel);
+    //take the security annotation from the typedef
+    //TODO: Define an annotation from function in type alias.
+    final functionSecType = _getFunctionSecType(
+        element,
+        element.metadata.map((m) => (m as ElementAnnotationImpl).annotationAst),
+        element.parameters,
+        element.returnType);
+    return new PreFunctionTypeImpl(functionSecType.beginLabel,
+        functionSecType.argumentTypes, functionSecType.returnType);
   }
 
-  ClassSecurityInfo securityInfoFromClass(InterfaceType classType) {
-    if (_classCache.containsKey(classType.name)) {
-      return _classCache[classType.name];
-    }
-    Map<String, SecurityFunctionType> methodTypes = {};
-    Map<String, SecurityType> accessors = {};
-    Map<String, SecurityFunctionType> constructors = {};
-    var result = new ClassSecurityInfo(methodTypes, accessors, constructors);
+  bool _isDeclaredAsTypeAlias(FunctionType type) {
+    return type.element.enclosingElement is FunctionTypeAliasElement;
+  }
 
-    _classCache.putIfAbsent(classType.name, () => result);
+  @override
+  SecurityFunctionElement getSecurityFunction(FunctionElement element) {
+    if (!_securityMap.map.containsKey(element)) {
+      var metadataList = element.metadata
+          .map((m) => (m as ElementAnnotationImpl).annotationAst);
+      final functionType = _getFunctionSecType(
+          element, metadataList, element.parameters, element.returnType);
+
+      _securityMap.map.putIfAbsent(element,
+          () => new SecurityFunctionElementImpl(element, functionType));
+    }
+    return _securityMap.map[element];
+  }
+
+  @override
+  SecurityMethodElement getSecurityMethod(MethodElement element) {
+    if (!_securityMap.map.containsKey(element)) {
+      var metadataList = element.metadata
+          .map((m) => (m as ElementAnnotationImpl).annotationAst);
+      final functionType = _getFunctionSecType(
+          element, metadataList, element.parameters, element.returnType);
+
+      _securityMap.map.putIfAbsent(
+          element, () => new SecurityMethodElementImpl(element, functionType));
+    }
+    return _securityMap.map[element];
+  }
+
+  @override
+  getSecurityConstructor(ConstructorElement element) {
+    if (!_securityMap.map.containsKey(element)) {
+      var metadataList = element.metadata
+          .map((m) => (m as ElementAnnotationImpl).annotationAst);
+      final functionType = _getFunctionSecType(
+          element, metadataList, element.parameters, element.returnType);
+
+      _securityMap.map.putIfAbsent(element,
+          () => new SecurityConstructorElementImpl(element, functionType));
+    }
+    return _securityMap.map[element];
+  }
+
+  @override
+  SecurityPropertyAccessorElement getSecurityPropertyAccessor(
+      PropertyAccessorElement property) {
+    if (!_securityMap.map.containsKey(property)) {
+      SecurityPropertyAccessorElement securityElement;
+
+      final functionType = _getFunctionSecType(
+          property,
+          property.metadata
+              .map((m) => (m as ElementAnnotationImpl).annotationAst),
+          property.parameters,
+          property.type.returnType);
+
+      if (property.isSynthetic) {
+        SecurityLabel label =
+            _getSecurityLabel(property.variable, property.variable.metadata);
+        if (property.isGetter) {
+          functionType.returnType.label = label;
+        }
+        //property.isSetter
+        else {
+          functionType.argumentTypes.first.label = label;
+        }
+      }
+      securityElement =
+          new SecurityPropertyAccessorElementImpl(property, functionType);
+
+      _securityMap.map.putIfAbsent(property, () => securityElement);
+    }
+    return _securityMap.map[property];
+  }
+
+  @override
+  SecurityClassElement getSecurityClass(ClassElement element) {
+    if (_securityMap.map.containsKey(element)) {
+      return _securityMap.map[element];
+    }
+
+    final classType = element.type;
+    final result = new SecurityClassElementImpl(this, classType);
+
+    _securityMap.map.putIfAbsent(classType.element, () => result);
 
     classType.methods.forEach((mElement) {
       var metadataList = mElement.metadata
           .map((m) => (m as ElementAnnotationImpl).annotationAst);
-      methodTypes.putIfAbsent(
+      result.methods.putIfAbsent(
           mElement.name,
-          () => getFunctionSecType(
-              metadataList, mElement.parameters, mElement.returnType));
+          () => _getFunctionSecType(mElement, metadataList, mElement.parameters,
+              mElement.returnType));
     });
 
     classType.accessors.forEach((property) {
       //it means the getter or setter was generated from a field
-      accessors.putIfAbsent(
-          property.name, () => securityTypeForProperty(property));
+      result.accessors.putIfAbsent(property.name,
+          () => getSecurityPropertyAccessor(property).propertyType);
     });
 
     classType.constructors.forEach((cElement) {
       var metadataList = cElement.metadata
           .map((m) => (m as ElementAnnotationImpl).annotationAst);
-      constructors.putIfAbsent(
+      result.constructors.putIfAbsent(
           cElement.name,
-          () => getFunctionSecType(
-              metadataList, cElement.parameters, cElement.returnType));
+          () => _getFunctionSecType(cElement, metadataList, cElement.parameters,
+              cElement.returnType));
     });
 
     return result;
   }
 
-  SecurityType securityTypeForProperty(PropertyAccessorElement property) {
-    var metadata;
-    if (property.isSynthetic) {
-      metadata = property.variable.metadata;
-    } else {
-      metadata = property.metadata;
-    }
-    var dartType = null;
-    if (property.isGetter) {
-      dartType = property.returnType;
-    }
-    //property.isSetter
-    else {
-      dartType = property.type.parameters.first.type;
-    }
-    return fromDartType(dartType, _getSecurityLabel(property, metadata));
-  }
-
-  SecurityType securityTypeForFunctionElement(FunctionElement element) {
-    var metadataList =
-        element.metadata.map((m) => (m as ElementAnnotationImpl).annotationAst);
-    return getFunctionSecType(
-        metadataList, element.parameters, element.returnType);
-  }
-
-  SecurityType securityTypeFromClass(
-      InterfaceType interfaceType, SecurityLabel label) {
-    //if the class was not defined with security concerns in mind.
-    if (!_elementIsDefinedInSecDartLibrary(interfaceType.element)) {
-      //TODO: Get either a parametric version for the security type or
-      //the unknown security type
-      return new InterfaceSecurityTypeImpl.forExternalClass(
-          label, interfaceType);
-    }
-    return new InterfaceSecurityTypeImpl(
-        label, interfaceType, securityInfoFromClass(interfaceType));
-  }
-
-  bool _elementIsDefinedInSecDartLibrary(Element element) {
-    return element.library.imports
-            .where((import) => import.uri != null
-                ? import.uri.contains("secdart.dart")
-                : false)
-            .length !=
-        0;
-  }
-
-  SecurityFunctionType _fromFunctionTypeAlias(
-      FunctionTypeAliasElement element) {
+  SecurityFunctionType _getFunctionSecType(
+      Element element,
+      Iterable<Annotation> metadataList,
+      List<ParameterElement> parameters,
+      DartType returnType) {
+    var functionLevelLabels = _functionLevelLabels(element);
     if (!_elementIsDefinedInSecDartLibrary(element)) {
-      return new SecurityFunctionTypeImpl(
-          lattice.top,
-          element.parameters
-              .map((p) => fromDartType(p.type, lattice.top))
-              .toList(),
-          fromDartType(element.returnType, lattice.bottom),
-          lattice.bottom);
+      throw new UnimplementedError("This method should not call on non-secdart"
+          "elements");
     }
-    //take the security annotation from the typedef
-    return getFunctionSecType(
-        element.metadata.map((m) => (m as ElementAnnotationImpl).annotationAst),
-        element.parameters,
-        element.returnType);
+    var returnLabel = functionLevelLabels.returnLabel;
+    var beginLabel = functionLevelLabels.functionLabels.beginLabel;
+    var endLabel = functionLevelLabels.functionLabels.endLabel;
+
+    var parameterSecTypes = new List<SecurityType>();
+    for (ParameterElement p in parameters) {
+      parameterSecTypes.add(fromIdentifierDeclaration(p, p.type));
+    }
+    var returnSecurityType =
+        fromDartType(returnType).toSecurityType(returnLabel);
+    return new SecurityFunctionTypeImpl(
+        beginLabel, parameterSecTypes, returnSecurityType, endLabel);
+  }
+
+  /**
+   * Returns the function level labels. First, we try to get those label
+   * from the label cache.
+   */
+  FunctionLevelLabels _functionLevelLabels(FunctionTypedElement element) {
+    if (!(element is FunctionElement ||
+        element is MethodElement ||
+        element is FunctionTypeAliasElement ||
+        element is ConstructorElement ||
+        element is PropertyAccessorElement)) {
+      throw new ArgumentError(
+          "Element must be either a FunctionElement or a MethodElement");
+    }
+    //asking if this function was already visited by the parser in this
+    //case we can get labels from the label cache
+    if (!_labelMap.map.containsKey(element)) {
+      final functionLevelLabels = _parser.getFunctionLevelLabels(element
+          .metadata
+          .map((m) => (m as ElementAnnotationImpl).annotationAst)
+          .toList());
+      _labelMap.map.putIfAbsent(element, () => functionLevelLabels);
+    }
+    return _labelMap.map[element] as FunctionLevelLabels;
   }
 
   SecurityLabel _getSecurityLabel(
       dynamic element, List<ElementAnnotation> metadata) {
-    if (_labelCache.containsKey(element)) {
-      print("label cached");
-      return _labelCache[element];
+    if (_labelMap.map.containsKey(element)) {
+      print("label from label cache");
+      return (_labelMap.map[element] as SimpleAnnotatedLabel).label;
     }
 
     var secLabelAnnotations = metadata
@@ -225,15 +407,148 @@ class ElementAnnotationParserImpl extends ElementAnnotationParser {
     if (secLabelAnnotations.length == 1) {
       label = _parser.parseLabel(secLabelAnnotations.first);
     }
-    _labelCache.putIfAbsent(element, () => label);
+
+    _labelMap.map.putIfAbsent(element, () => new SimpleAnnotatedLabel(label));
     return label;
   }
+}
 
-  bool _isDeclaredAsTypeAlias(FunctionType type) {
-    return type.element.enclosingElement is FunctionTypeAliasElement;
+///This class is used to resolve security annotations
+///for non-SecDart libraries. It reads the library annotation
+///file to provide annotations.
+class ExternalLibraryResolver extends SecurityElementResolver {
+  DispatcherSecurityElementResolver _dispatcherResolver;
+  Lattice lattice;
+  SecurityCache _securityMap;
+
+  ExternalLibraryResolver(this.lattice, this._securityMap);
+
+  set dispatcherResolver(DispatcherSecurityElementResolver resolver) {
+    _dispatcherResolver = resolver;
   }
 
-  SecurityLabel parseLiteralLabel(AstNode node, String value) {
-    return _parser.parseString(node, value);
+  ///TODO: We should have a set of rule (DSL) to specific how
+  ///we want to treat labels of external libraries:
+  ///a) Inputs are high, returns are low.
+  ///b) Are implicitly parametric. The result of invoking a method
+  ///with parameter e1...en is: join label(ei).
+  ///c) Inputs and output are dynamic
+  ///d) Certain method has a concrete signature, such as print.
+  FunctionLevelLabels _functionLevelLabels(Element element) {
+    return new FunctionLevelLabels(lattice.bottom,
+        new FunctionAnnotationLabel(lattice.bottom, lattice.bottom));
+  }
+
+  @override
+  PreSecurityType fromDartType(DartType type) {
+    if (_securityMap.typeCache.containsKey(type)) {
+      print("security type for $type obtained from cache");
+      return _securityMap.typeCache[type];
+    }
+
+    PreSecurityType result = new PreDynamicTypeImpl();
+
+    if (type is InterfaceType) {
+      result = new PreInterfaceTypeImpl.forExternalClass(
+          _dispatcherResolver.getSecurityClass(type.element));
+    } else if (type is FunctionType) {
+      //TODO: Improve this. the element of this type defines
+      //how we get the type (from the DSL)
+      final secType = _securityFunctionType(type);
+      result = new PreFunctionTypeImpl(
+          secType.beginLabel, secType.argumentTypes, secType.returnType);
+    }
+    _securityMap.typeCache.putIfAbsent(type, () => result);
+    return result;
+  }
+
+  @override
+  SecurityType fromIdentifierDeclaration(Element element, DartType type) {
+    throw new UnsupportedError("Method fromIdentifierDeclaration should not be"
+        "called on a ExternalLibraryResolver instance");
+  }
+
+  @override
+  SecurityClassElement getSecurityClass(ClassElement element) {
+    if (_securityMap.map.containsKey(element)) {
+      return _securityMap.map[element];
+    }
+
+    final classType = element.type;
+    //we are lazy regarding the resolution of security for non-SecDart
+    // libraries
+    final result = new SecurityClassElementImpl(this, classType);
+
+    _securityMap.map.putIfAbsent(classType.element, () => result);
+    return result;
+  }
+
+  @override
+  SecurityConstructorElement getSecurityConstructor(
+      ConstructorElement constructor) {
+    return new SecurityConstructorElementImpl(
+        constructor, _securityFunctionType(constructor.type));
+  }
+
+  @override
+  SecurityFunctionElement getSecurityFunction(FunctionElement element) {
+    SecurityFunctionType securityFunctionType;
+    //TODO: remove this. At the moment, it is a rapid way to give
+    //a function from dart.core.
+    if (element is FunctionElement &&
+        element.library.name.contains("dart.core")) {
+      //read annotation from dsl file
+      securityFunctionType =
+          ExternalLibraryAnnotations.getSecTypeForFunction(element, this);
+    } else {
+      securityFunctionType = _securityFunctionType(element.type);
+    }
+    return new SecurityFunctionElementImpl(element, securityFunctionType);
+  }
+
+  @override
+  SecurityMethodElement getSecurityMethod(MethodElement element) {
+    return new SecurityMethodElementImpl(
+        element, _securityFunctionType(element.type));
+  }
+
+  @override
+  SecurityPropertyAccessorElement getSecurityPropertyAccessor(
+      PropertyAccessorElement element) {
+    //TODO: check this implementation
+    SecurityFunctionType securityAccessorType;
+    if (element.isGetter) {
+      securityAccessorType = new SecurityFunctionTypeImpl.forExternalFunction(
+          lattice.bottom,
+          [],
+          fromDartType(element.type.returnType).toSecurityType(lattice.bottom),
+          lattice.bottom);
+    } else {
+      securityAccessorType = new SecurityFunctionTypeImpl.forExternalFunction(
+          lattice.bottom,
+          [
+            fromDartType(element.type.parameters.first.type)
+                .toSecurityType(lattice.top)
+          ],
+          fromDartType(element.type.returnType).toSecurityType(lattice.bottom),
+          lattice.bottom);
+    }
+    return new SecurityPropertyAccessorElementImpl(
+        element, securityAccessorType);
+  }
+
+  SecurityFunctionType _securityFunctionType(FunctionType type) {
+    //TODO: use DSL this is unsound.
+    return new SecurityFunctionTypeImpl.forExternalFunction(
+        lattice.top,
+        type.parameters
+            .map((p) => _dispatcherResolver
+                .fromDartType(p.type)
+                .toSecurityType(lattice.top))
+            .toList(),
+        _dispatcherResolver
+            .fromDartType(type.returnType)
+            .toSecurityType(lattice.bottom),
+        lattice.bottom);
   }
 }

@@ -1,3 +1,5 @@
+import 'package:test/test.dart';
+
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import "package:secdart_analyzer/src/errors.dart";
@@ -21,7 +23,8 @@ class UsingClasses extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_usingNoSecDartClasses_2() {
@@ -35,7 +38,7 @@ class UsingClasses extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.isEmpty);
+    expect(result, isEmpty);
   }
 
   void test_propertyAccess_synthetic() {
@@ -52,8 +55,9 @@ class UsingClasses extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(
-        result.any((e) => e.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR));
+    expect(
+        result.where((e) => e.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR),
+        isNotEmpty);
   }
 
   void test_propertyAccess_explicit() {

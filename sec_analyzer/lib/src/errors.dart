@@ -81,6 +81,11 @@ class SecurityTypeError {
     return toAnalysisError(node, errorCode, []);
   }
 
+  static AnalysisError getNotRecognizedFunctionLabel(AstNode node) {
+    var errorCode = ParserErrorCode.NOT_RECOGNIZED_FUNCTION_LABEL;
+    return toAnalysisError(node, errorCode, []);
+  }
+
   //SYNTACTIC ERRORS IN LABEL
   static AnalysisError getBadFunctionLabel(AstNode node) {
     var errorCode = ParserErrorCode.BAD_FUNCTION_LABEL;
@@ -248,6 +253,10 @@ class ParserErrorCode extends ErrorCode {
   static const ParserErrorCode DUPLICATED_LABEL_ON_PARAMETER_ERROR =
       const ParserErrorCode('DUPLICATED_LABEL_ON_PARAMETER_ERROR',
           'Duplicated label on parameter');
+
+  static const ParserErrorCode NOT_RECOGNIZED_FUNCTION_LABEL =
+      const ParserErrorCode(
+          'NOT_RECOGNIZED_FUNCTION_LABEL', 'Not recognized function label');
 
   static const ParserErrorCode BAD_FUNCTION_LABEL = const ParserErrorCode(
       'BAD_FUNCTION_LABEL',

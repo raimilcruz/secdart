@@ -1,6 +1,7 @@
 import '../test_helpers.dart';
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import 'package:secdart_analyzer/src/errors.dart';
+import 'package:test/test.dart';
 
 void main() {
   defineReflectiveSuite(() {
@@ -52,11 +53,12 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.isNotEmpty);
-    assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result, isNotEmpty);
+    expect(result.where((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
-  void test_3() {
+  void test_lambdaAsParameter() {
     var program = '''
         import "package:secdart/secdart.dart";
         void callWithSecret(void f(@low bool)) {
@@ -67,7 +69,8 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_mapWrapper() {
@@ -80,8 +83,9 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(
-        result.any((e) => e.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR));
+    expect(
+        result.where((e) => e.errorCode == SecurityErrorCode.RETURN_TYPE_ERROR),
+        isNotEmpty);
   }
 
   void test_functionAsParameterError() {
@@ -108,7 +112,8 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_functionAsParameterWithInLineSignature() {
@@ -132,7 +137,8 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
+    expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
+        isNotEmpty);
   }
 
   void test_functionAsParameterWithInLineSignatureOk() {
@@ -156,6 +162,6 @@ class HighOrderFunctionTest extends AbstractSecDartTest {
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
 
-    assert(result.isEmpty);
+    expect(result, isEmpty);
   }
 }
