@@ -140,9 +140,6 @@ class DispatcherSecurityElementResolver extends SecurityElementResolver {
   @override
   SecurityPropertyAccessorElement getSecurityPropertyAccessor(
       PropertyAccessorElement property) {
-    if (property.name == "_age") {
-      print("in _age");
-    }
     if (!_securityMap.map.containsKey(property)) {
       SecurityPropertyAccessorElement securityElement =
           _elementIsDefinedInSecDartLibrary(property)
@@ -397,7 +394,10 @@ class SecDartElementResolver extends SecurityElementResolver {
       dynamic element, List<ElementAnnotation> metadata) {
     if (_labelMap.map.containsKey(element)) {
       print("label from label cache");
-      return (_labelMap.map[element] as SimpleAnnotatedLabel).label;
+      //TODO: Process null label properly. We obtain a null label when there
+      //is no label annotation.
+      final annotatedLabel = _labelMap.map[element] as SimpleAnnotatedLabel;
+      return annotatedLabel.label ?? _parser.lattice.dynamic;
     }
 
     var secLabelAnnotations = metadata
