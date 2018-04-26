@@ -63,6 +63,38 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
       expect(funDeclType.argumentTypes.skip(1).first.label, GTopLabel);
     }
   }
+
+  void test_globalVar() {
+    var function = '''
+        import "package:secdart/secdart.dart";
+        @low int x;
+        f(){
+          return x;
+        }
+    ''';
+    var source = newSource("/test.dart", function);
+    var result = resolveSecurity(source);
+    var unit = result.astNode;
+
+    var varDecl = AstQuery
+        .toList(unit)
+        .where((n) => n is VariableDeclaration)
+        .first as VariableDeclaration;
+    var varDeclType = varDecl.getProperty(SEC_TYPE_PROPERTY);
+
+    expect(varDeclType is InterfaceSecurityType, isTrue);
+    expect(varDeclType.label, GLowLabel);
+
+    var returnStatement = AstQuery
+        .toList(unit)
+        .where((n) => n is ReturnStatement)
+        .first as ReturnStatement;
+    var returnedExpressionSecType =
+        returnStatement.expression.getProperty(SEC_TYPE_PROPERTY);
+
+    expect(returnedExpressionSecType is InterfaceSecurityType, isTrue);
+    expect(varDeclType.label, GLowLabel);
+  }
 }
 
 @reflectiveTest

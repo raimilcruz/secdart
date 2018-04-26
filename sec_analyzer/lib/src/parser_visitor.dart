@@ -144,7 +144,9 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
       label = annotatedLabel;
     }
     node.setProperty(SEC_LABEL_PROPERTY, new SimpleAnnotatedLabel(label));
-    _labelMap.map.putIfAbsent(element, () => new SimpleAnnotatedLabel(label));
+    if (element != null) {
+      _labelMap.map.putIfAbsent(element, () => new SimpleAnnotatedLabel(label));
+    }
   }
 
   @override
@@ -171,8 +173,16 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
   @override
   bool visitVariableDeclarationList(VariableDeclarationList node) {
+    LabelNode annotatedLabel;
+    //global variable declaration
+    if (node.parent is TopLevelVariableDeclaration) {
+      annotatedLabel = _checkSimpleLabelAnnotation(node.parent);
+    }
+    //local variable declaration
+    else {
+      annotatedLabel = _checkSimpleLabelAnnotation(node);
+    }
     for (VariableDeclaration variable in node.variables) {
-      var annotatedLabel = _checkSimpleLabelAnnotation(node);
       setSimpleLabel(annotatedLabel, node, variable.element);
     }
     node.visitChildren(this);
