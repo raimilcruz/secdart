@@ -125,6 +125,115 @@ class ParserTest extends AbstractSecDartTest {
     }
   }
 
+  void test_nestedFunctionDoesNotSupportAnnotations() {
+    var function = '''
+        void foo(){
+          
+          @latent("H","L")
+          @low
+          bar (@bot int a, @top int b) {            
+          }
+        }
+    ''';
+    var source = newSource("/test.dart", function);
+    var result = resolveDart(source);
+    ErrorCollector errorListener = new ErrorCollector();
+
+    var unit = result.astNode;
+
+    var annotationParser =
+        new FourLatticeParser(errorListener, unit as CompilationUnit);
+    var visitor =
+        new SecurityParserVisitor(errorListener, unit, annotationParser, true);
+    unit.accept(visitor);
+
+    final labelMap = visitor.labeMap;
+
+    var funDecl = AstQuery
+        .toList(unit)
+        .where((n) => n is FunctionDeclaration)
+        .skip(1)
+        .first as FunctionDeclaration;
+    var funDeclLabel = funDecl.getProperty(SEC_LABEL_PROPERTY);
+
+    var parameter1 = AstQuery
+        .toList(unit)
+        .where((n) => n is FormalParameter)
+        .first as FormalParameter;
+    var parameter2 = AstQuery
+        .toList(unit)
+        .where((n) => n is FormalParameter)
+        .skip(1)
+        .first as FormalParameter;
+
+    //formal parameters need to be populated
+    final parameter1Label = parameter1.getProperty(SEC_LABEL_PROPERTY);
+    expect(parameter1Label is SimpleAnnotatedLabel, isTrue);
+    expect(labelMap.map[parameter1.element] is SimpleAnnotatedLabel, isTrue);
+    expect(parameter1Label.label, new LabelNodeImpl("bot"));
+
+    final parameter2Label = parameter2.getProperty(SEC_LABEL_PROPERTY);
+    expect(parameter2Label is SimpleAnnotatedLabel, isTrue);
+    expect(labelMap.map[parameter2.element] is SimpleAnnotatedLabel, isTrue);
+    expect(parameter2Label.label, new LabelNodeImpl("top"));
+
+    //FunctionDeclaration must be populated.
+    expect(funDeclLabel is FunctionLevelLabels, isTrue);
+    expect(labelMap.map[funDecl.element] is FunctionLevelLabels, isTrue);
+
+    if (funDeclLabel is FunctionLevelLabels) {
+      //begin label
+      expect(funDeclLabel.functionLabels.beginLabel, new NoAnnotatedLabel());
+      //end label
+      expect(funDeclLabel.functionLabels.endLabel, new NoAnnotatedLabel());
+      //return type;
+      expect(funDeclLabel.returnLabel, new NoAnnotatedLabel());
+    }
+  }
+
+  void test_nestedFunctionInMethod() {
+    var function = '''
+        import 'package:secdart/secdart.dart';
+        class Quicksort {
+            static void _qsort() {
+              void _partition() {}
+            }
+         }
+    ''';
+    var source = newSource("/test.dart", function);
+    var result = resolveDart(source);
+    ErrorCollector errorListener = new ErrorCollector();
+
+    var unit = result.astNode;
+
+    var annotationParser =
+        new FourLatticeParser(errorListener, unit as CompilationUnit);
+    var visitor =
+        new SecurityParserVisitor(errorListener, unit, annotationParser, true);
+    unit.accept(visitor);
+
+    final labelMap = visitor.labeMap;
+
+    var funDecl = AstQuery
+        .toList(unit)
+        .where((n) => n is FunctionDeclaration)
+        .first as FunctionDeclaration;
+    var funDeclLabel = funDecl.getProperty(SEC_LABEL_PROPERTY);
+
+    expect(funDeclLabel, new isInstanceOf<FunctionLevelLabels>());
+    expect(
+        labelMap.map[funDecl.element], new isInstanceOf<FunctionLevelLabels>());
+
+    if (funDeclLabel is FunctionLevelLabels) {
+      //begin label
+      expect(funDeclLabel.functionLabels.beginLabel, new NoAnnotatedLabel());
+      //end label
+      expect(funDeclLabel.functionLabels.endLabel, new NoAnnotatedLabel());
+      //return type;
+      expect(funDeclLabel.returnLabel, new NoAnnotatedLabel());
+    }
+  }
+
   void test_lambdaAreNotAnnotated() {
     var function = '''       
         foo () {

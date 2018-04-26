@@ -95,6 +95,85 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
     expect(returnedExpressionSecType is InterfaceSecurityType, isTrue);
     expect(varDeclType.label, GLowLabel);
   }
+
+  void test_nestedFunction() {
+    var function = '''
+        import "package:secdart/secdart.dart";
+        void foo(){
+          
+          @latent("H","L")
+          @low
+          bar (@bot int a, @top int b) {
+          }
+        }
+    ''';
+    var source = newSource("/test.dart", function);
+    var result = resolveSecurity(source);
+    var unit = result.astNode;
+
+    var funDecl = AstQuery
+        .toList(unit)
+        .where((n) => n is FunctionDeclaration)
+        .skip(1)
+        .first as FunctionDeclaration;
+    var funDeclType = funDecl.getProperty(SEC_TYPE_PROPERTY);
+
+    expect(funDeclType is SecurityFunctionType, isTrue);
+    expect(funDeclType.label, new DynamicLabel());
+
+    if (funDeclType is SecurityFunctionType) {
+      //begin label
+      expect(funDeclType.beginLabel, new DynamicLabel());
+      //end label
+      expect(funDeclType.endLabel, new DynamicLabel());
+      //return type;
+      expect(funDeclType.returnType, new isInstanceOf<InterfaceSecurityType>());
+      expect(funDeclType.returnType.label, new DynamicLabel());
+
+      //parameter types
+      expect(funDeclType.argumentTypes.length == 2, isTrue);
+      expect(funDeclType.argumentTypes.first is InterfaceSecurityType, isTrue);
+      expect(funDeclType.argumentTypes.first.label, GBotLabel);
+
+      expect(funDeclType.argumentTypes.skip(1).first is InterfaceSecurityType,
+          isTrue);
+      expect(funDeclType.argumentTypes.skip(1).first.label, GTopLabel);
+    }
+  }
+
+  void test_nestedFunctionInMethod() {
+    var function = '''
+        import 'package:secdart/secdart.dart';
+        class Quicksort {
+            static void _qsort() {
+              void _partition() {}
+            }
+         }
+    ''';
+    var source = newSource("/test.dart", function);
+    var result = resolveSecurity(source);
+
+    var unit = result.astNode;
+
+    var funDecl = AstQuery
+        .toList(unit)
+        .where((n) => n is FunctionDeclaration)
+        .first as FunctionDeclaration;
+    var funDeclType = funDecl.getProperty(SEC_TYPE_PROPERTY);
+
+    expect(funDeclType, new isInstanceOf<SecurityFunctionType>());
+    expect(funDeclType.label, new DynamicLabel());
+
+    if (funDeclType is SecurityFunctionType) {
+      //begin label
+      expect(funDeclType.beginLabel, new DynamicLabel());
+      //end label
+      expect(funDeclType.endLabel, new DynamicLabel());
+      //return type;
+      //expect(funDeclType.returnType, new isInstanceOf<InterfaceSecurityType>());
+      expect(funDeclType.returnType.label, new DynamicLabel());
+    }
+  }
 }
 
 @reflectiveTest

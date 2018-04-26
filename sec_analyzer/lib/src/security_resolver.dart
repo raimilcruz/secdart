@@ -56,9 +56,10 @@ class TopLevelDeclarationResolver extends RecursiveAstVisitor<bool> {
       node.setProperty(SEC_TYPE_PROPERTY, securityPropertyElement.propertyType);
       securityElement = securityPropertyElement;
     }
-
     node.setProperty(SECURITY_ELEMENT, securityElement);
 
+    //we need to visit nested function declarations
+    node.visitChildren(this);
     return true;
   }
 
@@ -69,6 +70,9 @@ class TopLevelDeclarationResolver extends RecursiveAstVisitor<bool> {
 
     node.setProperty(SEC_TYPE_PROPERTY, securityElement.constructorType);
     node.setProperty(SECURITY_ELEMENT, securityElement);
+
+    //we need to visit nested function declarations
+    node.visitChildren(this);
     return true;
   }
 }
