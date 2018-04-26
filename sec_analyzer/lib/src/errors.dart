@@ -44,9 +44,9 @@ class SecurityTypeError {
   }
 
   static AnalysisError getReturnTypeError(
-      ReturnStatement node, SecurityType from, SecurityType to) {
+      ReturnStatement node, SecurityType expected, SecurityType actual) {
     var errorCode = SecurityErrorCode.RETURN_TYPE_ERROR;
-    return toAnalysisError(node, errorCode, []);
+    return toAnalysisError(node, errorCode, [actual.label, expected.label]);
   }
 
   static AnalysisError getFunctionLabelError(FunctionDeclaration node) {
@@ -163,12 +163,12 @@ class SecurityErrorCode extends ErrorCode {
       'Pc "{0}" is higher than the security label of left hand '
       'expression "{1}" which is "{2}"');
 
-/** 
- * Reported when the label of the returned value is not less than declared function return label
-*/
+  /**
+   * Reported when the label of the returned value is not less than declared function return label
+   */
   static const SecurityErrorCode RETURN_TYPE_ERROR = const SecurityErrorCode(
       'RETURN_TYPE_ERROR',
-      'Label of returned expression is higher than return label of the function or method');
+      'Label of returned expression ({0}) is higher than return label of the function or method ({1})');
 
   static const SecurityErrorCode FUNCTION_LABEL_ERROR = const SecurityErrorCode(
       'FUNCTION_LABEL_ERROR',
@@ -285,6 +285,7 @@ class ImplementationErrorCode extends ErrorCode {
 
 abstract class SecDartException implements Exception {
   AstNode node;
+
   String getMessage();
 }
 

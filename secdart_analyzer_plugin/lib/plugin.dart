@@ -33,7 +33,9 @@ class SecDartPlugin extends ServerPlugin {
       ..byteStore = byteStore
       ..performanceLog = logger
       ..fileContentOverlay = fileContentOverlay;
-    final dartDriver = builder.buildDriver(root);
+    final dartDriver = builder.buildDriver(root)
+      ..results.listen((_) {})
+      ..exceptions.listen((_) {});
 
     final sourceFactory = dartDriver.sourceFactory;
 

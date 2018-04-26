@@ -87,8 +87,8 @@ class FunctionDefinitionTest extends AbstractSecDartTest {
 
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
-    var resultWithInterval =
-        typeCheckSecurityForSource(source, intervalMode: true);
+    var resultWithInterval = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
 
     expect(result, isEmpty);
     expect(
@@ -108,8 +108,8 @@ class FunctionDefinitionTest extends AbstractSecDartTest {
         ''';
 
     var source = newSource("/test.dart", program);
-    var resultWithInterval =
-        typeCheckSecurityForSource(source, intervalMode: true);
+    var resultWithInterval = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
 
     assert(resultWithInterval
         .any((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW));

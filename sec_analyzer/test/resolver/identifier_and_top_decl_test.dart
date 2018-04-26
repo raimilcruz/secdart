@@ -31,7 +31,7 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
 
     var unit = result.astNode;
 
-    resolveTopLevelDeclarations(unit, errorListener);
+    resolveTopLevelDeclarations(unit, errorListener, defaultConfig, false);
 
     var funDecl = AstQuery
         .toList(unit)
@@ -46,21 +46,21 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
 
     if (funDeclType is SecurityFunctionType) {
       //begin label
-      expect(funDeclType.beginLabel, new HighLabel());
+      expect(funDeclType.beginLabel, GHighLabel);
       //end label
-      expect(funDeclType.endLabel, new LowLabel());
+      expect(funDeclType.endLabel, GLowLabel);
       //return type;
       expect(funDeclType.returnType is DynamicSecurityType, isTrue);
-      expect(funDeclType.returnType.label, new LowLabel());
+      expect(funDeclType.returnType.label, GLowLabel);
 
       //parameter types
       expect(funDeclType.argumentTypes.length == 2, isTrue);
       expect(funDeclType.argumentTypes.first is InterfaceSecurityType, isTrue);
-      expect(funDeclType.argumentTypes.first.label, new BotLabel());
+      expect(funDeclType.argumentTypes.first.label, GBotLabel);
 
       expect(funDeclType.argumentTypes.skip(1).first is DynamicSecurityType,
           isTrue);
-      expect(funDeclType.argumentTypes.skip(1).first.label, new TopLabel());
+      expect(funDeclType.argumentTypes.skip(1).first.label, GTopLabel);
     }
   }
 }
@@ -82,7 +82,8 @@ class IdentifierResolverTest extends AbstractSecDartTest {
 
     var unit = result.astNode;
 
-    var resolver = parseAndGetSecurityElementResolver(unit, errorListener);
+    var resolver = parseAndGetSecurityElementResolver(
+        unit, errorListener, defaultConfig, false);
 
     var returnStm =
         AstQuery.toList(unit).where((n) => n is ReturnStatement).first;
@@ -98,7 +99,7 @@ class IdentifierResolverTest extends AbstractSecDartTest {
     var secType = variableUsage.getProperty(SEC_TYPE_PROPERTY);
     expect(secType is InterfaceSecurityType, isTrue);
     if (secType is InterfaceSecurityType) {
-      expect(secType.label, new BotLabel());
+      expect(secType.label, GBotLabel);
     }
   }
 
@@ -121,7 +122,8 @@ class IdentifierResolverTest extends AbstractSecDartTest {
 
     var unit = result.astNode;
 
-    var resolver = parseAndGetSecurityElementResolver(unit, errorListener);
+    var resolver = parseAndGetSecurityElementResolver(
+        unit, errorListener, defaultConfig, false);
 
     var methodInvocation =
         AstQuery.toList(unit).where((n) => n is MethodInvocation).first;
@@ -141,7 +143,7 @@ class IdentifierResolverTest extends AbstractSecDartTest {
           new DynamicLabel(),
           new DynamicLabel(),
           new DynamicLabel(),
-          [new BotLabel()]).sameShapeThat(secType));
+          [GBotLabel]).sameShapeThat(secType));
     }
   }
 
@@ -162,7 +164,8 @@ class IdentifierResolverTest extends AbstractSecDartTest {
 
     var unit = result.astNode;
 
-    var resolver = parseAndGetSecurityElementResolver(unit, errorListener);
+    var resolver = parseAndGetSecurityElementResolver(
+        unit, errorListener, defaultConfig, false);
 
     var returnStm =
         AstQuery.toList(unit).where((n) => n is ReturnStatement).first;
@@ -177,7 +180,7 @@ class IdentifierResolverTest extends AbstractSecDartTest {
 
     var secType = variableUsage.getProperty(SEC_TYPE_PROPERTY);
     expect(secType is InterfaceSecurityType, isTrue);
-    expect(secType.label, new HighLabel());
+    expect(secType.label, GHighLabel);
   }
 
   void test_methodElement() {
@@ -200,7 +203,8 @@ class IdentifierResolverTest extends AbstractSecDartTest {
 
     var unit = result.astNode;
 
-    var resolver = parseAndGetSecurityElementResolver(unit, errorListener);
+    var resolver = parseAndGetSecurityElementResolver(
+        unit, errorListener, defaultConfig, false);
 
     var returnStm =
         AstQuery.toList(unit).where((n) => n is MethodInvocation).first;
@@ -217,10 +221,8 @@ class IdentifierResolverTest extends AbstractSecDartTest {
     expect(secType is SecurityFunctionType, isTrue);
     if (secType is SecurityFunctionType) {
       assert(new FunctionSecurityTypeLabelShape(
-          new DynamicLabel(),
-          new DynamicLabel(),
-          new LowLabel(),
-          [new HighLabel()]).sameShapeThat(secType));
+              new DynamicLabel(), new DynamicLabel(), GLowLabel, [GHighLabel])
+          .sameShapeThat(secType));
     }
   }
 }

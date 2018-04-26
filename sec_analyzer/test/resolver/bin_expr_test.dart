@@ -34,7 +34,7 @@ class BinaryExprTest extends AbstractSecDartTest {
 
     var securityType = binaryExpression.getProperty(SEC_TYPE_PROPERTY);
     expect(securityType is InterfaceSecurityType, isTrue);
-    expect(securityType.label, new HighLabel());
+    expect(securityType.label, GHighLabel);
   }
 
   void test_flowSensitiveSum2() {
@@ -56,7 +56,7 @@ class BinaryExprTest extends AbstractSecDartTest {
 
     var securityType = binaryExpression.getProperty(SEC_TYPE_PROPERTY);
     expect(securityType is InterfaceSecurityType, isTrue);
-    expect(securityType.label, new LowLabel());
+    expect(securityType.label, GLowLabel);
   }
 
   void test_relaxedModeBinOp() {
@@ -89,7 +89,7 @@ class BinaryExprTest extends AbstractSecDartTest {
           }
       ''';
     var source = newSource("/test.dart", program);
-    var result = resolveSecurity(source, intervalMode: true);
+    var result = resolveSecurity(source, intervalModeWithDefaultLatticeConfig);
 
     var unit = result.astNode;
     result.errors.forEach(print);
@@ -100,7 +100,6 @@ class BinaryExprTest extends AbstractSecDartTest {
 
     var securityType = binaryExpression.getProperty(SEC_TYPE_PROPERTY);
     expect(securityType is InterfaceSecurityType, isTrue);
-    expect(
-        securityType.label, new IntervalLabel(new HighLabel(), new TopLabel()));
+    expect(securityType.label, new IntervalLabel(HighLabel, TopLabel));
   }
 }

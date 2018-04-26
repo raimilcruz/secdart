@@ -12,6 +12,7 @@ import 'sec_analysis/loops_test.dart' as loops;
 
 import 'lattice/lh_lattice_test.dart' as lattice;
 import 'parser/annotation_test.dart' as parser;
+import 'parser/custom_lattice_test.dart' as custom_parser;
 
 import 'unsupported_features_tests.dart' as unsupported;
 
@@ -34,6 +35,8 @@ void main() {
     lattice.main();
     //security parsing tests
     parser.main();
+    //parser a configurable lattice
+    custom_parser.main();
 
     //unsupported features tests
     unsupported.main();

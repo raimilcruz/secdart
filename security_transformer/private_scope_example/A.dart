@@ -1,4 +1,4 @@
-class A{
+class A {
   int _x;
   A() {
     _x = 0;

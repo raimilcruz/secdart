@@ -1,4 +1,5 @@
 import 'package:secdart_analyzer/security_label.dart';
+import 'package:secdart_analyzer/src/configuration.dart';
 
 abstract class ParametricSecurityLabel extends SecurityLabel {
   String get labelParameter;
@@ -16,56 +17,59 @@ abstract class MeetSecurityLabel extends SecurityLabel {
   SecurityLabel get right;
 }
 
-class FlatLattice extends Lattice {
-  FlatLattice._();
+/*class FourFlatLattice extends Lattice {
+  FourFlatLattice._();
 
-  factory FlatLattice() {
-    return new FlatLattice._();
+  factory FourFlatLattice() {
+    return new FourFlatLattice._();
   }
 
   @override
-  SecurityLabel get bottom => new BotLabel();
+  StaticLabel get bottom => new StaticLabelImpl("Bot");
 
   @override
   SecurityLabel get dynamic => new DynamicLabel();
 
   @override
-  SecurityLabel get top => new TopLabel();
+  StaticLabel get top => new StaticLabelImpl("Top");
 }
 
-class IntervalFlatLattice extends Lattice {
+class IntervalLattice extends Lattice {
+  Lattice underlineLattice;
+
+  IntervalLattice(this.underlineLattice);
+
   @override
-  SecurityLabel get bottom => new IntervalLabel(new BotLabel(), new BotLabel());
+  StaticLabel get bottom =>
+      new IntervalLabel(underlineLattice.bottom, underlineLattice.bottom);
 
   @override
   SecurityLabel get dynamic =>
-      new IntervalLabel(new BotLabel(), new TopLabel());
+      new IntervalLabel(underlineLattice.bottom, underlineLattice.top);
 
   @override
-  SecurityLabel get top => new IntervalLabel(new TopLabel(), new TopLabel());
-}
+  StaticLabel get top =>
+      new IntervalLabel(underlineLattice.top, underlineLattice.top);
+}*/
 
 /*
 Labels for a flat lattice of 4 levels (BOT < LOW < HIGH < TOP)
  */
 
-/**
- * Implements common operations for the label of the lattice
- */
-class FlatLabel extends SecurityLabel {
+abstract class GradualLabel extends SecurityLabel {
   @override
   bool canRelabeledTo(SecurityLabel l) {
-    return FlatLatticeOperations.lessThan(this, l);
+    return GradualFlatLatticeOperations.lessThan(this, l);
   }
 
   @override
   SecurityLabel join(SecurityLabel other) {
-    return FlatLatticeOperations.join(this, other);
+    return GradualFlatLatticeOperations.join(this, other);
   }
 
   @override
   SecurityLabel meet(SecurityLabel other) {
-    return FlatLatticeOperations.meet(this, other);
+    return GradualFlatLatticeOperations.meet(this, other);
   }
 
   @override
@@ -73,66 +77,9 @@ class FlatLabel extends SecurityLabel {
       List<String> labelParameter, List<String> securityLabels) {
     throw new UnimplementedError();
   }
-
-  @override
-  Lattice get lattice => new FlatLattice();
 }
 
-class HighLabel extends FlatLabel {
-  static final HighLabel _instance = new HighLabel._();
-
-  factory HighLabel() => _instance;
-
-  HighLabel._();
-
-  @override
-  String toString() {
-    return "H";
-  }
-}
-
-class LowLabel extends FlatLabel {
-  static final LowLabel _instance = new LowLabel._();
-
-  factory LowLabel() => _instance;
-
-  LowLabel._();
-
-  @override
-  String toString() {
-    return "L";
-  }
-}
-
-class TopLabel extends FlatLabel {
-  static final TopLabel _instance = new TopLabel._internal();
-
-  factory TopLabel() => _instance;
-
-  TopLabel._internal();
-
-  @override
-  String toString() {
-    return "Top";
-  }
-}
-
-class BotLabel extends FlatLabel {
-  static BotLabel _instance = new BotLabel._internal();
-
-  factory BotLabel() => _instance;
-
-  BotLabel._internal();
-
-  @override
-  String toString() {
-    return "Bot";
-  }
-}
-
-abstract class UnknownLabel extends FlatLabel {}
-
-class DynamicLabel extends UnknownLabel {
+class DynamicLabel extends GradualLabel {
   static DynamicLabel _instance = new DynamicLabel._internal();
 
   factory DynamicLabel() => _instance;
@@ -145,10 +92,27 @@ class DynamicLabel extends UnknownLabel {
   }
 }
 
-class IntervalLabel extends UnknownLabel {
-  FlatLabel lowerBound, upperBound;
+class GradualStaticLabel extends GradualLabel {
+  static Map<StaticLabel, GradualStaticLabel> _cache = {};
+  StaticLabel staticLabel;
 
-  IntervalLabel(FlatLabel lowerBound, FlatLabel upperBound) {
+  factory GradualStaticLabel(StaticLabel label) {
+    if (!_cache.containsKey(label)) {
+      _cache[label] = new GradualStaticLabel._(label);
+    }
+    return _cache[label];
+  }
+
+  GradualStaticLabel._(this.staticLabel);
+
+  @override
+  String toString() => staticLabel.toString();
+}
+
+class IntervalLabel extends SecurityLabel {
+  SecurityLabel lowerBound, upperBound;
+
+  IntervalLabel(SecurityLabel lowerBound, SecurityLabel upperBound) {
     if (lowerBound is DynamicLabel || upperBound is DynamicLabel)
       throw new ArgumentError("Bounded unknow must have static label bounds");
 
@@ -172,112 +136,321 @@ class IntervalLabel extends UnknownLabel {
   int get hashCode {
     return toString().hashCode;
   }
+
+  @override
+  bool canRelabeledTo(SecurityLabel l) {
+    return IntervalLatticeOperations.lessThan(this, l);
+  }
+
+  @override
+  SecurityLabel join(SecurityLabel other) {
+    return IntervalLatticeOperations.join(this, other);
+  }
+
+  @override
+  SecurityLabel meet(SecurityLabel other) {
+    return IntervalLatticeOperations.meet(this, other);
+  }
+
+  @override
+  SecurityLabel substitute(
+      List<String> labelParameter, List<String> securityLabels) {
+    throw new UnimplementedError();
+  }
+
+  String get representation => toString();
 }
 
 class FlatStaticLatticeOperations {
-  static List<String> labels = ["Bot", "L", "H", "Top"];
-
   //l1 < l2
-  static bool lessThan(FlatLabel l1, FlatLabel l2) {
-    if (l1 is! UnknownLabel && l2 is! UnknownLabel) {
-      var il1 = labels.indexOf(l1.toString());
-      var il2 = labels.indexOf(l2.toString());
-      return il1 <= il2;
-    }
-    throw new ArgumentError("invalid arguments");
+  static bool lessThan(StaticLabel l1, StaticLabel l2) {
+    var il1 = topologicalOrderlabels().indexOf(l1.representation);
+    var il2 = topologicalOrderlabels().indexOf(l2.representation);
+    _assertIndexes(il1, il2);
+
+    return il1 <= il2;
   }
 
-  static FlatLabel join(FlatLabel l1, FlatLabel l2) {
-    if (l1 is! UnknownLabel && l2 is! UnknownLabel) {
-      var il1 = labels.indexOf(l1.toString());
-      var il2 = labels.indexOf(l2.toString());
-      if (il1 < il2) {
-        return l2;
-      } else {
-        return l1;
-      }
+  static StaticLabel join(StaticLabel l1, StaticLabel l2) {
+    var il1 = topologicalOrderlabels().indexOf(l1.representation);
+    var il2 = topologicalOrderlabels().indexOf(l2.representation);
+    _assertIndexes(il1, il2);
+
+    final joinIndex = _join(il1, il2);
+    if (joinIndex <= -1) {
+      throw new UnsupportedError(
+          "Elements $l1 and $l2 do not represent a lattice");
     }
-    throw new ArgumentError("invalid arguments");
+    return new StaticLabelImpl(topologicalOrderlabels()[joinIndex]);
   }
 
-  static FlatLabel meet(FlatLabel l1, FlatLabel l2) {
-    if (l1 is! UnknownLabel && l2 is! UnknownLabel) {
-      var il1 = labels.indexOf(l1.toString());
-      var il2 = labels.indexOf(l2.toString());
-      if (il1 < il2) {
-        return l1;
+  static StaticLabel meet(StaticLabel l1, StaticLabel l2) {
+    var il1 = topologicalOrderlabels().indexOf(l1.representation);
+    var il2 = topologicalOrderlabels().indexOf(l2.representation);
+    _assertIndexes(il1, il2);
+    final meetIndex = _meet(il1, il2);
+    if (meetIndex <= -1) {
+      throw new UnsupportedError("Elements do not represent a lattice");
+    }
+    return new StaticLabelImpl(topologicalOrderlabels()[meetIndex]);
+  }
+
+  static int _join(int i1, int i2) {
+    var candidateIndex = topologicalOrderlabels().length - 1;
+    for (var i = candidateIndex; i >= 0; i--) {
+      if (i1 <= i && i2 <= i) {
+        candidateIndex = i;
       } else {
-        return l2;
+        return candidateIndex;
       }
     }
-    throw new ArgumentError("invalid arguments");
+    return candidateIndex != topologicalOrderlabels().length
+        ? candidateIndex
+        : -1;
+  }
+
+  static int _meet(int i1, int i2) {
+    var candidateIndex = 0;
+    for (var i = candidateIndex; i < topologicalOrderlabels().length; i++) {
+      if (i <= i1 && i <= i2) {
+        candidateIndex = i;
+      } else {
+        return candidateIndex;
+      }
+    }
+    return candidateIndex != 0 ? candidateIndex : -1;
+  }
+
+  static List<String> topologicalOrderlabels() {
+    return SecDartConfig.latticeTopologicalSort();
+  }
+
+  static void _assertIndexes(il1, il2) {
+    assert(il1 >= 0);
+    assert(il2 >= 0);
   }
 }
 
-class FlatLatticeOperations {
-  static bool lessThan(FlatLabel l1, FlatLabel l2) {
-    if (l1 is! UnknownLabel && l2 is! UnknownLabel) {
-      return FlatStaticLatticeOperations.lessThan(l1, l2);
+/**
+ * Implementation of gradual label operations when the lattice contains
+ * explicit [DynamicLabel]
+ */
+class GradualFlatLatticeOperations {
+  static bool lessThan(GradualLabel l1, GradualLabel l2) {
+    if (l1 is GradualStaticLabel && l2 is GradualStaticLabel) {
+      return FlatStaticLatticeOperations.lessThan(
+          l1.staticLabel, l2.staticLabel);
     }
-    checkConflict(l1, l2);
     if (l1 is DynamicLabel || l2 is DynamicLabel) return true;
-    //here we know that we have intervals
-    var il1 = intervalizeLabel(l1);
-    var il2 = intervalizeLabel(l2);
+    return false;
+  }
 
+  static GradualLabel join(GradualLabel l1, GradualLabel l2) {
+    if (l1 is GradualStaticLabel && l2 is GradualStaticLabel) {
+      return new GradualStaticLabel(
+          FlatStaticLatticeOperations.join(l1.staticLabel, l2.staticLabel));
+    }
+    if (l1 is DynamicLabel || l2 is DynamicLabel) return new DynamicLabel();
+    return null;
+  }
+
+  static GradualLabel meet(GradualLabel l1, GradualLabel l2) {
+    if (l1 is GradualStaticLabel && l2 is GradualStaticLabel) {
+      return new GradualStaticLabel(
+          FlatStaticLatticeOperations.meet(l1.staticLabel, l2.staticLabel));
+    }
+    if (l1 is DynamicLabel || l2 is DynamicLabel) return new DynamicLabel();
+    return null;
+  }
+}
+
+class IntervalLatticeOperations {
+  static bool lessThan(IntervalLabel l1, IntervalLabel l2) {
     //if the lower bound of the second interval is strictly higher that
     //the upper bound.
-    /*return !(il2.upperBound.lessOrEqThan(il1.lowerBound)
-              && il2.upperBound == il1.lowerBound);*/
-    return il1.lowerBound.lessOrEqThan(il2.upperBound);
+    return l1.lowerBound.lessOrEqThan(l2.upperBound);
   }
 
-  static FlatLabel join(FlatLabel l1, FlatLabel l2) {
-    if (l1 is! UnknownLabel && l2 is! UnknownLabel) {
-      return FlatStaticLatticeOperations.join(l1, l2);
-    }
-    checkConflict(l1, l2);
-    if (l1 is DynamicLabel || l2 is DynamicLabel) return new DynamicLabel();
-
-    //here we know that we have intervals
-    var il1 = intervalizeLabel(l1);
-    var il2 = intervalizeLabel(l2);
-
-    return new IntervalLabel(il1.lowerBound.join(il2.lowerBound),
-        il1.upperBound.join(il2.upperBound));
+  static IntervalLabel join(IntervalLabel l1, IntervalLabel l2) {
+    return new IntervalLabel(
+        l1.lowerBound.join(l2.lowerBound), l1.upperBound.join(l2.upperBound));
   }
 
-  static FlatLabel meet(FlatLabel l1, FlatLabel l2) {
-    if (l1 is! UnknownLabel && l2 is! UnknownLabel) {
-      return FlatStaticLatticeOperations.meet(l1, l2);
+  static IntervalLabel meet(IntervalLabel l1, IntervalLabel l2) {
+    return new IntervalLabel(
+        l1.lowerBound.join(l2.lowerBound), l1.upperBound.join(l2.upperBound));
+  }
+}
+
+class StaticLabelImpl extends StaticLabel {
+  static Map<String, StaticLabelImpl> _cache = {};
+
+  String _representation;
+
+  factory StaticLabelImpl(String representation) {
+    if (!_cache.containsKey(representation)) {
+      _cache[representation] = new StaticLabelImpl._(representation);
     }
-    checkConflict(l1, l2);
-    if (l1 is DynamicLabel || l2 is DynamicLabel) return new DynamicLabel();
-
-    //here we know that we have intervals
-    var il1 = intervalizeLabel(l1);
-    var il2 = intervalizeLabel(l2);
-
-    return new IntervalLabel(il1.lowerBound.join(il2.lowerBound),
-        il1.upperBound.join(il2.upperBound));
+    return _cache[representation];
   }
 
-  static checkConflict(FlatLabel l1, FlatLabel l2) {
-    if ((l1 is DynamicLabel && l2 is IntervalLabel) ||
-        (l2 is DynamicLabel && l1 is IntervalLabel)) {
-      throw new ArgumentError(
-          "Cannot operate over different kinds of unknown labels");
+  StaticLabelImpl._(this._representation);
+
+  @override
+  bool canRelabeledTo(SecurityLabel l) {
+    return FlatStaticLatticeOperations.lessThan(this, l);
+  }
+
+  @override
+  SecurityLabel join(SecurityLabel other) {
+    return FlatStaticLatticeOperations.join(this, other);
+  }
+
+  @override
+  SecurityLabel meet(SecurityLabel other) {
+    return FlatStaticLatticeOperations.meet(this, other);
+  }
+
+  @override
+  SecurityLabel substitute(
+      List<String> labelParameter, List<String> securityLabels) {
+    throw new UnimplementedError();
+  }
+
+  @override
+  String toString() {
+    return representation;
+  }
+
+  @override
+  bool operator ==(other) {
+    if (other is StaticLabel) {
+      return representation == other.representation;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode {
+    return representation.hashCode;
+  }
+
+  @override
+  String get representation => _representation;
+}
+
+class IntervalLattice extends GradualLattice {
+  LatticeConfig latticeConfig;
+
+  IntervalLattice(this.latticeConfig);
+
+  @override
+  SecurityLabel get bottom => new IntervalLabel(
+      new StaticLabelImpl(latticeConfig.bottom),
+      new StaticLabelImpl(latticeConfig.bottom));
+
+  @override
+  SecurityLabel get dynamic => new IntervalLabel(
+      new StaticLabelImpl(latticeConfig.bottom),
+      new StaticLabelImpl(latticeConfig.top));
+
+  @override
+  SecurityLabel get top => new IntervalLabel(
+      new StaticLabelImpl(latticeConfig.top),
+      new StaticLabelImpl(latticeConfig.top));
+
+  @override
+  String get dynamicLiteralRepresentation => latticeConfig.unknown;
+
+  @override
+  SecurityLabel lift(StaticLabel staticLabelImpl) {
+    return new IntervalLabel(staticLabelImpl, staticLabelImpl);
+  }
+}
+
+class GradualLatticeWithUnknown extends GradualLattice {
+  LatticeConfig latticeConfig;
+
+  GradualLatticeWithUnknown(this.latticeConfig);
+
+  @override
+  SecurityLabel get bottom =>
+      new GradualStaticLabel(new StaticLabelImpl(latticeConfig.bottom));
+
+  @override
+  SecurityLabel get dynamic => new DynamicLabel();
+
+  @override
+  SecurityLabel get top =>
+      new GradualStaticLabel(new StaticLabelImpl(latticeConfig.top));
+
+  @override
+  String get dynamicLiteralRepresentation => latticeConfig.unknown;
+
+  @override
+  SecurityLabel lift(StaticLabel staticLabelImpl) {
+    return new GradualStaticLabel(staticLabelImpl);
+  }
+}
+
+class GraphLattice {
+  //adjacent list. If x <= y, then y is in the list of x.
+  Map<String, List<String>> _connections;
+  List<String> _topologicalSort;
+
+  GraphLattice(List<String> elements, List<LabelOrder> relation) {
+    _connections = {};
+    for (String s in elements) {
+      _connections.putIfAbsent(s, () => []);
+    }
+    for (var order in relation) {
+      _addConnection(order.s1, order.s2);
     }
   }
 
-  static IntervalLabel intervalizeLabel(FlatLabel label) {
-    if (label is! UnknownLabel) {
-      return new IntervalLabel(label, label);
+  void _addConnection(String s1, String s2) {
+    if (!_connections.containsKey(s1)) {
+      throw new UnsupportedError("This element is not part of the lattice");
     }
-    if (label is DynamicLabel) {
-      //I just fix this. Is not correct to merge both semantics of the unknown label
-      return new IntervalLabel(new BotLabel(), new TopLabel());
+    if (!_connections[s1].contains(s2)) {
+      _connections[s1].add(s2);
     }
-    return label;
   }
+
+  Iterable<String> get vertices => _connections.keys;
+
+  Iterable<String> adjacentTo(String vertex) => _connections[vertex];
+
+  List<String> topSort() {
+    if (_topologicalSort == null) {
+      _DFSState result = new _DFSState();
+      for (var vertex in vertices) {
+        if (!result.parent.containsKey(vertex)) {
+          result.parent[vertex] = null;
+          _dfs(vertex, result);
+        }
+      }
+      List<String> sort = new List<String>(vertices.length);
+      result.time.forEach((s, t) => sort[t] = s);
+      _topologicalSort = sort.reversed.toList();
+    }
+    return _topologicalSort;
+  }
+
+  void _dfs(String startVertex, _DFSState state) {
+    for (var vertex in adjacentTo(startVertex)) {
+      if (!state.parent.containsKey(vertex)) {
+        state.parent.putIfAbsent(vertex, () => startVertex);
+        _dfs(vertex, state);
+      }
+    }
+    state.time.putIfAbsent(startVertex, () => state.dfsCallCounter);
+    state.dfsCallCounter++;
+  }
+}
+
+class _DFSState {
+  Map<String, String> parent = {};
+  Map<String, int> time = {};
+  int dfsCallCounter = 0;
 }

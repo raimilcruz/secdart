@@ -28,8 +28,8 @@ class ImplicitFlowsTest extends AbstractSecDartTest {
         }
       ''';
     var source = newSource("/test.dart", program);
-    var resultWithIntervals =
-        typeCheckSecurityForSource(source, intervalMode: true);
+    var resultWithIntervals = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
 
     var resultWithoutNoIntervals = typeCheckSecurityForSource(source);
 
@@ -81,8 +81,8 @@ class ImplicitFlowsTest extends AbstractSecDartTest {
       ''';
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
-    var resultWithIntervals =
-        typeCheckSecurityForSource(source, intervalMode: true);
+    var resultWithIntervals = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
 
     expect(result, isEmpty);
     expect(

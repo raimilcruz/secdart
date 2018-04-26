@@ -2,7 +2,6 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/analyzer.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:secdart_analyzer/security_label.dart';
-import '../security_label.dart';
 import '../errors.dart';
 
 const String FUNCTION_LATENT_LABEL = "latent";
@@ -12,14 +11,9 @@ const String FUNCTION_LATENT_LABEL = "latent";
  */
 abstract class SecAnnotationParser {
   /**
-   * A general representation of the lattice this parser parses
-   */
-  Lattice get lattice;
-
-  /**
    * Parsers a [SecurityLabel] from an annotation
    */
-  SecurityLabel parseLabel(Annotation n);
+  LabelNode parseLabel(Annotation n);
 
   /**
    * Parses function labels from an annotation
@@ -34,119 +28,23 @@ abstract class SecAnnotationParser {
 
   isLabel(Annotation a);
 
-  SecurityLabel parseString(AstNode nodeToReportError, String value);
+  LabelNode parseString(AstNode nodeToReportError, String value);
 }
 
-/**
- * Parses a lattice with four element: BOT < LOW < HIGH < TOP and the
- * dynamic label (dyn)
- */
-class FourLatticeParser extends SecAnnotationParser {
+abstract class BaseLatticeParser extends SecAnnotationParser {
   AnalysisErrorListener errorListener;
-  bool intervalMode;
-  Lattice _lattice;
+  CompilationUnit unit;
 
-  @override
-  Lattice get lattice {
-    if (_lattice == null) {
-      _lattice = intervalMode ? new IntervalFlatLattice() : new FlatLattice();
-    }
-    return _lattice;
-  }
-
-  /**
-   * Creates a [FourLatticeParser] instance
-   */
-  FourLatticeParser(
-      AnalysisErrorListener this.errorListener, CompilationUnit unit,
-      [bool intervalMode = false]) {
-    this.intervalMode = intervalMode;
-  }
-
-  @override
-  FunctionAnnotationLabel parseFunctionLabel(Annotation n) {
-    if (n.name.name != FUNCTION_LATENT_LABEL) {
-      errorListener.onError(SecurityTypeError.getNotRecognizedFunctionLabel(n));
-      throw new Exception();
-    }
-    var arguments = n.arguments.arguments;
-    if (arguments.length != 2) {
-      errorListener.onError(SecurityTypeError.getBadFunctionLabel(n));
-      throw new Error();
-    }
-    var beginLabelString = arguments[0] as SimpleStringLiteral;
-    var endLabelString = arguments[1] as SimpleStringLiteral;
-
-    var beginLabel =
-        _parseLiteralLabel(beginLabelString, beginLabelString.stringValue);
-    var endLabel =
-        _parseLiteralLabel(endLabelString, endLabelString.stringValue);
-    return new FunctionAnnotationLabel(beginLabel, endLabel);
-  }
-
-  @override
-  SecurityLabel parseLabel(Annotation n) {
-    var annotationName = n.name.name;
-    switch (annotationName) {
-      case 'high':
-        return _liftLabelToIntervalIfNeeded(new HighLabel());
-      case 'low':
-        return _liftLabelToIntervalIfNeeded(new LowLabel());
-      case 'top':
-        return _liftLabelToIntervalIfNeeded(new TopLabel());
-      case 'bot':
-        return _liftLabelToIntervalIfNeeded(new BotLabel());
-      case 'dynl':
-        return this.lattice.dynamic;
-      default:
-        errorListener.onError(SecurityTypeError.getInvalidLabel(n));
-        return this.lattice.dynamic;
-    }
-  }
-
-  SecurityLabel _parseLiteralLabel(AstNode node, String label) {
-    switch (label) {
-      case 'H':
-        return _liftLabelToIntervalIfNeeded(new HighLabel());
-      case 'L':
-        return _liftLabelToIntervalIfNeeded(new LowLabel());
-      case 'top':
-        return _liftLabelToIntervalIfNeeded(new TopLabel());
-      case 'bot':
-        return _liftLabelToIntervalIfNeeded(new BotLabel());
-      case 'dynl':
-        return this.lattice.dynamic;
-      default:
-        errorListener
-            .onError(SecurityTypeError.getInvalidLiteralLabel(node, label));
-        return this.lattice.dynamic;
-    }
-  }
-
-  @override
-  isLabel(Annotation a) {
-    switch (a.name.name) {
-      case 'low':
-      case 'high':
-      case 'top':
-      case 'bot':
-      case 'dynl':
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  @override
-  SecurityLabel parseString(AstNode nodeToReportError, String value) {
-    return _parseLiteralLabel(nodeToReportError, value);
-  }
+  BaseLatticeParser(
+      AnalysisErrorListener this.errorListener, CompilationUnit this.unit) {}
 
   @override
   FunctionLevelLabels getFunctionLevelLabels(List<Annotation> metadata) {
-    var beginLabel = lattice.dynamic;
-    var endLabel = lattice.dynamic;
-    var returnLabel = lattice.dynamic;
+    var beginLabel = LabelNode.noAnnotated;
+    var endLabel = LabelNode.noAnnotated;
+    ;
+    var returnLabel = LabelNode.noAnnotated;
+    ;
     if (metadata != null) {
       var latentAnnotations =
           metadata.where((a) => a.name.name == FUNCTION_LATENT_LABEL);
@@ -167,25 +65,139 @@ class FourLatticeParser extends SecAnnotationParser {
         returnLabel, new FunctionAnnotationLabel(beginLabel, endLabel));
   }
 
-  SecurityLabel _liftLabelToIntervalIfNeeded(SecurityLabel label) {
-    return intervalMode
-        ? (!(label is UnknownLabel)
-            ? new IntervalLabel(label, label)
-            : lattice.dynamic)
-        : label;
+  @override
+  FunctionAnnotationLabel parseFunctionLabel(Annotation n) {
+    if (n.name.name != FUNCTION_LATENT_LABEL) {
+      errorListener.onError(SecurityTypeError.getNotRecognizedFunctionLabel(n));
+      throw new Exception();
+    }
+    var arguments = n.arguments.arguments;
+    if (arguments.length != 2) {
+      errorListener.onError(SecurityTypeError.getBadFunctionLabel(n));
+      throw new Error();
+    }
+    var beginLabelString = arguments[0] as SimpleStringLiteral;
+    var endLabelString = arguments[1] as SimpleStringLiteral;
+
+    var beginLabel =
+        parseString(beginLabelString, beginLabelString.stringValue);
+    var endLabel = parseString(endLabelString, endLabelString.stringValue);
+    return new FunctionAnnotationLabel(beginLabel, endLabel);
+  }
+}
+
+/**
+ * Parses a lattice with four element: BOT < LOW < HIGH < TOP and the
+ * dynamic label (dyn) from annotations: @low, @bot, @high, @top, @dyn.
+ */
+class FourLatticeParser extends BaseLatticeParser {
+  Map<String, String> _literalLabelMap = {
+    "H": "H",
+    "L": "L",
+    "bot": "bot",
+    "top": "top",
+    "?": "?"
+  };
+  Map<String, String> annotationLabelMap = {
+    "high": "H",
+    "low": "L",
+    "bot": "bot",
+    "top": "top",
+    "dynl": "?"
+  };
+
+  /**
+   * Creates a [FourLatticeParser] instance
+   */
+  FourLatticeParser(AnalysisErrorListener errorListener, CompilationUnit unit)
+      : super(errorListener, unit) {}
+
+  @override
+  LabelNode parseLabel(Annotation n) {
+    if (!isLabel(n)) {
+      errorListener.onError(SecurityTypeError.getInvalidLabel(n));
+      return new LabelNodeImpl(LatticeConfig.defaultLattice.unknown);
+    }
+    return new LabelNodeImpl(annotationLabelMap[n.name.name]);
+  }
+
+  LabelNode _parseLiteralLabel(AstNode node, String label) {
+    if (_literalLabelMap.containsKey(label)) {
+      return new LabelNodeImpl(_literalLabelMap[label]);
+    } else {
+      errorListener.onError(SecurityTypeError.getInvalidLabel(node));
+      return new LabelNodeImpl(LatticeConfig.defaultLattice.unknown);
+    }
+  }
+
+  @override
+  isLabel(Annotation a) {
+    return (annotationLabelMap.containsKey(a.name.name));
+  }
+
+  @override
+  LabelNode parseString(AstNode nodeToReportError, String value) {
+    return _parseLiteralLabel(nodeToReportError, value);
+  }
+}
+
+class ConfigurableLatticeParser extends BaseLatticeParser {
+  static String labelAnnotationName = "lab";
+  List<String> recognizedLabels;
+  LatticeConfig latticeConfig;
+
+  ConfigurableLatticeParser(LatticeConfig latticeConfig,
+      AnalysisErrorListener errorListener, CompilationUnit unit)
+      : super(errorListener, unit) {
+    recognizedLabels = latticeConfig.elements;
+  }
+
+  @override
+  isLabel(Annotation a) {
+    return a.name.name == labelAnnotationName &&
+        a.arguments.arguments.length == 1 &&
+        a.arguments.arguments.first is SimpleStringLiteral &&
+        recognizedLabels.contains(
+            (a.arguments.arguments.first as SimpleStringLiteral).value);
+  }
+
+  @override
+  LabelNode parseLabel(Annotation n) {
+    if (!isLabel(n)) {
+      throw new ArgumentError(
+          "The method 'parseLabel' expect an already validated "
+          "annotation. Use the method 'isLabel' before to call 'parseLabel'");
+    }
+    final stringLabel = n.arguments.arguments.first as SimpleStringLiteral;
+    if (stringLabel != null) {
+      if (recognizedLabels.contains(stringLabel.value)) {
+        return new LabelNodeImpl(stringLabel.value);
+      }
+    }
+    errorListener.onError(SecurityTypeError.getInvalidLabel(n));
+    return LabelNode.noAnnotated;
+  }
+
+  @override
+  LabelNode parseString(AstNode nodeToReportError, String value) {
+    if (recognizedLabels.contains(value)) {
+      return new LabelNodeImpl(value);
+    }
+    errorListener.onError(SecurityTypeError.getInvalidLabel(nodeToReportError));
+    return LabelNode.noAnnotated;
   }
 }
 
 abstract class AnnotatedLabel {}
 
 class SimpleAnnotatedLabel extends AnnotatedLabel {
-  SecurityLabel label;
+  LabelNode label;
 
   SimpleAnnotatedLabel(this.label);
 }
 
 class FunctionLevelLabels extends AnnotatedLabel {
-  SecurityLabel returnLabel;
+  LabelNode returnLabel;
   FunctionAnnotationLabel functionLabels;
 
   FunctionLevelLabels(this.returnLabel, this.functionLabels);
@@ -199,15 +211,45 @@ class FunctionAnnotationLabel {
    * We use the same name than in JIF to name the label that is an upper bound
    * of the caller context pc.
    */
-  SecurityLabel beginLabel;
+  LabelNode beginLabel;
 
   /**
    *
    */
-  SecurityLabel endLabel;
+  LabelNode endLabel;
 
-  FunctionAnnotationLabel(
-      SecurityLabel this.beginLabel, SecurityLabel this.endLabel);
+  FunctionAnnotationLabel(LabelNode this.beginLabel, LabelNode this.endLabel);
+}
+
+class LabelNodeImpl extends LabelNode {
+  static Map<String, LabelNodeImpl> _cache = {};
+  String _rep;
+
+  factory LabelNodeImpl(String representation) {
+    if (!_cache.containsKey(representation)) {
+      _cache[representation] = new LabelNodeImpl._(representation);
+    }
+    return _cache[representation];
+  }
+
+  LabelNodeImpl._(this._rep);
+
+  @override
+  String get literalRepresentation => _rep;
+
+  @override
+  String toString() => literalRepresentation;
+
+  @override
+  bool operator ==(other) {
+    if (other is LabelNodeImpl) {
+      return other.literalRepresentation == literalRepresentation;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => literalRepresentation.hashCode;
 }
 
 class SecCompilationException implements SecDartException {

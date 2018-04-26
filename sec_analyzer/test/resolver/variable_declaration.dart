@@ -33,7 +33,7 @@ class VariableDeclarationTest extends AbstractSecDartTest {
 
     var securityType = variableDeclaration.getProperty(SEC_TYPE_PROPERTY);
     assert(securityType is InterfaceSecurityType);
-    expect(securityType.label, new LowLabel());
+    expect(securityType.label, GLowLabel);
   }
 
   void test_multipleVariableDeclaration() {
@@ -61,11 +61,11 @@ class VariableDeclarationTest extends AbstractSecDartTest {
 
     var securityType1 = variableDeclaration1.getProperty(SEC_TYPE_PROPERTY);
     assert(securityType1 is InterfaceSecurityType);
-    expect(securityType1.label, new LowLabel());
+    expect(securityType1.label, GLowLabel);
 
     var securityType2 = variableDeclaration2.getProperty(SEC_TYPE_PROPERTY);
     assert(securityType2 is InterfaceSecurityType);
-    expect(securityType2.label, new LowLabel());
+    expect(securityType2.label, GLowLabel);
   }
 
   void test_multipleVariableDeclarationNoLabels() {

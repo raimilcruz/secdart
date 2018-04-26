@@ -41,7 +41,8 @@ class AnalysisClientTest {
         await new File(expectedPath).writeAsString(actual);
         continue;
       }
-      expect(actual, expected);
+      expect(collapseWhitespace(actual), collapseWhitespace(expected),
+          reason: "Testing files: $expectedPath and $sourcePath");
       print('Passed.');
     }
     if (missExpectedFile) {

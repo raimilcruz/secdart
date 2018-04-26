@@ -7,6 +7,7 @@ import 'package:analyzer/src/dart/analysis/driver.dart';
 import 'package:analyzer/src/dart/analysis/file_state.dart';
 
 import "package:secdart_analyzer/analyzer.dart";
+import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/src/options.dart';
 
 abstract class NotificationManager {
@@ -160,12 +161,16 @@ class SecDriver implements AnalysisDriverGeneric {
     }
 
     final unitAst = unit.element.computeNode();
-    var errors = SecAnalyzer.computeErrors(unitAst, options.intervalMode);
+    var errors = SecAnalyzer.computeErrors(
+        unitAst,
+        new SecAnalysisConfig(
+            options.intervalMode, LatticeConfig.defaultLattice));
     return new SecResult(errors);
   }
 }
 
 class SecResult {
   List<AnalysisError> errors;
+
   SecResult(this.errors);
 }

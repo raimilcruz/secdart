@@ -32,13 +32,13 @@ class WebApiTest {
     Map headers = {'Content-Type': 'application/json', 'charset': 'UTF-8'};
 
     Map body = {"source": program, "useInterval": false};
-    String bodyText = JSON.encode(body);
+    String bodyText = json.encode(body);
 
     expect(
         http.post(url, headers: headers, body: bodyText).then((response) {
           expect(response.statusCode, 200);
           expect(true, response.body.length > 100);
-          final result = JSON.decode(response.body);
+          final result = json.decode(response.body);
           expect(result["issues"], isNotNull);
           return true;
         }),
@@ -50,13 +50,13 @@ class WebApiTest {
     Map headers = {'Content-Type': 'application/json', 'charset': 'UTF-8'};
 
     Map body = {"source": program, "useInterval": false};
-    String bodyText = JSON.encode(body);
+    String bodyText = json.encode(body);
 
     expect(
         http.post(url, headers: headers, body: bodyText).then((response) {
           expect(response.statusCode, 200);
           expect(true, response.body.length > 100);
-          final result = JSON.decode(response.body);
+          final result = json.decode(response.body);
           expect(result["compiled"], isNotNull);
           return true;
         }),

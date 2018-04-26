@@ -26,7 +26,7 @@ class PcTest extends AbstractSecDartTest {
           }
       ''';
     var source = newSource("/test.dart", program);
-    var result = resolveSecurity(source, intervalMode: true);
+    var result = resolveSecurity(source, intervalModeWithDefaultLatticeConfig);
 
     var unit = result.astNode;
     result.errors.forEach(print);
@@ -36,9 +36,9 @@ class PcTest extends AbstractSecDartTest {
         as IfStatement;
 
     var pcThen = ifStatement.thenStatement.getProperty(SEC_PC_PROPERTY);
-    expect(pcThen, new IntervalLabel(new HighLabel(), new TopLabel()));
+    expect(pcThen, new IntervalLabel(HighLabel, TopLabel));
 
     var pcElse = ifStatement.thenStatement.getProperty(SEC_PC_PROPERTY);
-    expect(pcElse, new IntervalLabel(new HighLabel(), new TopLabel()));
+    expect(pcElse, new IntervalLabel(HighLabel, TopLabel));
   }
 }

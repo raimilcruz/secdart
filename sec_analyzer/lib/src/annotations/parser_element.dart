@@ -7,6 +7,7 @@ import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/annotations/external_library.dart';
 import 'package:secdart_analyzer/src/annotations/parser.dart';
+import 'package:secdart_analyzer/src/security_label.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
 
 ///Resolve security for program entities.
@@ -14,7 +15,7 @@ abstract class SecurityElementResolver {
   /**
    * A general representation of the lattice this parser parses
    */
-  Lattice get lattice;
+  GradualLattice get lattice;
 
   /**
    * Returns the security type associated to this element. We assume that
@@ -50,6 +51,21 @@ abstract class SecurityElementResolver {
 
   bool _isVoidType(DartType type) {
     return (type is VoidType);
+  }
+
+  /**
+   * Lifting of label node to gradual labels
+   */
+  SecurityLabel labelNodeToLabelElement(LabelNode node) {
+    if (node is NoAnnotatedLabel) {
+      return lattice.dynamic;
+    }
+    if (node.literalRepresentation == lattice.dynamicLiteralRepresentation) {
+      return lattice.dynamic;
+    } else {
+      //lift the label representation to the lattice
+      return lattice.lift(new StaticLabelImpl(node.literalRepresentation));
+    }
   }
 }
 
@@ -152,7 +168,7 @@ class DispatcherSecurityElementResolver extends SecurityElementResolver {
   }
 
   @override
-  Lattice get lattice => secDartResolver.lattice;
+  GradualLattice get lattice => secDartResolver.lattice;
 }
 
 class SecDartElementResolver extends SecurityElementResolver {
@@ -160,19 +176,21 @@ class SecDartElementResolver extends SecurityElementResolver {
   SecAnnotationParser _parser;
   SecurityCache _securityMap;
   LabelMap _labelMap;
+  GradualLattice _lattice;
 
   SecDartElementResolver(
       CompilationUnit unit,
       SecAnnotationParser annotationParser,
       SecurityCache securityMap,
       LabelMap labelMap,
-      [bool intervalMode = false]) {
+      GradualLattice lattice) {
     _securityMap = securityMap;
     _labelMap = labelMap;
     _parser = annotationParser;
+    _lattice = lattice;
   }
 
-  Lattice get lattice => _parser.lattice;
+  GradualLattice get lattice => _lattice;
 
   PreSecurityType fromDartType(DartType type) {
     PreSecurityType result = new PreDynamicTypeImpl();
@@ -207,7 +225,9 @@ class SecDartElementResolver extends SecurityElementResolver {
   SecurityType fromIdentifierDeclaration(Element element, DartType type) {
     //get the label ascribed via annotations
     var label = _getSecurityLabel(element, element.metadata);
-    return dispatcherResolver.fromDartType(type).toSecurityType(label);
+    return dispatcherResolver
+        .fromDartType(type)
+        .toSecurityType(labelNodeToLabelElement(label));
   }
 
   PreFunctionType _fromFunctionTypeAlias(FunctionTypeAliasElement element) {
@@ -285,8 +305,8 @@ class SecDartElementResolver extends SecurityElementResolver {
           property.type.returnType);
 
       if (property.isSynthetic) {
-        SecurityLabel label =
-            _getSecurityLabel(property.variable, property.variable.metadata);
+        SecurityLabel label = labelNodeToLabelElement(
+            _getSecurityLabel(property.variable, property.variable.metadata));
         if (property.isGetter) {
           functionType.returnType.label = label;
         }
@@ -351,9 +371,11 @@ class SecDartElementResolver extends SecurityElementResolver {
       throw new UnimplementedError("This method should not call on non-secdart"
           "elements");
     }
-    var returnLabel = functionLevelLabels.returnLabel;
-    var beginLabel = functionLevelLabels.functionLabels.beginLabel;
-    var endLabel = functionLevelLabels.functionLabels.endLabel;
+    var returnLabel = labelNodeToLabelElement(functionLevelLabels.returnLabel);
+    var beginLabel =
+        labelNodeToLabelElement(functionLevelLabels.functionLabels.beginLabel);
+    var endLabel =
+        labelNodeToLabelElement(functionLevelLabels.functionLabels.endLabel);
 
     var parameterSecTypes = new List<SecurityType>();
     for (ParameterElement p in parameters) {
@@ -390,20 +412,20 @@ class SecDartElementResolver extends SecurityElementResolver {
     return _labelMap.map[element] as FunctionLevelLabels;
   }
 
-  SecurityLabel _getSecurityLabel(
+  LabelNode _getSecurityLabel(
       dynamic element, List<ElementAnnotation> metadata) {
     if (_labelMap.map.containsKey(element)) {
       print("label from label cache");
       //TODO: Process null label properly. We obtain a null label when there
       //is no label annotation.
       final annotatedLabel = _labelMap.map[element] as SimpleAnnotatedLabel;
-      return annotatedLabel.label ?? _parser.lattice.dynamic;
+      return annotatedLabel.label ?? new NoAnnotatedLabel();
     }
 
     var secLabelAnnotations = metadata
         .map((e) => (e as ElementAnnotationImpl).annotationAst)
         .where((x) => _parser.isLabel(x));
-    var label = _parser.lattice.dynamic;
+    var label = new NoAnnotatedLabel();
     if (secLabelAnnotations.length == 1) {
       label = _parser.parseLabel(secLabelAnnotations.first);
     }
@@ -418,7 +440,7 @@ class SecDartElementResolver extends SecurityElementResolver {
 ///file to provide annotations.
 class ExternalLibraryResolver extends SecurityElementResolver {
   DispatcherSecurityElementResolver _dispatcherResolver;
-  Lattice lattice;
+  GradualLattice lattice;
   SecurityCache _securityMap;
 
   ExternalLibraryResolver(this.lattice, this._securityMap);
@@ -434,10 +456,13 @@ class ExternalLibraryResolver extends SecurityElementResolver {
   ///with parameter e1...en is: join label(ei).
   ///c) Inputs and output are dynamic
   ///d) Certain method has a concrete signature, such as print.
-  FunctionLevelLabels _functionLevelLabels(Element element) {
-    return new FunctionLevelLabels(lattice.bottom,
-        new FunctionAnnotationLabel(lattice.bottom, lattice.bottom));
-  }
+  /* FunctionLevelLabels _functionLevelLabels(Element element) {
+    return new FunctionLevelLabels(
+        new LabelNodeImpl(lattice.bottom.representation),
+        new FunctionAnnotationLabel(
+            new LabelNodeImpl(lattice.bottom.representation),
+            new LabelNodeImpl(lattice.bottom.representation)));
+  }*/
 
   @override
   PreSecurityType fromDartType(DartType type) {

@@ -22,7 +22,8 @@ class StrictModeTest extends AbstractSecDartTest {
   void test_ecoopds_1() {
     var program = EcoopDsPaperExamples.first();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: true);
+    var result = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
 
     expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
         isNotEmpty);
@@ -31,7 +32,8 @@ class StrictModeTest extends AbstractSecDartTest {
   void test_ecoopds_2() {
     var program = EcoopDsPaperExamples.second();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: true);
+    var result = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
     expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
         isNotEmpty);
   }
@@ -39,7 +41,8 @@ class StrictModeTest extends AbstractSecDartTest {
   void test_ecoopds_3() {
     var program = EcoopDsPaperExamples.third();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: true);
+    var result = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
     expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
         isNotEmpty);
   }
@@ -47,7 +50,8 @@ class StrictModeTest extends AbstractSecDartTest {
   void test_ecoopds_4() {
     var program = EcoopDsPaperExamples.fourth();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: true);
+    var result = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
     expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
         isNotEmpty);
   }
@@ -55,7 +59,8 @@ class StrictModeTest extends AbstractSecDartTest {
   void test_ecoopds_5() {
     var program = EcoopDsPaperExamples.fifth();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: true);
+    var result = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
 
     expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
         isNotEmpty);
@@ -67,7 +72,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
   void test_ecoopds_1() {
     var program = EcoopDsPaperExamples.first();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: false);
+    var result = typeCheckSecurityForSource(source);
 
     expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
         isNotEmpty);
@@ -76,7 +81,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
   void test_ecoopds_2() {
     var program = EcoopDsPaperExamples.second();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: false);
+    var result = typeCheckSecurityForSource(source);
 
     expect(containsInvalidFlow(result), isFalse);
   }
@@ -84,7 +89,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
   void test_ecoopds_3() {
     var program = EcoopDsPaperExamples.third();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: false);
+    var result = typeCheckSecurityForSource(source);
 
     expect(containsInvalidFlow(result), isFalse);
   }
@@ -92,7 +97,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
   void test_ecoopds_4() {
     var program = EcoopDsPaperExamples.fourth();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: false);
+    var result = typeCheckSecurityForSource(source);
 
     expect(result.where((e) => e.errorCode == SecurityErrorCode.EXPLICIT_FLOW),
         isNotEmpty);
@@ -101,7 +106,7 @@ class FlexibleModeTest extends AbstractSecDartTest {
   void test_ecoopds_5() {
     var program = EcoopDsPaperExamples.fifth();
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: false);
+    var result = typeCheckSecurityForSource(source);
 
     expect(containsInvalidFlow(result), isFalse);
   }

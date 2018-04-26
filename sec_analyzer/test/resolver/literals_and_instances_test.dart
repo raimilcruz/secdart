@@ -1,3 +1,4 @@
+import 'package:secdart_analyzer/analyzer.dart';
 import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/security_label.dart';
@@ -77,7 +78,7 @@ class LiteralsAndInstancesTest extends AbstractSecDartTest {
       expect(securityType.endLabel, new DynamicLabel());
       expect(securityType.beginLabel, new DynamicLabel());
       expect(securityType.returnType.label, new DynamicLabel());
-      expect(securityType.argumentTypes.first.label, new LowLabel());
+      expect(securityType.argumentTypes.first.label, GLowLabel);
     }
   }
 
@@ -90,7 +91,7 @@ class LiteralsAndInstancesTest extends AbstractSecDartTest {
           }
       ''';
     var source = newSource("/test.dart", program);
-    var result = resolveSecurity(source, intervalMode: true);
+    var result = resolveSecurity(source, intervalModeWithDefaultLatticeConfig);
 
     var unit = result.astNode;
     result.errors.forEach(print);
@@ -109,12 +110,10 @@ class LiteralsAndInstancesTest extends AbstractSecDartTest {
 
     //the if is to get flow-sensitive type inference from dart.
     if (securityType is SecurityFunctionType) {
-      expect(securityType.beginLabel,
-          new IntervalLabel(new BotLabel(), new TopLabel()));
-      expect(securityType.endLabel,
-          new IntervalLabel(new BotLabel(), new TopLabel()));
+      expect(securityType.beginLabel, new IntervalLabel(BotLabel, TopLabel));
+      expect(securityType.endLabel, new IntervalLabel(BotLabel, TopLabel));
       expect(securityType.returnType.label,
-          new IntervalLabel(new HighLabel(), new TopLabel()));
+          new IntervalLabel(HighLabel, TopLabel));
     }
   }
 
@@ -128,9 +127,9 @@ class LiteralsAndInstancesTest extends AbstractSecDartTest {
       ''';
 
     var filter = (n) => n is IntegerLiteral;
-    _checkLiteralSecType(program, filter, false, new DynamicLabel());
-    _checkLiteralSecType(program, filter, true,
-        new IntervalLabel(new HighLabel(), new TopLabel()));
+    _checkLiteralSecType(program, filter, defaultConfig, new DynamicLabel());
+    _checkLiteralSecType(program, filter, intervalModeWithDefaultLatticeConfig,
+        new IntervalLabel(HighLabel, TopLabel));
   }
 
   void test_stringLiteral() {
@@ -142,9 +141,9 @@ class LiteralsAndInstancesTest extends AbstractSecDartTest {
           }
       ''';
     var filter = (n) => n is StringLiteral;
-    _checkLiteralSecType(program, filter, false, new DynamicLabel());
-    _checkLiteralSecType(program, filter, true,
-        new IntervalLabel(new HighLabel(), new TopLabel()));
+    _checkLiteralSecType(program, filter, defaultConfig, new DynamicLabel());
+    _checkLiteralSecType(program, filter, intervalModeWithDefaultLatticeConfig,
+        new IntervalLabel(HighLabel, TopLabel));
   }
 
   void test_BoolLiteral() {
@@ -156,15 +155,15 @@ class LiteralsAndInstancesTest extends AbstractSecDartTest {
           }
       ''';
     var filter = (n) => n is BooleanLiteral;
-    _checkLiteralSecType(program, filter, false, new DynamicLabel());
-    _checkLiteralSecType(program, filter, true,
-        new IntervalLabel(new HighLabel(), new TopLabel()));
+    _checkLiteralSecType(program, filter, defaultConfig, new DynamicLabel());
+    _checkLiteralSecType(program, filter, intervalModeWithDefaultLatticeConfig,
+        new IntervalLabel(HighLabel, TopLabel));
   }
 
-  void _checkLiteralSecType(
-      String program, filter, bool useInterval, SecurityLabel expectedLabel) {
+  void _checkLiteralSecType(String program, filter, SecAnalysisConfig config,
+      SecurityLabel expectedLabel) {
     var source = newSource("/test.dart", program);
-    var result = resolveSecurity(source, intervalMode: useInterval);
+    var result = resolveSecurity(source, config);
 
     var unit = result.astNode;
     result.errors.forEach(print);

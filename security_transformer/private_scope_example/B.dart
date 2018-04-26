@@ -6,4 +6,3 @@ class B extends A {
     _x = 1;
   }
 }
-

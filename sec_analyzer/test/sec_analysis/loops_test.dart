@@ -22,7 +22,8 @@ class LoopsTest extends AbstractSecDartTest {
           }
       ''';
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: true);
+    var result = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
 
     assert(result.any((x) => x.errorCode == SecurityErrorCode.EXPLICIT_FLOW));
   }
@@ -40,7 +41,8 @@ class LoopsTest extends AbstractSecDartTest {
           }
       ''';
     var source = newSource("/test.dart", program);
-    var result = typeCheckSecurityForSource(source, intervalMode: true);
+    var result = typeCheckSecurityForSource(source,
+        config: intervalModeWithDefaultLatticeConfig);
 
     assert(result.any((x) => x.errorCode == SecurityErrorCode.IMPLICIT_FLOW));
   }

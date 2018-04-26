@@ -23,22 +23,15 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
    * The parser used to get label from annotation
    */
   SecAnnotationParser _parser;
-  Lattice _lattice;
-
-  /**
-   * The mode define the internal representation of labels
-   */
-  final bool intervalMode;
 
   final bool astIsResolved;
 
   SecurityParserVisitor(AnalysisErrorListener reporter, CompilationUnit unit,
       SecAnnotationParser parser,
-      [this.intervalMode = false, this.astIsResolved = true]) {
+      [this.astIsResolved = true]) {
     _reporter = reporter;
     _parser = parser;
     _labelMap = new LabelMap();
-    _lattice = _parser.lattice;
   }
 
   LabelMap get labeMap => _labelMap;
@@ -102,8 +95,10 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
 
   void setFunctionLabels(
       _FunctionLabelResult functionLabelResult, AstNode node, Element element) {
-    FunctionLevelLabels labels = new FunctionLevelLabels(_lattice.dynamic,
-        new FunctionAnnotationLabel(_lattice.dynamic, _lattice.dynamic));
+    FunctionLevelLabels labels = new FunctionLevelLabels(
+        new NoAnnotatedLabel(),
+        new FunctionAnnotationLabel(
+            new NoAnnotatedLabel(), new NoAnnotatedLabel()));
     if (!functionLabelResult.errorOnLabel) {
       if (functionLabelResult.returnLabel != null) {
         labels.returnLabel = functionLabelResult.returnLabel.label;
@@ -142,9 +137,8 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
     return true;
   }
 
-  void setSimpleLabel(
-      SecurityLabel annotatedLabel, AstNode node, Element element) {
-    var label = _lattice.dynamic;
+  void setSimpleLabel(LabelNode annotatedLabel, AstNode node, Element element) {
+    var label = new NoAnnotatedLabel();
 
     if (annotatedLabel != null) {
       label = annotatedLabel;
@@ -164,8 +158,9 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
       //In this case the FunctionExpression node represents a lambda and
       //it is not possible to annotate lambda (or any value).
       final functionLabelResult = new _FunctionLabelResult.fromLabels(
-          new FunctionAnnotationLabel(_lattice.dynamic, _lattice.dynamic),
-          new SimpleAnnotatedLabel(_lattice.dynamic));
+          new FunctionAnnotationLabel(
+              new NoAnnotatedLabel(), new NoAnnotatedLabel()),
+          new SimpleAnnotatedLabel(new NoAnnotatedLabel()));
 
       setFunctionLabels(functionLabelResult, node, node.element);
     }
@@ -192,7 +187,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
   /**
    * Get the security annotation for a formal parameter.
    */
-  SecurityLabel _checkSimpleLabelAnnotation(dynamic parameter) {
+  LabelNode _checkSimpleLabelAnnotation(dynamic parameter) {
     var secLabelAnnotations =
         parameter.metadata.where((x) => _parser.isLabel(x));
     if (secLabelAnnotations.length > 1) {

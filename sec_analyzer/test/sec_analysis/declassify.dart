@@ -1,3 +1,4 @@
+import 'package:secdart_analyzer/analyzer.dart';
 import 'package:test/test.dart';
 
 import '../test_helpers.dart';
@@ -75,6 +76,27 @@ class DeclassifyTest extends AbstractSecDartTest {
       ''';
     var source = newSource("/test.dart", program);
     var result = typeCheckSecurityForSource(source);
+
+    assert(result.isEmpty);
+  }
+
+  void test_declassifyPasswordWithCustomLattice() {
+    var program = '''
+                   
+          import "package:secdart/secdart.dart";
+          
+          @latent("B","B")
+          @lab("Bob") String login(@lab("Alice") String password, @lab("Bob") String guess){
+            if(declassify(password == guess,"Bob")){
+              return "Login successful";
+            }
+            return "Invalid login";
+          }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source,
+        config: new SecAnalysisConfig(false, aliceBobLattice),
+        customLattice: true);
 
     assert(result.isEmpty);
   }

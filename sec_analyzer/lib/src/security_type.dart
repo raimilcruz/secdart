@@ -97,7 +97,7 @@ class SecurityClassElementImpl extends SecurityClassElement {
   /**
    * The lattice used to assign default labels
    */
-  Lattice lattice;
+  GradualLattice lattice;
   SecurityElementResolver elementResolver;
   Map<String, SecurityFunctionType> methods;
   Map<String, SecurityType> accessors;

@@ -1,5 +1,4 @@
 import 'package:secdart_analyzer/security_type.dart';
-import 'package:secdart_analyzer/src/security_label.dart';
 import 'package:test/test.dart';
 
 import '../test_helpers.dart';
@@ -23,7 +22,7 @@ class NoSecDartTest extends AbstractSecDartTest {
           }
       ''';
     var source = newSource("/test.dart", program);
-    var result = resolveSecurity(source, intervalMode: true);
+    var result = resolveSecurity(source, intervalModeWithDefaultLatticeConfig);
 
     var unit = result.astNode;
     result.errors.forEach(print);
@@ -35,6 +34,6 @@ class NoSecDartTest extends AbstractSecDartTest {
     var securityType = methodInv.getProperty(SEC_TYPE_PROPERTY);
     expect(securityType is InterfaceSecurityType, isTrue);
     final InterfaceSecurityType interfaceSecurityType = securityType;
-    expect(interfaceSecurityType.label, new HighLabel());
+    expect(interfaceSecurityType.label, IHighLabel);
   }
 }

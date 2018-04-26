@@ -5,7 +5,6 @@ import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/annotations/parser.dart';
 import 'package:secdart_analyzer/src/annotations/parser_element.dart';
-import 'package:secdart_analyzer/src/annotations/external_library.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';
 import 'package:secdart_analyzer/src/helper.dart';
 import 'package:secdart_analyzer/src/security_visitor.dart';
@@ -152,13 +151,12 @@ class SecurityIdentifierResolver {
  */
 class SecurityResolverVisitor extends AbstractSecurityVisitor {
   SecurityElementResolver _elementResolver;
-  Lattice _lattice;
+  GradualLattice _lattice;
   SecurityIdentifierResolver _identifierResolver;
   GradualSecurityTypeSystem typeSystem;
 
   SecurityResolverVisitor(AnalysisErrorListener reporter,
-      SecurityElementResolver elementResolver, SecurityCache securityMap,
-      [bool intervalMode = false])
+      SecurityElementResolver elementResolver, SecurityCache securityMap)
       : super(reporter, securityMap) {
     _elementResolver = elementResolver;
     _lattice = _elementResolver.lattice;
@@ -397,6 +395,8 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
     //type
     SimpleAnnotatedLabel simpleAnnotatedLabel =
         node.getProperty(SEC_LABEL_PROPERTY);
+    SecurityLabel label =
+        _elementResolver.labelNodeToLabelElement(simpleAnnotatedLabel.label);
 
     for (VariableDeclaration variable in node.variables) {
       //get the type for the variable. We cannot get the type from node.type
@@ -404,7 +404,7 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
       //here on the Dart type inference and get the type from the variable.
       SecurityType securityType = _elementResolver
           .fromDartType(variable.element.type)
-          .toSecurityType(simpleAnnotatedLabel.label);
+          .toSecurityType(label);
       variable.setProperty(SEC_TYPE_PROPERTY, securityType);
 
       variable.visitChildren(this);
@@ -490,6 +490,17 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
   }
 
   @override
+  bool visitThisExpression(ThisExpression node) {
+    //TODO: fix this
+    node.setProperty(
+        SEC_TYPE_PROPERTY,
+        _elementResolver
+            .fromDartType(node.bestType)
+            .toSecurityType(_lattice.dynamic));
+    return true;
+  }
+
+  @override
   bool visitPropertyAccess(PropertyAccess node) {
     //resolver security type for target
     node.target.accept(this);
@@ -500,13 +511,17 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
     } else {
       //find the field in the class
       //include the security value of the target object
-      var propertySecType = (receiverSType as InterfaceSecurityType)
-          .getGetterSecurityType(node.propertyName.name);
-      if (propertySecType is SecurityFunctionType) {
-        resultInvocationType =
-            propertySecType.returnType.stampLabel(receiverSType.label);
+      if (receiverSType is InterfaceSecurityType) {
+        var propertySecType =
+            receiverSType.getGetterSecurityType(node.propertyName.name);
+        if (propertySecType is SecurityFunctionType) {
+          resultInvocationType =
+              propertySecType.returnType.stampLabel(receiverSType.label);
+        }
+      } else {
+        //TODO: check this
+        resultInvocationType = receiverSType.stampLabel(receiverSType.label);
       }
-      resultInvocationType = propertySecType.stampLabel(receiverSType.label);
     }
     node.setProperty(SEC_TYPE_PROPERTY, resultInvocationType);
     return true;
@@ -592,6 +607,7 @@ class SecurityResolverVisitor extends AbstractSecurityVisitor {
     final secType = getSecurityType(actualArgumentToDeclassify);
     final stringLabel = argumentList[1];
     final label = stringLabel.getProperty(SEC_LABEL_PROPERTY);
-    return secType.downgradeLabel(label);
+    return secType
+        .downgradeLabel(_elementResolver.labelNodeToLabelElement(label));
   }
 }

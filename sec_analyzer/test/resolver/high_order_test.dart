@@ -36,7 +36,7 @@ class HighOrderResolverTest extends AbstractSecDartTest {
     var securityType =
         returnStatement.expression.getProperty(SEC_TYPE_PROPERTY);
     expect(securityType is InterfaceSecurityType, isTrue);
-    expect(securityType.label, new HighLabel());
+    expect(securityType.label, GHighLabel);
   }
 
   void test_TypeAlias() {
@@ -73,8 +73,8 @@ class HighOrderResolverTest extends AbstractSecDartTest {
     // a variable declaration/parameter.
     expect(
         labelShape(securityType),
-        new FunctionSecurityTypeLabelShape(new HighLabel(), new DynamicLabel(),
-            new BotLabel(), [new TopLabel(), new BotLabel()]));
+        new FunctionSecurityTypeLabelShape(
+            GHighLabel, new DynamicLabel(), GBotLabel, [GTopLabel, GBotLabel]));
   }
 
   void test_TypeAlias2() {
@@ -110,10 +110,7 @@ class HighOrderResolverTest extends AbstractSecDartTest {
     // a variable declaration/parameter.
     expect(
         labelShape(securityType),
-        new FunctionSecurityTypeLabelShape(
-            new DynamicLabel(),
-            new DynamicLabel(),
-            new LowLabel(),
-            [new TopLabel(), new BotLabel()]));
+        new FunctionSecurityTypeLabelShape(new DynamicLabel(),
+            new DynamicLabel(), GLowLabel, [GTopLabel, GBotLabel]));
   }
 }

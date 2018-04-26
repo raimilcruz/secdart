@@ -3,7 +3,7 @@
 
 library secdart;
 
-export 'src/flat_lattice.dart';
+export 'src/default_lattice.dart';
 
 /**
  * Downgrades the security label of the given expression.
@@ -12,3 +12,28 @@ export 'src/flat_lattice.dart';
  * it and perform the necessary downgrade.
  */
 T declassify<T>(T expression, label) => expression;
+
+/**
+ * Represents a label annotation. Its interpretation is open.
+ * eg. Lab("H"), Lab("Alice -> Bob")
+ */
+class lab {
+  final String labelRep;
+  const lab(String this.labelRep);
+}
+
+/**
+ * Label for function annotations
+ */
+class latent {
+  /**
+   * The label required to invoke the function
+   */
+  final String beginLabel;
+
+  /**
+   * The label of the return value of the function can not be higher than the [endlabel]
+   */
+  final String endLabel;
+  const latent(this.beginLabel, this.endLabel);
+}

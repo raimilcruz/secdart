@@ -2,7 +2,6 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/listener.dart';
 import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
-import 'package:secdart_analyzer/src/annotations/parser.dart';
 
 import 'errors.dart';
 import 'gs_typesystem.dart';
@@ -103,15 +102,11 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
 
   @override
   bool visitFunctionDeclaration(FunctionDeclaration node) {
-    //we assume that that labels were already parsed
-    var annotatedLabels =
-        node.getProperty(SEC_LABEL_PROPERTY) as FunctionLevelLabels;
-
     var currentPc = pc;
     var outerFunctionType = _enclosingExecutableElementSecurityType;
     _enclosingExecutableElementSecurityType = getSecurityType(node);
 
-    pc = pc.join(annotatedLabels.functionLabels.beginLabel);
+    pc = pc.join(_enclosingExecutableElementSecurityType.beginLabel);
 
     super.visitFunctionDeclaration(node);
 
@@ -122,16 +117,13 @@ class AbstractSecurityVisitor extends RecursiveAstVisitor<bool> {
 
   @override
   bool visitMethodDeclaration(MethodDeclaration node) {
-    //we assume that that labels were already parsed
-    var annotatedLabels =
-        node.getProperty(SEC_LABEL_PROPERTY) as FunctionLevelLabels;
-
     var currentPc = pc;
     var outerFunctionType = _enclosingExecutableElementSecurityType;
     _enclosingExecutableElementSecurityType = getSecurityType(node);
 
-    //TODO: update pc or join?
-    pc = annotatedLabels.functionLabels.beginLabel;
+    //Dart does not support nested classes, so here we override the pc,
+    //because there is not relevant po in a outer scope.
+    pc = _enclosingExecutableElementSecurityType.beginLabel;
 
     var result = super.visitMethodDeclaration(node);
 

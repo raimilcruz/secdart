@@ -14,3 +14,4 @@ deps/*
 web_api/bin/*log*
 secdart/doc/api/
 *.orig
+*/.dart_tool/

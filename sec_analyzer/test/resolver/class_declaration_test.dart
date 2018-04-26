@@ -2,7 +2,6 @@ import 'package:test_reflective_loader/test_reflective_loader.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:secdart_analyzer/security_type.dart';
 import 'package:test/src/frontend/expect.dart';
-import 'package:secdart_analyzer/src/security_label.dart';
 import 'package:test/test.dart';
 import '../test_helpers.dart';
 
@@ -50,12 +49,12 @@ class ClassDeclarationTest extends AbstractSecDartTest {
 
     expect(securityType1 is SecurityFunctionType, isTrue);
     final funSecurityType1 = securityType1 as SecurityFunctionType;
-    expect(funSecurityType1.returnType.label, new LowLabel());
+    expect(funSecurityType1.returnType.label, GLowLabel);
     expect(securityMap.map.containsKey(methodDeclaration1.element), isTrue);
 
     expect(securityType2 is SecurityFunctionType, isTrue);
     final funSecurityType2 = securityType2 as SecurityFunctionType;
-    expect(funSecurityType2.returnType.label, new TopLabel());
+    expect(funSecurityType2.returnType.label, GTopLabel);
     expect(securityMap.map.containsKey(methodDeclaration2.element), isTrue);
   }
 
@@ -86,7 +85,7 @@ class ClassDeclarationTest extends AbstractSecDartTest {
 
     expect(securityType1 is InterfaceSecurityType, isTrue);
     final interfaceSecurityType = securityType1 as InterfaceSecurityType;
-    expect(interfaceSecurityType.label, new TopLabel());
+    expect(interfaceSecurityType.label, GTopLabel);
   }
 
   test_instanceFieldAcccess() {
@@ -122,7 +121,7 @@ class ClassDeclarationTest extends AbstractSecDartTest {
     var securityType = returnedExpression.getProperty(SEC_TYPE_PROPERTY);
 
     expect(securityType is InterfaceSecurityType, isTrue);
-    expect(securityType.label, new HighLabel());
+    expect(securityType.label, GHighLabel);
 
     //check the class element
     final classElement = classDeclaration.element;
@@ -139,6 +138,6 @@ class ClassDeclarationTest extends AbstractSecDartTest {
         (ageSecurityAccessor.propertyType as SecurityFunctionType)
             .returnType
             .label,
-        new HighLabel());
+        GHighLabel);
   }
 }

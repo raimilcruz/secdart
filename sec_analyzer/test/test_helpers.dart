@@ -14,14 +14,33 @@ import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/annotations/parser.dart';
 import 'package:secdart_analyzer/src/annotations/parser_element.dart';
+import 'package:secdart_analyzer/src/configuration.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
 import 'package:secdart_analyzer/src/errors.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
+import 'package:secdart_analyzer/src/security_label.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
 import 'package:analyzer/source/package_map_resolver.dart';
 import 'package:secdart_analyzer/src/security_resolver.dart';
+
+final SecAnalysisConfig defaultConfig =
+    new SecAnalysisConfig(false, LatticeConfig.defaultLattice);
+final SecAnalysisConfig intervalModeWithDefaultLatticeConfig =
+    new SecAnalysisConfig(true, LatticeConfig.defaultLattice);
+
+final aliceBobLattice = new LatticeConfig([
+  "Alice",
+  "Bob",
+  "T",
+  "B"
+], [
+  new LabelOrder("Alice", "T"),
+  new LabelOrder("Bob", "T"),
+  new LabelOrder("B", "Alice"),
+  new LabelOrder("B", "Bob")
+], "T", "B");
 
 class AbstractSecDartTest {
   MemoryResourceProvider resourceProvider = new MemoryResourceProvider();
@@ -126,12 +145,16 @@ T declassify<T>(T expression,label) => expression;
   }
 
   List<AnalysisError> typeCheckSecurityForSource(Source source,
-      {bool intervalMode: false,
-      bool printError: true,
-      bool includeDartErrors: false}) {
+      {bool printError: true,
+      bool includeDartErrors: false,
+      SecAnalysisConfig config = null,
+      bool customLattice = false}) {
+    if (config == null) {
+      config = defaultConfig;
+    }
     var errors = SecAnalyzer
-        .computeAllErrors(context, source,
-            intervalMode: intervalMode, returnDartErrors: includeDartErrors)
+        .computeAllErrors(context, source, config,
+            returnDartErrors: includeDartErrors, customLattice: customLattice)
         .errors;
     if (printError) {
       for (AnalysisError error in errors) {
@@ -169,61 +192,110 @@ T declassify<T>(T expression,label) => expression;
   }
 
   SecAnalysisResult parse(Source source,
-      {bool intervalMode: false, bool includeDartErrors: false}) {
+      [SecAnalysisConfig config = null,
+      bool customLattice = false,
+      bool includeDartErrors = false]) {
+    if (config == null) {
+      config = defaultConfig;
+    }
+
     var result = resolveDart(source);
     if (includeDartErrors) {
       return result;
     }
     ErrorCollector errorListener = new ErrorCollector();
     var unit = result.astNode;
-    var annotationParser =
-        new FourLatticeParser(errorListener, unit as CompilationUnit, false);
-    var visitor = new SecurityParserVisitor(
-        errorListener, unit, annotationParser, false, true);
+
+    SecAnnotationParser parser =
+        _getParser(errorListener, unit, customLattice, config);
+    var visitor = new SecurityParserVisitor(errorListener, unit, parser, true);
     unit.accept(visitor);
 
     return new SecAnalysisResult(errorListener.errors, unit);
   }
 
   SecurityElementResolver parseAndGetSecurityElementResolver(
-      CompilationUnit unit, ErrorCollector errorListener) {
-    var annotationParser = new FourLatticeParser(errorListener, unit, false);
-    var visitor = new SecurityParserVisitor(
-        errorListener, unit, annotationParser, false, true);
+      CompilationUnit unit, ErrorCollector errorListener,
+      [SecAnalysisConfig config = null, bool customLattice = false]) {
+    if (config == null) {
+      config = defaultConfig;
+    }
+
+    SecAnnotationParser annotationParser =
+        _getParser(errorListener, unit, customLattice, config);
+
+    SecDartConfig.init(config.latticeConfig);
+    var visitor =
+        new SecurityParserVisitor(errorListener, unit, annotationParser, true);
     unit.accept(visitor);
 
     SecurityCache securityCache = new SecurityCache();
 
+    GradualLattice lattice = _getGradualLattice(config);
+
     var secDartElementResolver = new SecDartElementResolver(
-        unit, annotationParser, securityCache, visitor.labeMap);
+        unit, annotationParser, securityCache, visitor.labeMap, lattice);
 
     var nonSecDartElementResolver =
-        new ExternalLibraryResolver(annotationParser.lattice, securityCache);
+        new ExternalLibraryResolver(lattice, securityCache);
 
     final resolver = new DispatcherSecurityElementResolver(
         secDartElementResolver, nonSecDartElementResolver, securityCache);
     return resolver;
   }
 
-  SecResolverResult resolveSecurity(Source source, {bool intervalMode: false}) {
+  GradualLattice _getGradualLattice(SecAnalysisConfig config) {
+    GradualLattice lattice = null;
+    if (config.intervalMode) {
+      lattice = new IntervalLattice(config.latticeConfig);
+    } else {
+      lattice = new GradualLatticeWithUnknown(config.latticeConfig);
+    }
+    return lattice;
+  }
+
+  SecAnnotationParser _getParser(ErrorCollector errorListener,
+      CompilationUnit unit, bool customLattice, SecAnalysisConfig config) {
+    SecAnnotationParser annotationParser =
+        new FourLatticeParser(errorListener, unit);
+    if (customLattice) {
+      annotationParser = new ConfigurableLatticeParser(
+          config.latticeConfig, errorListener, unit);
+    }
+    return annotationParser;
+  }
+
+  SecResolverResult resolveSecurity(Source source,
+      [SecAnalysisConfig config = null, bool customLattice = false]) {
+    if (config == null) {
+      config = defaultConfig;
+    }
     var result = resolveDart(source);
     if (result.errors.isNotEmpty) {
       return result;
     }
     ErrorCollector errorListener = new ErrorCollector();
     var unit = result.astNode;
-    var annotationParser = new FourLatticeParser(
-        errorListener, unit as CompilationUnit, intervalMode);
-    var visitor = new SecurityParserVisitor(
-        errorListener, unit, annotationParser, intervalMode, true);
+
+    SecAnnotationParser annotationParser =
+        _getParser(errorListener, unit, customLattice, config);
+
+    SecDartConfig.init(config.latticeConfig);
+
+    var visitor =
+        new SecurityParserVisitor(errorListener, unit, annotationParser, true);
     unit.accept(visitor);
 
     SecurityCache securityCache = new SecurityCache();
 
+    GradualLattice lattice = _getGradualLattice(config);
+
+    assert(lattice != null);
+
     var secDartResolver = new SecDartElementResolver(
-        unit, annotationParser, securityCache, visitor.labeMap, intervalMode);
+        unit, annotationParser, securityCache, visitor.labeMap, lattice);
     var nonSecDartResolver =
-        new ExternalLibraryResolver(annotationParser.lattice, securityCache);
+        new ExternalLibraryResolver(lattice, securityCache);
 
     var elementResolver = new DispatcherSecurityElementResolver(
         secDartResolver, nonSecDartResolver, securityCache);
@@ -232,7 +304,7 @@ T declassify<T>(T expression,label) => expression;
     unit.accept(topLevelResolver);
 
     var fullResolver = new SecurityResolverVisitor(
-        errorListener, elementResolver, securityCache, intervalMode);
+        errorListener, elementResolver, securityCache);
 
     unit.accept(fullResolver);
 
@@ -241,45 +313,32 @@ T declassify<T>(T expression,label) => expression;
   }
 
   void resolveTopLevelDeclarations(
-      CompilationUnit unit, ErrorCollector errorListener) {
-    var annotationParser = new FourLatticeParser(errorListener, unit, false);
-    var visitor = new SecurityParserVisitor(
-        errorListener, unit, annotationParser, false, true);
+      CompilationUnit unit,
+      ErrorCollector errorListener,
+      SecAnalysisConfig config,
+      bool customLattice) {
+    assert(config != null);
+    assert(config.latticeConfig != null);
+    var annotationParser =
+        _getParser(errorListener, unit, customLattice, config);
+    var visitor =
+        new SecurityParserVisitor(errorListener, unit, annotationParser, true);
     unit.accept(visitor);
 
     SecurityCache securityCache = new SecurityCache();
+    GradualLattice lattice = _getGradualLattice(config);
 
     var secDartResolver = new SecDartElementResolver(
-        unit, annotationParser, securityCache, visitor.labeMap, false);
+        unit, annotationParser, securityCache, visitor.labeMap, lattice);
 
     var nonSecDartResolver =
-        new ExternalLibraryResolver(annotationParser.lattice, securityCache);
+        new ExternalLibraryResolver(lattice, securityCache);
 
     var elementResolver = new DispatcherSecurityElementResolver(
         secDartResolver, nonSecDartResolver, securityCache);
 
     var topLevelResolver = new TopLevelDeclarationResolver(elementResolver);
     unit.accept(topLevelResolver);
-  }
-
-  bool containsParseErrors(Source source, {bool printError: true}) {
-    var libraryElement = context.computeLibraryElement(source);
-    var unit = context.resolveCompilationUnit(source, libraryElement);
-
-    ErrorCollector errorListener = new ErrorCollector();
-    var annotationParser = new FourLatticeParser(errorListener, unit, false);
-    var visitor =
-        new SecurityParserVisitor(errorListener, unit, annotationParser);
-    unit.accept(visitor);
-
-    if (printError) {
-      for (AnalysisError error in errorListener.errors) {
-        print(error);
-      }
-    }
-    return errorListener.errors
-        .where((e) => e.errorCode is ParserErrorCode)
-        .isNotEmpty;
   }
 
   bool containsInvalidFlow(List<AnalysisError> errors) {
@@ -378,4 +437,27 @@ FunctionSecurityTypeLabelShape labelShape(SecurityFunctionType functionType) {
       functionType.endLabel,
       functionType.returnType.label,
       functionType.argumentTypes.map((p) => p.label).toList());
+}
+
+final BotLabel = new StaticLabelImpl("bot");
+final HighLabel = new StaticLabelImpl("H");
+final LowLabel = new StaticLabelImpl("L");
+final TopLabel = new StaticLabelImpl("top");
+
+final GHighLabel = toGradual(HighLabel);
+final GLowLabel = toGradual(LowLabel);
+final GTopLabel = toGradual(TopLabel);
+final GBotLabel = toGradual(BotLabel);
+
+final IHighLabel = toInterval(HighLabel);
+final ILowLabel = toInterval(LowLabel);
+final ITopLabel = toInterval(TopLabel);
+final IBotLabel = toInterval(BotLabel);
+
+GradualStaticLabel toGradual(StaticLabel label) {
+  return new GradualStaticLabel(label);
+}
+
+IntervalLabel toInterval(StaticLabel label) {
+  return new IntervalLabel(label, label);
 }
