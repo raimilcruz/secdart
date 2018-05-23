@@ -1,13 +1,20 @@
 import 'package:security_transformer/src/security_value.dart';
 
-class Point {
+class A {
   dynamic _x = SecurityContext.declare('?', SecurityContext.nullLiteral());
   dynamic y = SecurityContext.declare('?', SecurityContext.nullLiteral());
-  Point(this._x, this.y);
+  A(this._x, this.y);
   void _foo() {
     SecurityContext.checkParametersType([], []);
     {
       print(_x);
+    }
+  }
+
+  void bar() {
+    SecurityContext.checkParametersType([], []);
+    {
+      print(y);
     }
   }
 }
@@ -17,10 +24,12 @@ void main() {
   {
     final a = SecurityContext.declare(
         '?',
-        SecurityContext.instanceCreation(new Point(
-            SecurityContext.integerLiteral(0), SecurityContext.nullLiteral())));
-    print(a.getField('_x', type: Point));
+        SecurityContext.instanceCreation(new A(
+            SecurityContext.integerLiteral(0),
+            SecurityContext.integerLiteral(1))));
+    print(a.getField('_x', type: A));
     print(a.getField('y'));
-    a.invoke('_foo', [], type: Point);
+    a.invoke('_foo', [], type: A);
+    a.invoke('bar', []);
   }
 }

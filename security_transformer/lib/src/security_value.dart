@@ -1,3 +1,5 @@
+import 'dart:mirrors';
+
 class ErrorReporter {
   static void reportBadArgument(SecurityLabel parameterSecurityLabel,
       SecurityLabel argumentSecurityLabel) {
@@ -218,6 +220,13 @@ class SecurityContext {
     }
     return null;
   }
+
+  static SecurityValue instanceCreation(value) {
+    return new SecurityValue(
+        value,
+        new SecurityLabel(pc.lowerBoundType,
+            upperBoundType: pc.upperBoundType));
+  }
 }
 
 class SecurityLabel {
@@ -230,6 +239,7 @@ class SecurityLabel {
   };
   String lowerBoundType, upperBoundType;
   int lowerBoundValue, upperBoundValue;
+
   SecurityLabel(this.lowerBoundType, {this.upperBoundType}) {
     if (lowerBoundType == '?') {
       lowerBoundType = 'B';
@@ -253,9 +263,40 @@ class SecurityValue {
   dynamic value;
   SecurityLabel staticSecurityLabel;
   SecurityLabel dynamicSecurityLabel;
+
   SecurityValue(this.value, this.staticSecurityLabel)
       : dynamicSecurityLabel = staticSecurityLabel;
 
   @override
   String toString() => '($value, $staticSecurityLabel, $dynamicSecurityLabel)';
+
+  getField(String fieldName, {Type type}) {
+    if (fieldName.startsWith('_')) {
+      final symbol = type == null
+          ? _lookUp(fieldName, value.runtimeType)
+          : _lookUp(fieldName, reflectClass(type));
+      return reflect(value).getField(symbol).reflectee;
+    }
+    return reflect(value).getField(new Symbol(fieldName)).reflectee;
+  }
+
+  invoke(String fieldName, List arguments, {Type type}) {
+    if (fieldName.startsWith('_')) {
+      final symbol = type == null
+          ? _lookUp(fieldName, value.runtimeType)
+          : _lookUp(fieldName, reflectClass(type));
+      return reflect(value).invoke(symbol, arguments).reflectee;
+    }
+    return reflect(value).invoke(new Symbol(fieldName), arguments).reflectee;
+  }
+}
+
+Symbol _lookUp(String memberName, ClassMirror classMirror) {
+  final keyName = 'Symbol("$memberName")';
+  for (final key in classMirror.declarations.keys) {
+    if (keyName == key.toString()) {
+      return key;
+    }
+  }
+  return null;
 }
