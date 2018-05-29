@@ -51,7 +51,7 @@ class SecurityContext {
 
   static SecurityValue binaryExpression(SecurityValue leftLambda(),
       SecurityValue rightLambda(), String operator) {
-    SecurityValue result = new SecurityValue(null, new SecurityLabel('b'));
+    SecurityValue result = new SecurityValue(null, new SecurityLabel('B'));
     result.value = _interpretBinaryExpression(() {
       final securityValue = leftLambda();
       result.dynamicSecurityLabel = dynamicJoin(
@@ -271,23 +271,23 @@ class SecurityValue {
   String toString() => '($value, $staticSecurityLabel, $dynamicSecurityLabel)';
 
   getField(String fieldName, {Type type}) {
-    if (fieldName.startsWith('_')) {
-      final symbol = type == null
-          ? _lookUp(fieldName, value.runtimeType)
-          : _lookUp(fieldName, reflectClass(type));
-      return reflect(value).getField(symbol).reflectee;
-    }
-    return reflect(value).getField(new Symbol(fieldName)).reflectee;
+    final symbol = fieldName.startsWith('_')
+        ? type == null
+            ? _lookUp(fieldName, value.runtimeType)
+            : _lookUp(fieldName, reflectClass(type))
+        : new Symbol(fieldName);
+    return reflect(value).getField(symbol).reflectee;
   }
 
   invoke(String fieldName, List arguments, {Type type}) {
-    if (fieldName.startsWith('_')) {
-      final symbol = type == null
-          ? _lookUp(fieldName, value.runtimeType)
-          : _lookUp(fieldName, reflectClass(type));
-      return reflect(value).invoke(symbol, arguments).reflectee;
-    }
-    return reflect(value).invoke(new Symbol(fieldName), arguments).reflectee;
+    List modifiedArguments = [this];
+    modifiedArguments.addAll(arguments);
+    final symbol = fieldName.startsWith('_')
+        ? type == null
+            ? _lookUp(fieldName, value.runtimeType)
+            : _lookUp(fieldName, reflectClass(type))
+        : new Symbol(fieldName);
+    return reflect(value).invoke(symbol, modifiedArguments).reflectee;
   }
 }
 

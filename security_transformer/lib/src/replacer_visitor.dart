@@ -1,5 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:secdart_analyzer/sec_analyzer.dart';
 import 'package:security_transformer/src/utils.dart';
 
@@ -1080,22 +1081,29 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   AstNode visitMapLiteralEntry(MapLiteralEntry node) => node;
 
   @override
-  AstNode visitMethodDeclaration(MethodDeclaration node) => node;
+  AstNode visitMethodDeclaration(MethodDeclaration node) {
+    if (!node.isStatic) {
+      replaceNodeInAst(node.parameters,
+          createParametersWithSecurityValue(node.parameters.parameters),
+          parent: node);
+    }
+    return node;
+  }
 
   @override
   AstNode visitMethodInvocation(MethodInvocation node) {
-    if (node.operator == null) {
+    if (_isStatic(node)) {
       return node;
     }
     return node.methodName.name.startsWith('_')
         ? createInvokeInvocation(
-            node.target.toString(),
+            node.target?.toString(),
             node.operator?.stringValue,
             node.methodName.name,
             node.argumentList.arguments.map((e) => e.toString()).toList(),
             className: node.methodName.bestElement?.enclosingElement?.name)
         : createInvokeInvocation(
-            node.target.toString(),
+            node.target?.toString(),
             node.operator?.stringValue,
             node.methodName.name,
             node.argumentList.arguments.map((e) => e.toString()).toList());
@@ -1299,12 +1307,12 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
     final declaration = body.parent;
     if (declaration is FunctionExpression) {
       return declaration.parameters.parameters
-          .map((e) => "'${e.getProperty('sec-type')}'")
+          .map((e) => "'${e.getProperty('sec-type') ?? '?'}'")
           .toList();
     }
     if (declaration is MethodDeclaration) {
       return declaration.parameters.parameters
-          .map((e) => "'${e.getProperty('sec-type')}'")
+          .map((e) => "'${e.getProperty('sec-type') ?? '?'}'")
           .toList();
     }
     return [];
@@ -1338,4 +1346,12 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
             [node.expression.toString(), "'$staticReturnLabel'"]));
     return node;
   }
+}
+
+bool _isStatic(MethodInvocation node) {
+  final element = node.methodName.bestElement;
+  if (element is MethodElement) {
+    return element.isStatic;
+  }
+  return true;
 }
