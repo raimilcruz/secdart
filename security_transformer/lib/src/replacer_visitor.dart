@@ -1,4 +1,5 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:secdart_analyzer/sec_analyzer.dart';
@@ -817,14 +818,27 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
 
   @override
   AstNode visitBinaryExpression(BinaryExpression node) {
-    final leftLambda = createLambdaWithSingleReturnExpression(node.leftOperand);
-    final rightLambda =
-        createLambdaWithSingleReturnExpression(node.rightOperand);
-    return createFunctionInvocation('SecurityContext.binaryExpression', [
-      leftLambda.toString(),
-      rightLambda.toString(),
-      "'${node.operator.type.name}'"
-    ]);
+    if (node.operator.type == TokenType.AMPERSAND_AMPERSAND) {
+      return createFunctionInvocation(
+          'SecurityContext.ampersandAmpersandBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    } else if (node.operator.type == TokenType.BANG_EQ) {
+      return createFunctionInvocation(
+          'SecurityContext.bangEqualBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    } else if (node.operator.type == TokenType.BAR_BAR) {
+      return createFunctionInvocation('SecurityContext.barBarBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    } else if (node.operator.type == TokenType.EQ_EQ) {
+      return createFunctionInvocation(
+          'SecurityContext.equalEqualBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    } else if (node.operator.type == TokenType.QUESTION_QUESTION) {
+      return createFunctionInvocation(
+          'SecurityContext.questionQuestionBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    }
+    return node;
   }
 
   @override
@@ -1092,21 +1106,15 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
 
   @override
   AstNode visitMethodInvocation(MethodInvocation node) {
-    if (_isStatic(node)) {
+    if (_isStatic(node) || !node.methodName.name.startsWith('_')) {
       return node;
     }
-    return node.methodName.name.startsWith('_')
-        ? createInvokeInvocation(
-            node.target?.toString(),
-            node.operator?.stringValue,
-            node.methodName.name,
-            node.argumentList.arguments.map((e) => e.toString()).toList(),
-            className: node.methodName.bestElement?.enclosingElement?.name)
-        : createInvokeInvocation(
-            node.target?.toString(),
-            node.operator?.stringValue,
-            node.methodName.name,
-            node.argumentList.arguments.map((e) => e.toString()).toList());
+    return createInvokeInvocation(
+        node.target?.toString(),
+        node.operator?.stringValue,
+        node.methodName.name,
+        node.argumentList.arguments.map((e) => e.toString()).toList(),
+        className: node.methodName.bestElement?.enclosingElement?.name);
   }
 
   @override
@@ -1140,8 +1148,7 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
           ? createGetFieldInvocation(
               node.prefix.name, node.period.stringValue, node.identifier.name,
               className: node.identifier.bestElement?.enclosingElement?.name)
-          : createGetFieldInvocation(
-              node.prefix.name, node.period.stringValue, node.identifier.name);
+          : node;
 
   @override
   AstNode visitPrefixExpression(PrefixExpression node) => node;
@@ -1149,13 +1156,10 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   @override
   AstNode visitPropertyAccess(PropertyAccess node) =>
       node.propertyName.name.startsWith('_')
-          ? createGetFieldInvocation(
-              node.target.toString(),
-              node.operator.stringValue,
-              node.propertyName.name,
+          ? createGetFieldInvocation(node.target.toString(),
+              node.operator.stringValue, node.propertyName.name,
               className: node.propertyName.bestElement?.enclosingElement?.name)
-          : createGetFieldInvocation(node.target.toString(),
-              node.operator.stringValue, node.propertyName.name);
+          : node;
 
   @override
   AstNode visitRedirectingConstructorInvocation(

@@ -31,40 +31,58 @@ class SecurityContext {
   static final oldPcs = <int, SecurityLabel>{};
 
   static SecurityValue adjacentStrings(List<SecurityValue> securityValues) {
-    final labels = securityValues.map((e) => e.dynamicSecurityLabel);
-    final values = securityValues.map((e) => e.value);
+    final labels = securityValues.map((e) => e._dynamicSecurityLabel);
+    final values = securityValues.map((e) => e._value);
     return new SecurityValue(values.join(''), dynamicJoinMultiple(labels));
   }
 
   static void assign(SecurityValue target, SecurityValue initializer) {
-    if (target.staticSecurityLabel < pc) {
-      ErrorReporter.reportBadContextAssignment(target.staticSecurityLabel, pc);
+    if (target._staticSecurityLabel < pc) {
+      ErrorReporter.reportBadContextAssignment(target._staticSecurityLabel, pc);
     }
-    if (target.staticSecurityLabel < initializer.dynamicSecurityLabel) {
+    if (target._staticSecurityLabel < initializer._dynamicSecurityLabel) {
       ErrorReporter.reportBadAssignment(
-          target.staticSecurityLabel, initializer.dynamicSecurityLabel);
+          target._staticSecurityLabel, initializer._dynamicSecurityLabel);
     }
-    target.dynamicSecurityLabel = dynamicJoin(
-        target.staticSecurityLabel, initializer.dynamicSecurityLabel);
-    target.value = initializer.value;
+    target._dynamicSecurityLabel = dynamicJoin(
+        target._staticSecurityLabel, initializer._dynamicSecurityLabel);
+    target._value = initializer._value;
   }
 
-  static SecurityValue binaryExpression(SecurityValue leftLambda(),
-      SecurityValue rightLambda(), String operator) {
-    SecurityValue result = new SecurityValue(null, new SecurityLabel('B'));
-    result.value = _interpretBinaryExpression(() {
-      final securityValue = leftLambda();
-      result.dynamicSecurityLabel = dynamicJoin(
-          result.dynamicSecurityLabel, securityValue.dynamicSecurityLabel);
-      return securityValue.value;
-    }, () {
-      final securityValue = rightLambda();
-      result.dynamicSecurityLabel = dynamicJoin(
-          result.dynamicSecurityLabel, securityValue.dynamicSecurityLabel);
-      return securityValue.value;
-    }, operator);
-    return result;
-  }
+  static SecurityValue ampersandAmpersandBinaryExpression(
+          SecurityValue leftValue, SecurityValue rightValue) =>
+      new SecurityValue(
+          leftValue._value && rightValue._value,
+          dynamicJoin(leftValue._dynamicSecurityLabel,
+              rightValue._dynamicSecurityLabel));
+
+  static SecurityValue bangEqualBinaryExpression(
+          SecurityValue leftValue, SecurityValue rightValue) =>
+      new SecurityValue(
+          leftValue._value != rightValue._value,
+          dynamicJoin(leftValue._dynamicSecurityLabel,
+              rightValue._dynamicSecurityLabel));
+
+  static SecurityValue barBarBinaryExpression(
+          SecurityValue leftValue, SecurityValue rightValue) =>
+      new SecurityValue(
+          leftValue._value || rightValue._value,
+          dynamicJoin(leftValue._dynamicSecurityLabel,
+              rightValue._dynamicSecurityLabel));
+
+  static SecurityValue equalEqualBinaryExpression(
+          SecurityValue leftValue, SecurityValue rightValue) =>
+      new SecurityValue(
+          leftValue._value == rightValue._value,
+          dynamicJoin(leftValue._dynamicSecurityLabel,
+              rightValue._dynamicSecurityLabel));
+
+  static SecurityValue questionQuestionBinaryExpression(
+          SecurityValue leftValue, SecurityValue rightValue) =>
+      new SecurityValue(
+          leftValue._value ?? rightValue._value,
+          dynamicJoin(leftValue._dynamicSecurityLabel,
+              rightValue._dynamicSecurityLabel));
 
   static SecurityValue booleanLiteral(bool literal) {
     return new SecurityValue(
@@ -79,9 +97,9 @@ class SecurityContext {
     for (var i = 0; i < securityValues.length; i++) {
       final securityValue = securityValues[i];
       final securityLabel = securityLabels[i];
-      if (securityLabel < securityValue.dynamicSecurityLabel) {
+      if (securityLabel < securityValue._dynamicSecurityLabel) {
         ErrorReporter.reportBadArgument(
-            securityLabel, securityValue.dynamicSecurityLabel);
+            securityLabel, securityValue._dynamicSecurityLabel);
       }
     }
   }
@@ -89,20 +107,20 @@ class SecurityContext {
   static SecurityValue checkReturnType(
       SecurityValue securityValue, String label) {
     final securityLabel = new SecurityLabel(label);
-    if (securityLabel < securityValue.dynamicSecurityLabel) {
+    if (securityLabel < securityValue._dynamicSecurityLabel) {
       ErrorReporter.reportBadReturnType(
-          securityLabel, securityValue.dynamicSecurityLabel);
+          securityLabel, securityValue._dynamicSecurityLabel);
     }
     return securityValue;
   }
 
   static SecurityValue conditionalExpression(SecurityValue condition,
       SecurityValue thenFunction(), SecurityValue elseFunction()) {
-    final result = condition.value ? thenFunction() : elseFunction();
+    final result = condition._value ? thenFunction() : elseFunction();
     return new SecurityValue(
-        result.value,
+        result._value,
         dynamicJoin(
-            condition.dynamicSecurityLabel, result.dynamicSecurityLabel));
+            condition._dynamicSecurityLabel, result._dynamicSecurityLabel));
   }
 
   static SecurityValue declare(String label, SecurityValue initializer) {
@@ -135,8 +153,8 @@ class SecurityContext {
 
   static bool evaluateConditionAndUpdatePc(SecurityValue condition, int pcKey) {
     oldPcs[pcKey] = pc;
-    pc = dynamicJoin(pc, condition.dynamicSecurityLabel);
-    return condition.value;
+    pc = dynamicJoin(pc, condition._dynamicSecurityLabel);
+    return condition._value;
   }
 
   static SecurityValue functionLiteral(Function function) {
@@ -169,56 +187,6 @@ class SecurityContext {
         literal,
         new SecurityLabel(pc.lowerBoundType,
             upperBoundType: pc.upperBoundType));
-  }
-
-  static dynamic _interpretBinaryExpression(
-      dynamic leftLambda(), dynamic rightLambda(), String operator) {
-    if (operator == 'QUESTION_QUESTION') {
-      return leftLambda() ?? rightLambda();
-    } else if (operator == 'AMPERSAND') {
-      return leftLambda() & rightLambda();
-    } else if (operator == 'AMPERSAND_AMPERSAND') {
-      return leftLambda() && rightLambda();
-    } else if (operator == 'AMPERSAND') {
-      return leftLambda() & rightLambda();
-    } else if (operator == 'BANG_EQ') {
-      return leftLambda() != rightLambda();
-    } else if (operator == 'BAR') {
-      return leftLambda() | rightLambda();
-    } else if (operator == 'BAR_BAR') {
-      return leftLambda() || rightLambda();
-    } else if (operator == 'CARET') {
-      return leftLambda() ^ rightLambda();
-    } else if (operator == 'EQ_EQ') {
-      return leftLambda() == rightLambda();
-    } else if (operator == 'GT') {
-      return leftLambda() > rightLambda();
-    } else if (operator == 'GT_EQ') {
-      return leftLambda() >= rightLambda();
-    } else if (operator == 'GT_GT') {
-      return leftLambda() >> rightLambda();
-    } else if (operator == 'LT') {
-      return leftLambda() < rightLambda();
-    } else if (operator == 'LT_EQ') {
-      return leftLambda() <= rightLambda();
-    } else if (operator == 'LT_LT') {
-      return leftLambda() << rightLambda();
-    } else if (operator == 'MINUS') {
-      return leftLambda() - rightLambda();
-    } else if (operator == 'PERCENT') {
-      return leftLambda() % rightLambda();
-    } else if (operator == 'PLUS') {
-      return leftLambda() + rightLambda();
-    } else if (operator == 'STAR') {
-      return leftLambda() * rightLambda();
-    } else if (operator == 'SLASH') {
-      return leftLambda() / rightLambda();
-    } else if (operator == 'TILDE_SLASH') {
-      return leftLambda() ~/ rightLambda();
-    } else if (operator == 'QUESTION_QUESTION') {
-      return leftLambda() ?? rightLambda();
-    }
-    return null;
   }
 
   static SecurityValue instanceCreation(value) {
@@ -260,23 +228,58 @@ class SecurityLabel {
 }
 
 class SecurityValue {
-  dynamic value;
-  SecurityLabel staticSecurityLabel;
-  SecurityLabel dynamicSecurityLabel;
+  dynamic _value;
+  SecurityLabel _staticSecurityLabel;
+  SecurityLabel _dynamicSecurityLabel;
 
-  SecurityValue(this.value, this.staticSecurityLabel)
-      : dynamicSecurityLabel = staticSecurityLabel;
+  SecurityValue(this._value, this._staticSecurityLabel)
+      : _dynamicSecurityLabel = _staticSecurityLabel;
 
   @override
-  String toString() => '($value, $staticSecurityLabel, $dynamicSecurityLabel)';
+  String toString() => '$_value';
+
+  @override
+  bool operator ==(other) => _value == other.value;
+
+  int get hashcode => _value?.hashCode;
+
+  Type get runtimeType => _value.runtimeType;
+
+  @override
+  noSuchMethod(Invocation invocation) {
+    final propertyMirror = reflect(_value).getField(invocation.memberName);
+    if (invocation.isGetter) {
+      return propertyMirror.reflectee;
+    }
+    if (propertyMirror is ClosureMirror) {
+      if (propertyMirror.function.isOperator) {
+        if (invocation.positionalArguments.isEmpty) {
+          return new SecurityValue(
+              propertyMirror.apply([]).reflectee, this._dynamicSecurityLabel);
+        } else {
+          final argument = invocation.positionalArguments.first;
+          return new SecurityValue(
+              propertyMirror.apply([argument._value]).reflectee,
+              SecurityContext.dynamicJoin(
+                  _dynamicSecurityLabel, argument._dynamicSecurityLabel));
+        }
+      }
+      List modifiedArguments = [this];
+      modifiedArguments.addAll(invocation.positionalArguments);
+      return propertyMirror
+          .apply(modifiedArguments, invocation.namedArguments)
+          .reflectee;
+    }
+    return null;
+  }
 
   getField(String fieldName, {Type type}) {
     final symbol = fieldName.startsWith('_')
         ? type == null
-            ? _lookUp(fieldName, value.runtimeType)
+            ? _lookUp(fieldName, _value.runtimeType)
             : _lookUp(fieldName, reflectClass(type))
         : new Symbol(fieldName);
-    return reflect(value).getField(symbol).reflectee;
+    return reflect(_value).getField(symbol).reflectee;
   }
 
   invoke(String fieldName, List arguments, {Type type}) {
@@ -284,10 +287,10 @@ class SecurityValue {
     modifiedArguments.addAll(arguments);
     final symbol = fieldName.startsWith('_')
         ? type == null
-            ? _lookUp(fieldName, value.runtimeType)
+            ? _lookUp(fieldName, _value.runtimeType)
             : _lookUp(fieldName, reflectClass(type))
         : new Symbol(fieldName);
-    return reflect(value).invoke(symbol, modifiedArguments).reflectee;
+    return reflect(_value).invoke(symbol, modifiedArguments).reflectee;
   }
 }
 
