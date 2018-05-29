@@ -116,9 +116,20 @@ MethodInvocation createGetFieldInvocation(
       : parseExpression("$prefix${period}getField('$identifier')");
 }
 
+AstNode createParametersWithSecurityValue(
+    NodeList<FormalParameter> parameters) {
+  final parameterList = ['SecurityValue thisSecurityValue'];
+  for (final parameter in parameters) {
+    parameterList.add(parameter.toString());
+  }
+  return parseFormalParameterList(parameterList);
+}
+
 MethodInvocation createInvokeInvocation(
     String prefix, String period, String identifier, List<String> arguments,
     {String className}) {
+  prefix ??= "thisSecurityValue";
+  period ??= ".";
   return className != null
       ? parseExpression(
           "$prefix${period}invoke('$identifier', [${arguments.join(
@@ -149,6 +160,14 @@ BlockFunctionBody parseBlockFunctionBody(String code) {
   return (compilationUnit.declarations.first as FunctionDeclaration)
       .functionExpression
       .body;
+}
+
+FormalParameterList parseFormalParameterList(List<String> parameters) {
+  final content = 'void _(${parameters.join(', ')}) {}';
+  final compilationUnit = parseCompilationUnit(content);
+  return (compilationUnit.declarations.first as FunctionDeclaration)
+      .functionExpression
+      .parameters;
 }
 
 CompilationUnit parseCompilationUnit(String contents, {String name}) {

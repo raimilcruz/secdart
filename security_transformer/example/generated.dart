@@ -1,26 +1,48 @@
 import 'package:security_transformer/src/security_value.dart';
-
-class Point {
-  dynamic _x = SecurityContext.declare('?', SecurityContext.nullLiteral());
-  dynamic y = SecurityContext.declare('?', SecurityContext.nullLiteral());
-  Point(this._x, this.y);
-  void _foo() {
-    SecurityContext.checkParametersType([], []);
-    {
-      print(_x);
-    }
-  }
-}
+import "package:secdart/secdart.dart";
 
 void main() {
   SecurityContext.checkParametersType([], []);
   {
-    final a = SecurityContext.declare(
-        '?',
-        SecurityContext.instanceCreation(new Point(
-            SecurityContext.integerLiteral(0), SecurityContext.nullLiteral())));
-    print(a.getField('_x', type: Point));
-    print(a.getField('y'));
-    a.invoke('_foo', [], type: Point);
+    print(
+        SecurityContext.integerLiteral(0) & SecurityContext.integerLiteral(1));
+    print(SecurityContext.ampersandAmpersandBinaryExpression(
+        SecurityContext.booleanLiteral(true),
+        SecurityContext.booleanLiteral(false)));
+    print(
+        SecurityContext.integerLiteral(0) | SecurityContext.integerLiteral(1));
+    print(SecurityContext.barBarBinaryExpression(
+        SecurityContext.booleanLiteral(false),
+        SecurityContext.booleanLiteral(true)));
+    print(
+        SecurityContext.integerLiteral(0) ^ SecurityContext.integerLiteral(1));
+    print(SecurityContext.equalEqualBinaryExpression(
+        SecurityContext.integerLiteral(0), SecurityContext.integerLiteral(1)));
+    print(
+        SecurityContext.integerLiteral(0) > SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) >= SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) >> SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) < SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) <= SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) << SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) - SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) & SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) + SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) * SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) / SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) ~/ SecurityContext.integerLiteral(1));
+    print(SecurityContext.questionQuestionBinaryExpression(
+        SecurityContext.integerLiteral(0), SecurityContext.integerLiteral(1)));
   }
 }

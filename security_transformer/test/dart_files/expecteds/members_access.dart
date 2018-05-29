@@ -4,14 +4,14 @@ class A {
   dynamic _x = SecurityContext.declare('?', SecurityContext.nullLiteral());
   dynamic y = SecurityContext.declare('?', SecurityContext.nullLiteral());
   A(this._x, this.y);
-  void _foo() {
+  void _foo(SecurityValue thisSecurityValue) {
     SecurityContext.checkParametersType([], []);
     {
       print(_x);
     }
   }
 
-  void bar() {
+  void bar(SecurityValue thisSecurityValue) {
     SecurityContext.checkParametersType([], []);
     {
       print(y);
@@ -28,8 +28,8 @@ void main() {
             SecurityContext.integerLiteral(0),
             SecurityContext.integerLiteral(1))));
     print(a.getField('_x', type: A));
-    print(a.getField('y'));
+    print(a.y);
     a.invoke('_foo', [], type: A);
-    a.invoke('bar', []);
+    a.bar();
   }
 }
