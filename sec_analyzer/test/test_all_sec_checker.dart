@@ -14,7 +14,6 @@ import 'package:test_reflective_loader/test_reflective_loader.dart';
 
 void main() {
   defineReflectiveSuite(() {
-
     //security analysis tests
     function.main();
     fun_call.main();
