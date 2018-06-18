@@ -1,5 +1,6 @@
 import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/src/configuration.dart';
+import 'package:secdart_analyzer/src/options.dart';
 
 import '../../lib/src/security_label.dart';
 import 'package:test/test.dart';

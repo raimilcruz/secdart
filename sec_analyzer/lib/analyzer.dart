@@ -13,6 +13,7 @@ import 'package:secdart_analyzer/src/configuration.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
 import 'package:secdart_analyzer/src/gs_typesystem.dart';
+import 'package:secdart_analyzer/src/options.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:secdart_analyzer/src/security_label.dart';
 import 'package:secdart_analyzer/src/security_resolver.dart';

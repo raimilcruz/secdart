@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:analyzer/src/generated/source.dart';
 import 'package:analyzer/error/error.dart';
@@ -7,7 +8,6 @@ import 'package:analyzer/src/dart/analysis/driver.dart';
 import 'package:analyzer/src/dart/analysis/file_state.dart';
 
 import "package:secdart_analyzer/analyzer.dart";
-import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/src/options.dart';
 
 abstract class NotificationManager {
@@ -42,7 +42,6 @@ class SecDriver implements AnalysisDriverGeneric {
     // TODO: implement dispose
   }
 
-  // TODO: implement hasFilesToAnalyze
   @override
   bool get hasFilesToAnalyze => _filesToAnalyze.isNotEmpty;
 
@@ -167,7 +166,19 @@ class SecDriver implements AnalysisDriverGeneric {
             options.intervalMode, LatticeConfig.defaultLattice));
     return new SecResult(errors);
   }
+
+  Future<LatticeConfig> _readLatticeFile(String latticePath)async {
+    final file = new File(latticePath);
+    final exists = await file.exists();
+    if(exists){
+      final content = await file.readAsString();
+      final latticeFile = new LatticeFile.from(content);
+      return LatticeConfig.from(latticeFile);
+    }
+    return null;
+  }
 }
+
 
 class SecResult {
   List<AnalysisError> errors;

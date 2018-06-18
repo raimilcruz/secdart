@@ -3,6 +3,7 @@ import 'package:secdart_analyzer/analyzer.dart';
 import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/src/annotations/parser.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
+import 'package:secdart_analyzer/src/options.dart';
 import 'package:secdart_analyzer/src/parser_visitor.dart';
 import 'package:test/test.dart';
 

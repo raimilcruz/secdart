@@ -79,34 +79,3 @@ abstract class GradualLattice {
  * an [AstNode]
  */
 const String SEC_LABEL_PROPERTY = "sec-label";
-
-class LatticeConfig {
-  List<String> elements;
-  List<LabelOrder> order;
-  String top;
-  String bottom;
-  String unknown;
-
-  LatticeConfig(this.elements, this.order, this.top, this.bottom,
-      [this.unknown = "?"]);
-
-  static final LatticeConfig defaultLattice = new LatticeConfig([
-    "bot",
-    "L",
-    "H",
-    "top"
-  ], [
-    new LabelOrder("bot", "L"),
-    new LabelOrder("L", "H"),
-    new LabelOrder("H", "top")
-  ], "top", "bot");
-}
-
-class LabelOrder {
-  String s1, s2;
-
-  LabelOrder(this.s1, this.s2);
-
-  @override
-  String toString() => "$s1 <= $s2";
-}

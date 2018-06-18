@@ -1,5 +1,6 @@
 import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/src/configuration.dart';
+import 'package:secdart_analyzer/src/options.dart';
 
 abstract class ParametricSecurityLabel extends SecurityLabel {
   String get labelParameter;

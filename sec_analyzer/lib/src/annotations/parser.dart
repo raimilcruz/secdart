@@ -2,6 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/analyzer.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:secdart_analyzer/security_label.dart';
+import 'package:secdart_analyzer/src/options.dart';
 import '../errors.dart';
 
 const String FUNCTION_LATENT_LABEL = "latent";

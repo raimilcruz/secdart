@@ -1,4 +1,4 @@
-import 'package:secdart_analyzer/security_label.dart';
+import 'package:secdart_analyzer/src/options.dart';
 import 'package:secdart_analyzer/src/security_label.dart';
 
 ///Configuration options for the analysis, for extensions to the analysis.
