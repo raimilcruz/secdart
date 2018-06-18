@@ -1,9 +1,23 @@
 import "package:secdart/secdart.dart";
 
-void foo() {
-  @low
-  int a = 3;
-  @high
-  int b;
-  b = a;
+void main() {
+  print(0 & 1);
+  print(true && false);
+  print(0 | 1);
+  print(false || true);
+  print(0 ^ 1);
+  print(0 == 1);
+  print(0 > 1);
+  print(0 >= 1);
+  print(0 >> 1);
+  print(0 < 1);
+  print(0 <= 1);
+  print(0 << 1);
+  print(0 - 1);
+  print(0 & 1);
+  print(0 + 1);
+  print(0 * 1);
+  print(0 / 1);
+  print(0 ~/ 1);
+  print(0 ?? 1);
 }

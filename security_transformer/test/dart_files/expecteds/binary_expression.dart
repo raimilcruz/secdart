@@ -1,28 +1,48 @@
 import 'package:security_transformer/src/security_value.dart';
 import "package:secdart/secdart.dart";
 
-var foo = SecurityContext.declare('?', SecurityContext.functionLiteral(() {
+void main() {
   SecurityContext.checkParametersType([], []);
   {
-    @low
-    dynamic a = SecurityContext.declare(
-        'L',
-        SecurityContext.binaryExpression(
-            () => SecurityContext.binaryExpression(
-                () => SecurityContext.integerLiteral(3),
-                () => SecurityContext.binaryExpression(
-                    () => SecurityContext.integerLiteral(4),
-                    () => SecurityContext.integerLiteral(2),
-                    'STAR'),
-                'PLUS'),
-            () => SecurityContext.integerLiteral(5),
-            'MINUS'));
-    @low
-    dynamic b = SecurityContext.declare(
-        'L',
-        SecurityContext.binaryExpression(
-            () => SecurityContext.booleanLiteral(true),
-            () => SecurityContext.booleanLiteral(false),
-            'AMPERSAND_AMPERSAND'));
+    print(
+        SecurityContext.integerLiteral(0) & SecurityContext.integerLiteral(1));
+    print(SecurityContext.ampersandAmpersandBinaryExpression(
+        SecurityContext.booleanLiteral(true),
+        SecurityContext.booleanLiteral(false)));
+    print(
+        SecurityContext.integerLiteral(0) | SecurityContext.integerLiteral(1));
+    print(SecurityContext.barBarBinaryExpression(
+        SecurityContext.booleanLiteral(false),
+        SecurityContext.booleanLiteral(true)));
+    print(
+        SecurityContext.integerLiteral(0) ^ SecurityContext.integerLiteral(1));
+    print(SecurityContext.equalEqualBinaryExpression(
+        SecurityContext.integerLiteral(0), SecurityContext.integerLiteral(1)));
+    print(
+        SecurityContext.integerLiteral(0) > SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) >= SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) >> SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) < SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) <= SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) << SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) - SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) & SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) + SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) * SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) / SecurityContext.integerLiteral(1));
+    print(
+        SecurityContext.integerLiteral(0) ~/ SecurityContext.integerLiteral(1));
+    print(SecurityContext.questionQuestionBinaryExpression(
+        SecurityContext.integerLiteral(0), SecurityContext.integerLiteral(1)));
   }
-}));
+}

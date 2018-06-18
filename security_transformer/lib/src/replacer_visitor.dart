@@ -1,10 +1,13 @@
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:secdart_analyzer/sec_analyzer.dart';
 import 'package:security_transformer/src/utils.dart';
 
 class ReplacerVisitor extends SimpleAstVisitor {
   static final SecurityVisitor _visitor = new SecurityVisitor();
+
   @override
   visitAdjacentStrings(AdjacentStrings node) {
     final parent = node.parent;
@@ -403,7 +406,7 @@ class ReplacerVisitor extends SimpleAstVisitor {
 
   @override
   visitInstanceCreationExpression(InstanceCreationExpression node) {
-    node.visitChildren(this);
+    node.argumentList?.accept(this); // Do not visit the constructorName
     final parent = node.parent;
     replaceNodeInAst(node, node.accept(_visitor), parent: parent);
   }
@@ -815,14 +818,27 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
 
   @override
   AstNode visitBinaryExpression(BinaryExpression node) {
-    final leftLambda = createLambdaWithSingleReturnExpression(node.leftOperand);
-    final rightLambda =
-        createLambdaWithSingleReturnExpression(node.rightOperand);
-    return createFunctionInvocation('SecurityContext.binaryExpression', [
-      leftLambda.toString(),
-      rightLambda.toString(),
-      "'${node.operator.type.name}'"
-    ]);
+    if (node.operator.type == TokenType.AMPERSAND_AMPERSAND) {
+      return createFunctionInvocation(
+          'SecurityContext.ampersandAmpersandBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    } else if (node.operator.type == TokenType.BANG_EQ) {
+      return createFunctionInvocation(
+          'SecurityContext.bangEqualBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    } else if (node.operator.type == TokenType.BAR_BAR) {
+      return createFunctionInvocation('SecurityContext.barBarBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    } else if (node.operator.type == TokenType.EQ_EQ) {
+      return createFunctionInvocation(
+          'SecurityContext.equalEqualBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    } else if (node.operator.type == TokenType.QUESTION_QUESTION) {
+      return createFunctionInvocation(
+          'SecurityContext.questionQuestionBinaryExpression',
+          [node.leftOperand.toString(), node.rightOperand.toString()]);
+    }
+    return node;
   }
 
   @override
@@ -1041,13 +1057,12 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
 
   @override
   AstNode visitInstanceCreationExpression(InstanceCreationExpression node) =>
-      node;
+      createFunctionInvocation(
+          'SecurityContext.instanceCreation', ["${node.toString()}"]);
 
   @override
-  AstNode visitIntegerLiteral(IntegerLiteral node) {
-    return createFunctionInvocation(
-        'SecurityContext.integerLiteral', ["${node.value}"]);
-  }
+  AstNode visitIntegerLiteral(IntegerLiteral node) => createFunctionInvocation(
+      'SecurityContext.integerLiteral', ["${node.value}"]);
 
   @override
   AstNode visitInterpolationExpression(InterpolationExpression node) => node;
@@ -1080,10 +1095,27 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   AstNode visitMapLiteralEntry(MapLiteralEntry node) => node;
 
   @override
-  AstNode visitMethodDeclaration(MethodDeclaration node) => node;
+  AstNode visitMethodDeclaration(MethodDeclaration node) {
+    if (!node.isStatic) {
+      replaceNodeInAst(node.parameters,
+          createParametersWithSecurityValue(node.parameters.parameters),
+          parent: node);
+    }
+    return node;
+  }
 
   @override
-  AstNode visitMethodInvocation(MethodInvocation node) => node;
+  AstNode visitMethodInvocation(MethodInvocation node) {
+    if (_isStatic(node) || !node.methodName.name.startsWith('_')) {
+      return node;
+    }
+    return createInvokeInvocation(
+        node.target?.toString(),
+        node.operator?.stringValue,
+        node.methodName.name,
+        node.argumentList.arguments.map((e) => e.toString()).toList(),
+        className: node.methodName.bestElement?.enclosingElement?.name);
+  }
 
   @override
   AstNode visitNamedExpression(NamedExpression node) => node;
@@ -1111,13 +1143,23 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   AstNode visitPostfixExpression(PostfixExpression node) => node;
 
   @override
-  AstNode visitPrefixedIdentifier(PrefixedIdentifier node) => node;
+  AstNode visitPrefixedIdentifier(PrefixedIdentifier node) =>
+      node.identifier.name.startsWith('_')
+          ? createGetFieldInvocation(
+              node.prefix.name, node.period.stringValue, node.identifier.name,
+              className: node.identifier.bestElement?.enclosingElement?.name)
+          : node;
 
   @override
   AstNode visitPrefixExpression(PrefixExpression node) => node;
 
   @override
-  AstNode visitPropertyAccess(PropertyAccess node) => node;
+  AstNode visitPropertyAccess(PropertyAccess node) =>
+      node.propertyName.name.startsWith('_')
+          ? createGetFieldInvocation(node.target.toString(),
+              node.operator.stringValue, node.propertyName.name,
+              className: node.propertyName.bestElement?.enclosingElement?.name)
+          : node;
 
   @override
   AstNode visitRedirectingConstructorInvocation(
@@ -1209,7 +1251,8 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
 
   @override
   AstNode visitVariableDeclaration(VariableDeclaration node) {
-    final securityLabel = node.getProperty('sec-type').label.toString();
+    var securityLabel = node.getProperty('sec-type')?.label?.toString();
+    securityLabel ??= '?';
     //securityLabel ??= '?'; (if there the security type is null there is
     // an error in the security analysis that have to be solved, so we cannot
     // assume the unknown label)
@@ -1249,12 +1292,39 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   @override
   AstNode visitYieldStatement(YieldStatement node) => node;
 
+  List<String> _getIdentifiers(FunctionBody body) {
+    final declaration = body.parent;
+    if (declaration is FunctionExpression) {
+      return declaration.parameters.parameters
+          .map((e) => e.identifier.name)
+          .toList();
+    }
+    if (declaration is MethodDeclaration) {
+      return declaration.parameters.parameters
+          .map((e) => e.identifier.name)
+          .toList();
+    }
+    return [];
+  }
+
+  List<String> _getSecurityLabels(FunctionBody body) {
+    final declaration = body.parent;
+    if (declaration is FunctionExpression) {
+      return declaration.parameters.parameters
+          .map((e) => "'${e.getProperty('sec-type') ?? '?'}'")
+          .toList();
+    }
+    if (declaration is MethodDeclaration) {
+      return declaration.parameters.parameters
+          .map((e) => "'${e.getProperty('sec-type') ?? '?'}'")
+          .toList();
+    }
+    return [];
+  }
+
   AstNode _visitFunctionBody(FunctionBody node, Statement bodyStatement) {
-    final functionExpression = node.parent as FunctionExpression;
-    final identifiers =
-        functionExpression.parameters.parameters.map((e) => e.identifier.name);
-    final securityLabels = functionExpression.parameters.parameters
-        .map((e) => "'${e.getProperty('sec-type')}'");
+    final identifiers = _getIdentifiers(node);
+    final securityLabels = _getSecurityLabels(node);
     final checkStatement = createExpressionStatementWithFunctionInvocation(
         'SecurityContext.checkParametersType',
         ['[${identifiers.join(', ')}]', '[${securityLabels.join(', ')}]']);
@@ -1269,7 +1339,8 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   }
 
   String _visitFunctionDeclaration(FunctionDeclaration node) =>
-      "SecurityContext.declare('?', SecurityContext.functionLiteral(${node.functionExpression.toString()}))";
+      "SecurityContext.declare('?', SecurityContext.functionLiteral(${node
+          .functionExpression.toString()}))";
 
   ReturnStatement _visitReturnStatement(
       ReturnStatement node, String staticReturnLabel) {
@@ -1279,4 +1350,12 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
             [node.expression.toString(), "'$staticReturnLabel'"]));
     return node;
   }
+}
+
+bool _isStatic(MethodInvocation node) {
+  final element = node.methodName.bestElement;
+  if (element is MethodElement) {
+    return element.isStatic;
+  }
+  return true;
 }

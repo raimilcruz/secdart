@@ -12,8 +12,13 @@ pub get
 # Analyze the test first
 dartanalyzer lib test
 
-# Run the actual tests
-dart --checked test/test_all.dart
+#Run tests. We run test in two groups because Travis kill the process
+#when it consumes too much memory 
+# first batch
+dart --checked test/test_all_but_sec_checker.dart
+
+# second batch
+dart --checked test/test_all_sec_checker.dart
 
 cd ..
 

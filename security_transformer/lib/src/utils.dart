@@ -7,6 +7,7 @@ import 'package:security_transformer/src/context.dart';
 /// This is necessary, if use the same source name with the same AnalysisContext
 /// all the time, the parseCompilationUnit will start failing.
 int counter = 0;
+
 void addStatementAfterStatement(Statement target, Statement newStatement) {
   final targetParent = target.parent;
   if (targetParent is Block) {
@@ -101,6 +102,43 @@ ExpressionStatement createStatementExpressionWithExpression(
   return parseStatement(expression.toString());
 }
 
+Expression parseExpression(String code) {
+  ExpressionStatement statement = parseStatement("$code;");
+  return statement.expression;
+}
+
+MethodInvocation createGetFieldInvocation(
+    String prefix, String period, String identifier,
+    {String className}) {
+  return className != null
+      ? parseExpression(
+          "$prefix${period}getField('$identifier', type:$className)")
+      : parseExpression("$prefix${period}getField('$identifier')");
+}
+
+AstNode createParametersWithSecurityValue(
+    NodeList<FormalParameter> parameters) {
+  final parameterList = ['SecurityValue thisSecurityValue'];
+  for (final parameter in parameters) {
+    parameterList.add(parameter.toString());
+  }
+  return parseFormalParameterList(parameterList);
+}
+
+MethodInvocation createInvokeInvocation(
+    String prefix, String period, String identifier, List<String> arguments,
+    {String className}) {
+  prefix ??= "thisSecurityValue";
+  period ??= ".";
+  return className != null
+      ? parseExpression(
+          "$prefix${period}invoke('$identifier', [${arguments.join(
+          ', ')}], type:$className)")
+      : parseExpression(
+          "$prefix${period}invoke('$identifier', [${arguments.join(
+          ', ')}])");
+}
+
 TypeName createTypeName(String type) {
   final declarationList = createVariableDeclarationList(type, ['a']);
   return declarationList.type;
@@ -122,6 +160,14 @@ BlockFunctionBody parseBlockFunctionBody(String code) {
   return (compilationUnit.declarations.first as FunctionDeclaration)
       .functionExpression
       .body;
+}
+
+FormalParameterList parseFormalParameterList(List<String> parameters) {
+  final content = 'void _(${parameters.join(', ')}) {}';
+  final compilationUnit = parseCompilationUnit(content);
+  return (compilationUnit.declarations.first as FunctionDeclaration)
+      .functionExpression
+      .parameters;
 }
 
 CompilationUnit parseCompilationUnit(String contents, {String name}) {

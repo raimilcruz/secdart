@@ -8,5 +8,5 @@ environment:
 
 dependencies:
   secdart_analyzer_plugin:
-    path: ../../../secdart_analyzer_plugin
-    # path: C:\Users\racruz\Desktop\Dart_Projects\secdart\secdart_analyzer_plugin
+    path: C:\Users\racruz\Desktop\Dart_Projects\secdart\secdart_analyzer_plugin
+    # path: /home/eljotape/Development/dart/secdart/secdart_analyzer_plugin

@@ -6,14 +6,14 @@ void main() {
   {
     var foo = SecurityContext.declare('?', SecurityContext.functionLiteral((a) {
       a ??= SecurityContext.nullLiteral();
-      SecurityContext.checkParametersType([a], ['Dyn@?']);
+      SecurityContext.checkParametersType([a], ['?']);
       {
         print(a);
       }
     }));
     var bar = SecurityContext.declare('?', SecurityContext.functionLiteral((a) {
       a ??= SecurityContext.nullLiteral();
-      SecurityContext.checkParametersType([a], ['Dyn@?']);
+      SecurityContext.checkParametersType([a], ['?']);
       {
         print(a);
       }
@@ -23,14 +23,14 @@ void main() {
 
 var foo = SecurityContext.declare('?', SecurityContext.functionLiteral((a) {
   a ??= SecurityContext.nullLiteral();
-  SecurityContext.checkParametersType([a], ['Dyn@?']);
+  SecurityContext.checkParametersType([a], ['?']);
   {
     print(a);
   }
 }));
 var bar = SecurityContext.declare('?', SecurityContext.functionLiteral((a) {
   a ??= SecurityContext.nullLiteral();
-  SecurityContext.checkParametersType([a], ['Dyn@?']);
+  SecurityContext.checkParametersType([a], ['?']);
   {
     print(a);
   }
