@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/src/configuration.dart';
 import 'package:secdart_analyzer/src/options.dart';
@@ -60,7 +62,7 @@ Labels for a flat lattice of 4 levels (BOT < LOW < HIGH < TOP)
 abstract class GradualLabel extends SecurityLabel {
   @override
   bool canRelabeledTo(SecurityLabel l) {
-    return GradualFlatLatticeOperations.lessThan(this, l);
+    return GradualFlatLatticeOperations.isLessOrEqualThan(this, l);
   }
 
   @override
@@ -164,72 +166,16 @@ class IntervalLabel extends SecurityLabel {
 
 class FlatStaticLatticeOperations {
   //l1 < l2
-  static bool lessThan(StaticLabel l1, StaticLabel l2) {
-    var il1 = topologicalOrderlabels().indexOf(l1.representation);
-    var il2 = topologicalOrderlabels().indexOf(l2.representation);
-    _assertIndexes(il1, il2);
+  static bool isLessOrEqualThan(StaticLabel l1, StaticLabel l2) =>
+      SecDartConfig.isLessOrEqualThan(l1.representation, l2.representation);
 
-    return il1 <= il2;
-  }
+  static StaticLabel join(StaticLabel l1, StaticLabel l2) =>
+      new StaticLabelImpl(
+          SecDartConfig.join(l1.representation, l2.representation));
 
-  static StaticLabel join(StaticLabel l1, StaticLabel l2) {
-    var il1 = topologicalOrderlabels().indexOf(l1.representation);
-    var il2 = topologicalOrderlabels().indexOf(l2.representation);
-    _assertIndexes(il1, il2);
-
-    final joinIndex = _join(il1, il2);
-    if (joinIndex <= -1) {
-      throw new UnsupportedError(
-          "Elements $l1 and $l2 do not represent a lattice");
-    }
-    return new StaticLabelImpl(topologicalOrderlabels()[joinIndex]);
-  }
-
-  static StaticLabel meet(StaticLabel l1, StaticLabel l2) {
-    var il1 = topologicalOrderlabels().indexOf(l1.representation);
-    var il2 = topologicalOrderlabels().indexOf(l2.representation);
-    _assertIndexes(il1, il2);
-    final meetIndex = _meet(il1, il2);
-    if (meetIndex <= -1) {
-      throw new UnsupportedError("Elements do not represent a lattice");
-    }
-    return new StaticLabelImpl(topologicalOrderlabels()[meetIndex]);
-  }
-
-  static int _join(int i1, int i2) {
-    var candidateIndex = topologicalOrderlabels().length - 1;
-    for (var i = candidateIndex; i >= 0; i--) {
-      if (i1 <= i && i2 <= i) {
-        candidateIndex = i;
-      } else {
-        return candidateIndex;
-      }
-    }
-    return candidateIndex != topologicalOrderlabels().length
-        ? candidateIndex
-        : -1;
-  }
-
-  static int _meet(int i1, int i2) {
-    var candidateIndex = 0;
-    for (var i = candidateIndex; i < topologicalOrderlabels().length; i++) {
-      if (i <= i1 && i <= i2) {
-        candidateIndex = i;
-      } else {
-        return candidateIndex;
-      }
-    }
-    return candidateIndex != 0 ? candidateIndex : -1;
-  }
-
-  static List<String> topologicalOrderlabels() {
-    return SecDartConfig.latticeTopologicalSort();
-  }
-
-  static void _assertIndexes(il1, il2) {
-    assert(il1 >= 0);
-    assert(il2 >= 0);
-  }
+  static StaticLabel meet(StaticLabel l1, StaticLabel l2) =>
+      new StaticLabelImpl(
+          SecDartConfig.meet(l1.representation, l2.representation));
 }
 
 /**
@@ -237,9 +183,9 @@ class FlatStaticLatticeOperations {
  * explicit [DynamicLabel]
  */
 class GradualFlatLatticeOperations {
-  static bool lessThan(GradualLabel l1, GradualLabel l2) {
+  static bool isLessOrEqualThan(GradualLabel l1, GradualLabel l2) {
     if (l1 is GradualStaticLabel && l2 is GradualStaticLabel) {
-      return FlatStaticLatticeOperations.lessThan(
+      return FlatStaticLatticeOperations.isLessOrEqualThan(
           l1.staticLabel, l2.staticLabel);
     }
     if (l1 is DynamicLabel || l2 is DynamicLabel) return true;
@@ -299,7 +245,7 @@ class StaticLabelImpl extends StaticLabel {
 
   @override
   bool canRelabeledTo(SecurityLabel l) {
-    return FlatStaticLatticeOperations.lessThan(this, l);
+    return FlatStaticLatticeOperations.isLessOrEqualThan(this, l);
   }
 
   @override
@@ -395,63 +341,151 @@ class GradualLatticeWithUnknown extends GradualLattice {
 }
 
 class GraphLattice {
-  //adjacent list. If x <= y, then y is in the list of x.
-  Map<String, List<String>> _connections;
-  List<String> _topologicalSort;
+  // Adjacent list. If x <= y, then y is in the list of x.
+  Map<String, int> _index;
+  List<String> _elements;
+  List<List<int>> _adjacencyList;
+  List<List<int>> _inverseAdjacencyList;
+  List<List<bool>> _adjacencyMatrix;
+  List<List<int>> _meetTable;
+  List<List<int>> _joinTable;
+  List<List<String>> _adjacencyListUsingStrings;
 
   GraphLattice(List<String> elements, List<LabelOrder> relation) {
-    _connections = {};
-    for (String s in elements) {
-      _connections.putIfAbsent(s, () => []);
+    _index = {};
+    _elements = elements;
+    _adjacencyList = new List.filled(elements.length, null);
+    _inverseAdjacencyList = new List.filled(elements.length, null);
+    _adjacencyMatrix = new List.filled(elements.length, null);
+    _meetTable = new List.filled(elements.length, null);
+    _joinTable = new List.filled(elements.length, null);
+    _adjacencyListUsingStrings = new List.filled(elements.length, null);
+    for (var i = 0; i < elements.length; i++) {
+      String s = elements[i];
+      if (_index.containsKey(s)) {
+        throw new UnsupportedError(
+            "The element $s is more than once in the lattice elements.");
+      }
+      _index[s] = i;
+      _adjacencyList[i] = [];
+      _inverseAdjacencyList[i] = [];
+      _adjacencyMatrix[i] = new List.filled(elements.length, false);
+      _adjacencyMatrix[i][i] = true;
+      _meetTable[i] = new List.filled(elements.length, -1);
+      _joinTable[i] = new List.filled(elements.length, -1);
+      _adjacencyListUsingStrings[i] = [];
     }
-    for (var order in relation) {
-      _addConnection(order.s1, order.s2);
+    for (var edge in relation) {
+      _addConnection(edge.s1, edge.s2);
+    }
+    // This is the Floyd-Warshall algorithm.
+    for (var k = 0; k < elements.length; k++) {
+      for (var i = 0; i < elements.length; i++) {
+        for (var j = 0; j < elements.length; j++) {
+          if (_adjacencyMatrix[i][k] && _adjacencyMatrix[k][j]) {
+            _addConnectionWithoutChecking(elements[i], elements[j]);
+          }
+        }
+      }
+    }
+    _computeMeetTable();
+    _computeJoinTable();
+  }
+
+  void _check(String s) {
+    if (!_index.containsKey(s)) {
+      throw new UnsupportedError("The element $s is not part of the lattice.");
     }
   }
 
   void _addConnection(String s1, String s2) {
-    if (!_connections.containsKey(s1)) {
-      throw new UnsupportedError("This element is not part of the lattice");
-    }
-    if (!_connections[s1].contains(s2)) {
-      _connections[s1].add(s2);
+    _check(s1);
+    _check(s2);
+    _addConnectionWithoutChecking(s1, s2);
+  }
+
+  void _addConnectionWithoutChecking(String s1, String s2) {
+    int u = _index[s1];
+    int v = _index[s2];
+    if (!_adjacencyMatrix[u][v]) {
+      _adjacencyList[u].add(v);
+      _inverseAdjacencyList[v].add(u);
+      _adjacencyMatrix[u][v] = true;
+      _adjacencyListUsingStrings[u].add(s2);
     }
   }
 
-  Iterable<String> get vertices => _connections.keys;
+  Iterable<String> get vertices => _elements;
 
-  Iterable<String> adjacentTo(String vertex) => _connections[vertex];
+  Iterable<String> adjacentTo(String s) {
+    _check(s);
+    return _adjacencyListUsingStrings[_index[s]];
+  }
 
-  List<String> topSort() {
-    if (_topologicalSort == null) {
-      _DFSState result = new _DFSState();
-      for (var vertex in vertices) {
-        if (!result.parent.containsKey(vertex)) {
-          result.parent[vertex] = null;
-          _dfs(vertex, result);
+  bool isLessOrEqualThan(String s1, String s2) {
+    _check(s1);
+    _check(s2);
+    int u = _index[s1];
+    int v = _index[s2];
+    return _adjacencyMatrix[u][v];
+  }
+
+  void _computeMeetTable() {
+    _computeTable(_meetTable, _adjacencyList, _inverseAdjacencyList);
+  }
+
+  void _computeJoinTable() {
+    _computeTable(_joinTable, _inverseAdjacencyList, _adjacencyList);
+  }
+
+  void _computeTable(List<List<int>> table, List<List<int>> graph,
+      List<List<int>> inverseGraph) {
+    final q = new ListQueue<int>();
+    List<int> inDegree = new List.filled(_elements.length, 0);
+    for (var i = 0; i < _elements.length; i++) {
+      inDegree[i] = inverseGraph[i].length;
+      if (inDegree[i] == 0) {
+        q.add(i);
+      }
+    }
+    while (!q.isEmpty) {
+      final u = q.removeFirst();
+      List<int> reachableVertices = [u];
+      for (final v in graph[u]) {
+        reachableVertices.add(v);
+        inDegree[v]--;
+        if (inDegree[v] == 0) {
+          q.add(v);
         }
       }
-      List<String> sort = new List<String>(vertices.length);
-      result.time.forEach((s, t) => sort[t] = s);
-      _topologicalSort = sort.reversed.toList();
-    }
-    return _topologicalSort;
-  }
-
-  void _dfs(String startVertex, _DFSState state) {
-    for (var vertex in adjacentTo(startVertex)) {
-      if (!state.parent.containsKey(vertex)) {
-        state.parent.putIfAbsent(vertex, () => startVertex);
-        _dfs(vertex, state);
+      for (final i in reachableVertices) {
+        for (final j in reachableVertices) {
+          table[i][j] = u;
+        }
       }
     }
-    state.time.putIfAbsent(startVertex, () => state.dfsCallCounter);
-    state.dfsCallCounter++;
+    for (var i = 0; i < _elements.length; i++) {
+      for (var j = 0; j < _elements.length; j++) {
+        if (table[i][j] == -1) {
+          throw new UnsupportedError("The given graph is not a lattice.");
+        }
+      }
+    }
   }
-}
 
-class _DFSState {
-  Map<String, String> parent = {};
-  Map<String, int> time = {};
-  int dfsCallCounter = 0;
+  String meet(String s1, String s2) {
+    _check(s1);
+    _check(s2);
+    int u = _index[s1];
+    int v = _index[s2];
+    return _elements[_meetTable[u][v]];
+  }
+
+  String join(String s1, String s2) {
+    _check(s1);
+    _check(s2);
+    int u = _index[s1];
+    int v = _index[s2];
+    return _elements[_joinTable[u][v]];
+  }
 }

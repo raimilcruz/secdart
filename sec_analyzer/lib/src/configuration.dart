@@ -18,7 +18,10 @@ class SecDartConfig {
         new GraphLattice(customLattice.elements, customLattice.order);
   }
 
-  static List<String> latticeTopologicalSort() {
-    return graphLattice.topSort();
-  }
+  static bool isLessOrEqualThan(String s1, String s2) =>
+      graphLattice.isLessOrEqualThan(s1, s2);
+
+  static String meet(String s1, String s2) => graphLattice.meet(s1, s2);
+
+  static String join(String s1, String s2) => graphLattice.join(s1, s2);
 }
