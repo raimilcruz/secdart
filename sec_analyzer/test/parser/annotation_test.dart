@@ -84,18 +84,15 @@ class ParserTest extends AbstractSecDartTest {
 
     final labelMap = visitor.labeMap;
 
-    var funDecl = AstQuery
-        .toList(unit)
+    var funDecl = AstQuery.toList(unit)
         .where((n) => n is FunctionDeclaration)
         .first as FunctionDeclaration;
     var funDeclLabel = funDecl.getProperty(SEC_LABEL_PROPERTY);
 
-    var parameter1 = AstQuery
-        .toList(unit)
+    var parameter1 = AstQuery.toList(unit)
         .where((n) => n is FormalParameter)
         .first as FormalParameter;
-    var parameter2 = AstQuery
-        .toList(unit)
+    var parameter2 = AstQuery.toList(unit)
         .where((n) => n is FormalParameter)
         .skip(1)
         .first as FormalParameter;
@@ -149,19 +146,16 @@ class ParserTest extends AbstractSecDartTest {
 
     final labelMap = visitor.labeMap;
 
-    var funDecl = AstQuery
-        .toList(unit)
+    var funDecl = AstQuery.toList(unit)
         .where((n) => n is FunctionDeclaration)
         .skip(1)
         .first as FunctionDeclaration;
     var funDeclLabel = funDecl.getProperty(SEC_LABEL_PROPERTY);
 
-    var parameter1 = AstQuery
-        .toList(unit)
+    var parameter1 = AstQuery.toList(unit)
         .where((n) => n is FormalParameter)
         .first as FormalParameter;
-    var parameter2 = AstQuery
-        .toList(unit)
+    var parameter2 = AstQuery.toList(unit)
         .where((n) => n is FormalParameter)
         .skip(1)
         .first as FormalParameter;
@@ -214,15 +208,14 @@ class ParserTest extends AbstractSecDartTest {
 
     final labelMap = visitor.labeMap;
 
-    var funDecl = AstQuery
-        .toList(unit)
+    var funDecl = AstQuery.toList(unit)
         .where((n) => n is FunctionDeclaration)
         .first as FunctionDeclaration;
     var funDeclLabel = funDecl.getProperty(SEC_LABEL_PROPERTY);
 
-    expect(funDeclLabel, new isInstanceOf<FunctionLevelLabels>());
-    expect(
-        labelMap.map[funDecl.element], new isInstanceOf<FunctionLevelLabels>());
+    expect(funDeclLabel, const TypeMatcher<FunctionLevelLabels>());
+    expect(labelMap.map[funDecl.element],
+        const TypeMatcher<FunctionLevelLabels>());
 
     if (funDeclLabel is FunctionLevelLabels) {
       //begin label
@@ -257,8 +250,7 @@ class ParserTest extends AbstractSecDartTest {
     var variableDeclaration =
         AstQuery.toList(unit).where((n) => n is VariableDeclaration).first;
 
-    var lambda = AstQuery
-        .toList(variableDeclaration)
+    var lambda = AstQuery.toList(variableDeclaration)
         .where((n) => n is FunctionExpression)
         .first as FunctionExpression;
 
@@ -301,8 +293,7 @@ class ParserTest extends AbstractSecDartTest {
     var numLit = AstQuery.toList(unit).where((n) => n is IntegerLiteral).first;
     var varDeclList =
         AstQuery.toList(unit).where((n) => n is VariableDeclarationList).first;
-    var varDecl = AstQuery
-        .toList(varDeclList)
+    var varDecl = AstQuery.toList(varDeclList)
         .where((n) => n is VariableDeclaration)
         .first as VariableDeclaration;
 
@@ -341,8 +332,7 @@ class ParserTest extends AbstractSecDartTest {
     var numLit = AstQuery.toList(unit).where((n) => n is IntegerLiteral).first;
     var varDeclList =
         AstQuery.toList(unit).where((n) => n is VariableDeclarationList).first;
-    var varDecl = AstQuery
-        .toList(varDeclList)
+    var varDecl = AstQuery.toList(varDeclList)
         .where((n) => n is VariableDeclaration)
         .first as VariableDeclaration;
 

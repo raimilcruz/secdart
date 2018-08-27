@@ -164,7 +164,7 @@ class SecurityClassElementImpl extends SecurityClassElement {
       final securityMethod =
           elementResolver.getSecurityPropertyAccessor(getter);
       SecurityFunctionType methodSecType = securityMethod.propertyType;
-      methods.putIfAbsent(accessorName, () => methodSecType);
+      accessors.putIfAbsent(accessorName, () => methodSecType);
     }
     return accessors[accessorName];
   }

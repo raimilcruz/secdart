@@ -33,8 +33,7 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
 
     resolveTopLevelDeclarations(unit, errorListener, defaultConfig, false);
 
-    var funDecl = AstQuery
-        .toList(unit)
+    var funDecl = AstQuery.toList(unit)
         .where((n) => n is FunctionDeclaration)
         .first as FunctionDeclaration;
     var funDeclType = funDecl.getProperty(SEC_TYPE_PROPERTY);
@@ -76,8 +75,7 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
     var result = resolveSecurity(source);
     var unit = result.astNode;
 
-    var varDecl = AstQuery
-        .toList(unit)
+    var varDecl = AstQuery.toList(unit)
         .where((n) => n is VariableDeclaration)
         .first as VariableDeclaration;
     var varDeclType = varDecl.getProperty(SEC_TYPE_PROPERTY);
@@ -85,8 +83,7 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
     expect(varDeclType is InterfaceSecurityType, isTrue);
     expect(varDeclType.label, GLowLabel);
 
-    var returnStatement = AstQuery
-        .toList(unit)
+    var returnStatement = AstQuery.toList(unit)
         .where((n) => n is ReturnStatement)
         .first as ReturnStatement;
     var returnedExpressionSecType =
@@ -111,8 +108,7 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
     var result = resolveSecurity(source);
     var unit = result.astNode;
 
-    var funDecl = AstQuery
-        .toList(unit)
+    var funDecl = AstQuery.toList(unit)
         .where((n) => n is FunctionDeclaration)
         .skip(1)
         .first as FunctionDeclaration;
@@ -127,7 +123,8 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
       //end label
       expect(funDeclType.endLabel, new DynamicLabel());
       //return type;
-      expect(funDeclType.returnType, new isInstanceOf<InterfaceSecurityType>());
+      expect(
+          funDeclType.returnType, const TypeMatcher<InterfaceSecurityType>());
       expect(funDeclType.returnType.label, new DynamicLabel());
 
       //parameter types
@@ -155,13 +152,12 @@ class TopDeclarationResolverTest extends AbstractSecDartTest {
 
     var unit = result.astNode;
 
-    var funDecl = AstQuery
-        .toList(unit)
+    var funDecl = AstQuery.toList(unit)
         .where((n) => n is FunctionDeclaration)
         .first as FunctionDeclaration;
     var funDeclType = funDecl.getProperty(SEC_TYPE_PROPERTY);
 
-    expect(funDeclType, new isInstanceOf<SecurityFunctionType>());
+    expect(funDeclType, const TypeMatcher<SecurityFunctionType>());
     expect(funDeclType.label, new DynamicLabel());
 
     if (funDeclType is SecurityFunctionType) {
@@ -199,8 +195,7 @@ class IdentifierResolverTest extends AbstractSecDartTest {
     var returnStm =
         AstQuery.toList(unit).where((n) => n is ReturnStatement).first;
 
-    var variableUsage = AstQuery
-        .toList(returnStm)
+    var variableUsage = AstQuery.toList(returnStm)
         .where((n) => n is SimpleIdentifier && n.name == "a")
         .first as SimpleIdentifier;
 
@@ -239,8 +234,7 @@ class IdentifierResolverTest extends AbstractSecDartTest {
     var methodInvocation =
         AstQuery.toList(unit).where((n) => n is MethodInvocation).first;
 
-    var variableUsage = AstQuery
-        .toList(methodInvocation)
+    var variableUsage = AstQuery.toList(methodInvocation)
         .where((n) => n is SimpleIdentifier && n.name == "bar")
         .first as SimpleIdentifier;
 
@@ -281,8 +275,7 @@ class IdentifierResolverTest extends AbstractSecDartTest {
     var returnStm =
         AstQuery.toList(unit).where((n) => n is ReturnStatement).first;
 
-    var variableUsage = AstQuery
-        .toList(returnStm)
+    var variableUsage = AstQuery.toList(returnStm)
         .where((n) => n is SimpleIdentifier && n.name == "bar")
         .first as SimpleIdentifier;
 
@@ -320,8 +313,7 @@ class IdentifierResolverTest extends AbstractSecDartTest {
     var returnStm =
         AstQuery.toList(unit).where((n) => n is MethodInvocation).first;
 
-    var variableUsage = AstQuery
-        .toList(returnStm)
+    var variableUsage = AstQuery.toList(returnStm)
         .where((n) => n is SimpleIdentifier && n.name == "bar")
         .first as SimpleIdentifier;
 

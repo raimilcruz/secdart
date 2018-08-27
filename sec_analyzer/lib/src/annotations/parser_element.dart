@@ -425,7 +425,7 @@ class SecDartElementResolver extends SecurityElementResolver {
     var secLabelAnnotations = metadata
         .map((e) => (e as ElementAnnotationImpl).annotationAst)
         .where((x) => _parser.isLabel(x));
-    var label = new NoAnnotatedLabel();
+    LabelNode label = new NoAnnotatedLabel();
     if (secLabelAnnotations.length == 1) {
       label = _parser.parseLabel(secLabelAnnotations.first);
     }

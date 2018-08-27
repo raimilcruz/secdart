@@ -52,8 +52,7 @@ class CustomLatticeParserTest extends AbstractSecDartTest {
 
     expect(result.errors.where((e) => e.errorCode is ParserErrorCode), isEmpty);
 
-    var parameter1 = AstQuery
-        .toList(unit)
+    var parameter1 = AstQuery.toList(unit)
         .where((n) => n is FormalParameter)
         .first as FormalParameter;
 
@@ -84,8 +83,7 @@ class CustomLatticeParserTest extends AbstractSecDartTest {
     var numLit = AstQuery.toList(unit).where((n) => n is IntegerLiteral).first;
     var varDeclList =
         AstQuery.toList(unit).where((n) => n is VariableDeclarationList).first;
-    var varDecl = AstQuery
-        .toList(varDeclList)
+    var varDecl = AstQuery.toList(varDeclList)
         .where((n) => n is VariableDeclaration)
         .first as VariableDeclaration;
 
@@ -123,8 +121,7 @@ class CustomLatticeParserTest extends AbstractSecDartTest {
 
     final labelMap = visitor.labeMap;
 
-    var funDecl = AstQuery
-        .toList(unit)
+    var funDecl = AstQuery.toList(unit)
         .where((n) => n is FunctionDeclaration)
         .first as FunctionDeclaration;
     var funDeclLabel = funDecl.getProperty(SEC_LABEL_PROPERTY);

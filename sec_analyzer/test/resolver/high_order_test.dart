@@ -28,8 +28,7 @@ class HighOrderResolverTest extends AbstractSecDartTest {
     result.errors.forEach(print);
     assert(result.errors.isEmpty);
 
-    var returnStatement = AstQuery
-        .toList(unit)
+    var returnStatement = AstQuery.toList(unit)
         .where((n) => n is ReturnStatement)
         .first as ReturnStatement;
 
@@ -59,8 +58,7 @@ class HighOrderResolverTest extends AbstractSecDartTest {
     result.errors.forEach(print);
     assert(result.errors.isEmpty);
 
-    var returnStatement = AstQuery
-        .toList(unit)
+    var returnStatement = AstQuery.toList(unit)
         .where((n) => n is ReturnStatement)
         .first as ReturnStatement;
 
@@ -96,8 +94,7 @@ class HighOrderResolverTest extends AbstractSecDartTest {
     result.errors.forEach(print);
     assert(result.errors.isEmpty);
 
-    var returnStatement = AstQuery
-        .toList(unit)
+    var returnStatement = AstQuery.toList(unit)
         .where((n) => n is ReturnStatement)
         .first as ReturnStatement;
 

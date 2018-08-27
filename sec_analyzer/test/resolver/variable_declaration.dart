@@ -53,8 +53,7 @@ class VariableDeclarationTest extends AbstractSecDartTest {
     var variableDeclaration1 =
         AstQuery.toList(unit).where((n) => n is VariableDeclaration).first;
 
-    var variableDeclaration2 = AstQuery
-        .toList(unit)
+    var variableDeclaration2 = AstQuery.toList(unit)
         .where((n) => n is VariableDeclaration)
         .skip(1)
         .first;
@@ -84,8 +83,7 @@ class VariableDeclarationTest extends AbstractSecDartTest {
 
     var variableDeclaration1 =
         AstQuery.toList(unit).where((n) => n is VariableDeclaration).first;
-    var variableDeclaration2 = AstQuery
-        .toList(unit)
+    var variableDeclaration2 = AstQuery.toList(unit)
         .where((n) => n is VariableDeclaration)
         .skip(1)
         .first;
@@ -115,8 +113,7 @@ class VariableDeclarationTest extends AbstractSecDartTest {
 
     var variableDeclaration1 =
         AstQuery.toList(unit).where((n) => n is VariableDeclaration).first;
-    var variableDeclaration2 = AstQuery
-        .toList(unit)
+    var variableDeclaration2 = AstQuery.toList(unit)
         .where((n) => n is VariableDeclaration)
         .skip(1)
         .first;

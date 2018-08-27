@@ -176,7 +176,7 @@ class _LatticeBuilder {
 
   void resolve() {
     latticeName = getOption('name', (val) => val is String) ?? "";
-    elements = getOption('elements', isListOfStrings) ?? [];
+    elements = getOption('elements', isListOfStrings)?.cast<String>() ?? [];
     getOption('order', isListOfOrders)?.nodes?.forEach((orderNode) {
       order.add(_orderFromString(orderNode.value));
     });

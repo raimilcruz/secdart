@@ -20,7 +20,8 @@ AnalysisContext createAnalysisContext() {
     new ResourceUriResolver(PhysicalResourceProvider.INSTANCE)
   ]);
 
-  context.analysisOptions = new AnalysisOptionsImpl()..strongMode = true;
+  //strong mode now is enabled by default
+  context.analysisOptions = new AnalysisOptionsImpl();
   return context;
 }
 

@@ -138,7 +138,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
   }
 
   void setSimpleLabel(LabelNode annotatedLabel, AstNode node, Element element) {
-    var label = new NoAnnotatedLabel();
+    LabelNode label = new NoAnnotatedLabel();
 
     if (annotatedLabel != null) {
       label = annotatedLabel;
@@ -236,7 +236,7 @@ class SecurityParserVisitor extends GeneralizingAstVisitor<bool> {
       if (latentAnnotations.length == 1) {
         functionLabel = _parser.parseFunctionLabel(latentAnnotations.first);
       }
-      var returnAnnotations = metadataList.where((a) => _parser.isLabel(a));
+      var returnAnnotations = metadataList.where(_parser.isLabel);
       if (returnAnnotations.length > 1) {
         _reporter
             .onError(SecurityTypeError.getDuplicatedReturnLabelError(node));

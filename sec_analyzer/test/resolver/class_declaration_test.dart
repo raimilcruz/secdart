@@ -33,13 +33,11 @@ class ClassDeclarationTest extends AbstractSecDartTest {
     result.errors.forEach(print);
     assert(result.errors.isEmpty);
 
-    var methodDeclaration1 = AstQuery
-        .toList(unit)
+    var methodDeclaration1 = AstQuery.toList(unit)
         .where((n) => n is MethodDeclaration)
         .first as MethodDeclaration;
 
-    var methodDeclaration2 = AstQuery
-        .toList(unit)
+    var methodDeclaration2 = AstQuery.toList(unit)
         .where((n) => n is MethodDeclaration)
         .skip(1)
         .first as MethodDeclaration;
@@ -76,8 +74,7 @@ class ClassDeclarationTest extends AbstractSecDartTest {
     result.errors.forEach(print);
     assert(result.errors.isEmpty);
 
-    var methodInvocation = AstQuery
-        .toList(unit)
+    var methodInvocation = AstQuery.toList(unit)
         .where((n) => n is PrefixedIdentifier)
         .first as PrefixedIdentifier;
 
@@ -107,13 +104,11 @@ class ClassDeclarationTest extends AbstractSecDartTest {
     result.errors.forEach(print);
     assert(result.errors.isEmpty);
 
-    var classDeclaration = AstQuery
-        .toList(unit)
+    var classDeclaration = AstQuery.toList(unit)
         .where((n) => n is ClassDeclaration)
         .first as ClassDeclaration;
 
-    var returnStatement = AstQuery
-        .toList(classDeclaration)
+    var returnStatement = AstQuery.toList(classDeclaration)
         .where((n) => n is ReturnStatement)
         .first as ReturnStatement;
     final returnedExpression = returnStatement.expression;

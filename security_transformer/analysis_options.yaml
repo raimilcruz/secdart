@@ -2,6 +2,7 @@ analyzer:
   strong-mode: true
   exclude:
     - test/dart_files/**
+    - example/generated.dart
 
 # Lint rules and documentation, see http://dart-lang.github.io/linter/lints
 linter:

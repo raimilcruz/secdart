@@ -3,4 +3,4 @@ description: A package with annotations to specify security label for Dart eleme
 version: 0.0.1
 
 environment:
-  sdk: '>=1.20.1 <2.0.0'
+  sdk: '>=1.20.1 <3.0.0'

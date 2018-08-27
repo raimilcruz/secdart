@@ -153,8 +153,7 @@ T declassify<T>(T expression,label) => expression;
     if (config == null) {
       config = defaultConfig;
     }
-    var errors = SecAnalyzer
-        .computeAllErrors(context, source, config,
+    var errors = SecAnalyzer.computeAllErrors(context, source, config,
             returnDartErrors: includeDartErrors, customLattice: customLattice)
         .errors;
     if (printError) {

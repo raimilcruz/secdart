@@ -3,7 +3,7 @@ description: This is the "loader" package for the secdart_analyzer_plugin.
 version: 0.0.1
 
 environment:
-  sdk: '>=1.24.0 <2.0.0'
+  sdk: '>=2.0.0-dev.48.0 <3.0.0'
 
 dependencies:
   secdart_analyzer_plugin:

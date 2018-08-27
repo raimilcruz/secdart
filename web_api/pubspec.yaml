@@ -3,12 +3,11 @@ description: A REST Web Api for the security analysis
 version: 0.0.1
 
 environment:
-  sdk: '>=1.20.1 <2.0.0'
+  sdk: '>=2.0.0-dev.48.0 <3.0.0'
 
 dependencies:
   analyzer: '>= 0.27.1 <1.0.0'
   logging: '>=0.11.1 <0.12.0'
-  logging_handlers: ">=0.8.0 <0.9.0"
   rpc: '>=0.5.0 <0.6.0'
   secdart_analyzer:
     path: ../sec_analyzer

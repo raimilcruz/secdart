@@ -25,6 +25,6 @@ main() async {
   var config = new ApplicationConfiguration("config.yaml");
 
   HttpServer server =
-      await HttpServer.bind(InternetAddress.ANY_IP_V4, config.port);
+      await HttpServer.bind(InternetAddress.anyIPv4, config.port);
   server.listen(_apiServer.httpRequestHandler);
 }

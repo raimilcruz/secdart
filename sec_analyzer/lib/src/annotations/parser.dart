@@ -27,7 +27,7 @@ abstract class SecAnnotationParser {
    */
   FunctionLevelLabels getFunctionLevelLabels(List<Annotation> metadata);
 
-  isLabel(Annotation a);
+  bool isLabel(Annotation a);
 
   LabelNode parseString(AstNode nodeToReportError, String value);
 }
@@ -154,7 +154,7 @@ class ConfigurableLatticeParser extends BaseLatticeParser {
   }
 
   @override
-  isLabel(Annotation a) {
+  bool isLabel(Annotation a) {
     return a.name.name == labelAnnotationName &&
         a.arguments.arguments.length == 1 &&
         a.arguments.arguments.first is SimpleStringLiteral &&

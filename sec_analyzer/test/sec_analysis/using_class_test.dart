@@ -12,6 +12,20 @@ void main() {
 
 @reflectiveTest
 class UsingClasses extends AbstractSecDartTest {
+  void test_usingMethodOfMap() {
+    var program = '''
+         import "package:secdart/secdart.dart";
+            void mapFoo(){
+              var map = new Map();
+              var key = map.keys.toList();
+            }
+      ''';
+    var source = newSource("/test.dart", program);
+    var result = typeCheckSecurityForSource(source);
+
+    expect(result, isEmpty);
+  }
+
   void test_usingNoSecDartClasses_1() {
     var program = '''
          import "package:secdart/secdart.dart";

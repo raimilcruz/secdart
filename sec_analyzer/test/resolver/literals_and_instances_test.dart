@@ -33,8 +33,7 @@ class LiteralsAndInstancesTest extends AbstractSecDartTest {
     var variableDeclaration =
         AstQuery.toList(unit).where((n) => n is VariableDeclaration).first;
 
-    var lambda = AstQuery
-        .toList(variableDeclaration)
+    var lambda = AstQuery.toList(variableDeclaration)
         .where((n) => n is FunctionExpression)
         .first;
 
@@ -66,8 +65,7 @@ class LiteralsAndInstancesTest extends AbstractSecDartTest {
     var variableDeclaration =
         AstQuery.toList(unit).where((n) => n is VariableDeclaration).first;
 
-    var lambda = AstQuery
-        .toList(variableDeclaration)
+    var lambda = AstQuery.toList(variableDeclaration)
         .where((n) => n is FunctionExpression)
         .first;
 
@@ -100,8 +98,7 @@ class LiteralsAndInstancesTest extends AbstractSecDartTest {
     var variableDeclaration =
         AstQuery.toList(unit).where((n) => n is VariableDeclaration).first;
 
-    var lambda = AstQuery
-        .toList(variableDeclaration)
+    var lambda = AstQuery.toList(variableDeclaration)
         .where((n) => n is FunctionExpression)
         .first;
 
