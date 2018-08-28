@@ -7,6 +7,7 @@ environment:
 
 dependencies:
   analyzer: '0.32.4'
+  safe_config: ^2.0.0
 #  code_builder : '^3.0.3'
 
 dev_dependencies:

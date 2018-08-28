@@ -7,6 +7,7 @@ import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/annotations/external_library.dart';
 import 'package:secdart_analyzer/src/annotations/parser.dart';
+import 'package:secdart_analyzer/src/app_config.dart';
 import 'package:secdart_analyzer/src/security_label.dart';
 import 'package:secdart_analyzer/src/security_type.dart';
 
@@ -83,7 +84,8 @@ class DispatcherSecurityElementResolver extends SecurityElementResolver {
   @override
   PreSecurityType fromDartType(DartType type) {
     if (_securityMap.typeCache.containsKey(type)) {
-      print("security type for $type obtained from cache");
+      if(AppConfiguration.defaultConfig().isDebug)
+        print("security type for $type obtained from cache");
       return _securityMap.typeCache[type];
     }
     if (_isVoidType(type)) {
@@ -415,7 +417,8 @@ class SecDartElementResolver extends SecurityElementResolver {
   LabelNode _getSecurityLabel(
       dynamic element, List<ElementAnnotation> metadata) {
     if (_labelMap.map.containsKey(element)) {
-      print("label from label cache");
+      if(AppConfiguration.defaultConfig().isDebug)
+        print("label from label cache");
       //TODO: Process null label properly. We obtain a null label when there
       //is no label annotation.
       final annotatedLabel = _labelMap.map[element] as SimpleAnnotatedLabel;
@@ -467,7 +470,8 @@ class ExternalLibraryResolver extends SecurityElementResolver {
   @override
   PreSecurityType fromDartType(DartType type) {
     if (_securityMap.typeCache.containsKey(type)) {
-      print("security type for $type obtained from cache");
+      if(AppConfiguration.defaultConfig().isDebug)
+        print("security type for $type obtained from cache");
       return _securityMap.typeCache[type];
     }
 

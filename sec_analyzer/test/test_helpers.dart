@@ -14,6 +14,7 @@ import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
 import 'package:secdart_analyzer/src/annotations/parser.dart';
 import 'package:secdart_analyzer/src/annotations/parser_element.dart';
+import 'package:secdart_analyzer/src/app_config.dart';
 import 'package:secdart_analyzer/src/configuration.dart';
 import 'package:secdart_analyzer/src/context.dart';
 import 'package:secdart_analyzer/src/error_collector.dart';
@@ -156,7 +157,7 @@ T declassify<T>(T expression,label) => expression;
     var errors = SecAnalyzer.computeAllErrors(context, source, config,
             returnDartErrors: includeDartErrors, customLattice: customLattice)
         .errors;
-    if (printError) {
+    if (printError && AppConfiguration.defaultConfig().isDebug) {
       for (AnalysisError error in errors) {
         print(error);
       }
@@ -181,7 +182,7 @@ T declassify<T>(T expression,label) => expression;
     var visitor = new UnSupportedDartSubsetVisitor(errorListener);
     unit.accept(visitor);
 
-    if (printError) {
+    if (printError && AppConfiguration.defaultConfig().isDebug) {
       for (AnalysisError error in errorListener.errors) {
         print(error);
       }
