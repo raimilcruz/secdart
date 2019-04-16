@@ -8,7 +8,6 @@ import 'package:analyzer/file_system/memory_file_system.dart';
 import 'package:analyzer/src/generated/engine.dart';
 import 'package:analyzer/src/generated/sdk.dart';
 import 'package:analyzer/src/generated/source.dart';
-import 'package:front_end/src/base/source.dart';
 import 'package:secdart_analyzer/analyzer.dart';
 import 'package:secdart_analyzer/security_label.dart';
 import 'package:secdart_analyzer/security_type.dart';
@@ -26,6 +25,7 @@ import 'package:secdart_analyzer/src/security_type.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
 import 'package:analyzer/source/package_map_resolver.dart';
 import 'package:secdart_analyzer/src/security_resolver.dart';
+import 'package:path/path.dart' as pathos;
 
 final SecAnalysisConfig defaultConfig =
     new SecAnalysisConfig(false, LatticeConfig.defaultLattice);
@@ -50,7 +50,7 @@ class AbstractSecDartTest {
   AnalysisContext context;
 
   Source newSource(String path, [String content = '']) {
-    final file = resourceProvider.newFile(path, content);
+    final file = resourceProvider.newFile(new pathos.Context().normalize(path), content);
     final source = file.createSource();
     return source;
   }
@@ -66,7 +66,7 @@ class AbstractSecDartTest {
     context = createAnalysisContext();
 
     final packageMap = <String, List<Folder>>{
-      "secdart": [resourceProvider.getFolder("/secdart")]
+      "secdart": [resourceProvider.getFolder(new pathos.Context().normalize("/secdart"))]
     };
     final packageResolver =
         new PackageMapUriResolver(resourceProvider, packageMap);

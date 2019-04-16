@@ -1,7 +1,6 @@
 import 'package:test_reflective_loader/test_reflective_loader.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:secdart_analyzer/security_type.dart';
-import 'package:test/src/frontend/expect.dart';
 import 'package:test/test.dart';
 import '../test_helpers.dart';
 

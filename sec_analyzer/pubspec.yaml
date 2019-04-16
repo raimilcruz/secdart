@@ -1,15 +1,17 @@
 name: secdart_analyzer
 description: Provides a gradual security typing static analysis for SecDart.
-version: 0.0.1
+version: 0.0.2
+authors:
+  - Raimil Cruz <raimil.cruz@gmail.com>
 
 environment:
   sdk: '>=2.0.0-dev.48.0 <3.0.0'
 
 dependencies:
-  analyzer: '0.32.4'
+  analyzer: '0.34.2'
   safe_config: ^2.0.0
 #  code_builder : '^3.0.3'
 
 dev_dependencies:
   test_reflective_loader: "^0.1.3"
-  test: ^1.3.0
+  test: ^1.2.0

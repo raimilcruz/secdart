@@ -25,6 +25,7 @@ import 'dart:io' as io show File;
 import 'package:path/path.dart' as pathos;
 import 'package:analyzer/src/generated/engine.dart';
 import 'package:secdart_analyzer/src/supported_subset.dart';
+import 'package:path/path.dart' as pathos;
 
 /**
  * This class invokes the security analysis. It used mainly
@@ -50,7 +51,7 @@ class SecAnalyzer {
 
     context = createAnalysisContext();
     final packageMap = <String, List<Folder>>{
-      "secdart": [resourceProvider.getFolder("/secdart")]
+      "secdart": [resourceProvider.getFolder(new pathos.Context().normalize("/secdart"))]
     };
     final packageResolver =
         new PackageMapUriResolver(resourceProvider, packageMap);
@@ -69,7 +70,7 @@ class SecAnalyzer {
   }
 
   Source _newSource(String path, [String content = '']) {
-    final file = resourceProvider.newFile(path, content);
+    final file = resourceProvider.newFile(new pathos.Context().normalize(path), content);
     final source = file.createSource();
     return source;
   }

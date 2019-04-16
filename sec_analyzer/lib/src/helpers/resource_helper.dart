@@ -1,6 +1,6 @@
 import 'package:analyzer/file_system/file_system.dart';
 import 'package:analyzer/file_system/memory_file_system.dart';
-import 'package:front_end/src/base/source.dart';
+import 'package:analyzer/src/generated/source.dart';
 
 /**
  * Provides a [Source] from a [String]
