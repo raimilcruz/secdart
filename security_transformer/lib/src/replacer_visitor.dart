@@ -1339,8 +1339,7 @@ class SecurityVisitor extends SimpleAstVisitor<AstNode> {
   }
 
   String _visitFunctionDeclaration(FunctionDeclaration node) =>
-      "SecurityContext.declare('?', SecurityContext.functionLiteral(${node
-          .functionExpression.toString()}))";
+      "SecurityContext.declare('?', SecurityContext.functionLiteral(${node.functionExpression.toString()}))";
 
   ReturnStatement _visitReturnStatement(
       ReturnStatement node, String staticReturnLabel) {

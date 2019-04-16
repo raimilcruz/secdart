@@ -74,9 +74,7 @@ class InterfaceSecurityTypeImpl extends InterfaceSecurityType {
 
   @override
   String toString() {
-    return "${securityElement.classType != null
-        ? securityElement.classType.name
-        : "CLASS"}@$_label";
+    return "${securityElement.classType != null ? securityElement.classType.name : "CLASS"}@$_label";
   }
 
   @override

@@ -132,11 +132,9 @@ MethodInvocation createInvokeInvocation(
   period ??= ".";
   return className != null
       ? parseExpression(
-          "$prefix${period}invoke('$identifier', [${arguments.join(
-          ', ')}], type:$className)")
+          "$prefix${period}invoke('$identifier', [${arguments.join(', ')}], type:$className)")
       : parseExpression(
-          "$prefix${period}invoke('$identifier', [${arguments.join(
-          ', ')}])");
+          "$prefix${period}invoke('$identifier', [${arguments.join(', ')}])");
 }
 
 TypeName createTypeName(String type) {

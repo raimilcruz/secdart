@@ -51,7 +51,9 @@ class SecAnalyzer {
 
     context = createAnalysisContext();
     final packageMap = <String, List<Folder>>{
-      "secdart": [resourceProvider.getFolder(new pathos.Context().normalize("/secdart"))]
+      "secdart": [
+        resourceProvider.getFolder(new pathos.Context().normalize("/secdart"))
+      ]
     };
     final packageResolver =
         new PackageMapUriResolver(resourceProvider, packageMap);
@@ -70,7 +72,8 @@ class SecAnalyzer {
   }
 
   Source _newSource(String path, [String content = '']) {
-    final file = resourceProvider.newFile(new pathos.Context().normalize(path), content);
+    final file =
+        resourceProvider.newFile(new pathos.Context().normalize(path), content);
     final source = file.createSource();
     return source;
   }
