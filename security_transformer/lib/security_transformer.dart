@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:barback/barback.dart';
+//TODO: Update transformer to the new build system
+/*import 'package:barback/barback.dart';
 import 'package:security_transformer/security_compiler.dart';
 
 export "security_compiler.dart";
@@ -25,4 +26,4 @@ class SecurityTransformer extends Transformer {
         id.path.startsWith('test/dart_files/sources/');
     return new Future.value(isDartFile && ownPackageFilter);
   }
-}
+}*/

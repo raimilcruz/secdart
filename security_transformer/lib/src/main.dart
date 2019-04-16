@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+/*
 import 'package:barback/barback.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:security_transformer/security_transformer.dart';
@@ -52,4 +53,4 @@ class SecurityTransformerRunner {
   Future<String> transformAndFormat(String package, String sourcePath) async {
     return formatter.format(await transform(package, sourcePath));
   }
-}
+}*/

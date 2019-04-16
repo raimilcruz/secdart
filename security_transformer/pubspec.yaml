@@ -1,8 +1,11 @@
 name: security_transformer
 description: Security transformer
+authors:
+  - Raimil Cruz <raimil.cruz@gmail.com>
+  - Juan Pablo Paulsen <juanpablo.paulsen@gmail.co>
 
 environment:
-  sdk: '>=1.20.1 <2.0.0'
+  sdk: '>=2.0.0-dev.48.0 <3.0.0'
 
 dependencies:
   secdart:
@@ -10,12 +13,12 @@ dependencies:
   secdart_analyzer:
     path: ../sec_analyzer
   analyzer:
-  barback: ">=0.14.1 <0.16.0"
+#  barback: ">=0.14.1 <0.16.0"
   dart_style:
 
 dev_dependencies:
   test_reflective_loader: "^0.1.3"
-  test: ^0.12.0
+  test: ^1.2.0
 
 transformers:
   - security_transformer

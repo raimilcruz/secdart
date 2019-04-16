@@ -17,7 +17,7 @@ void main() {
 
 @reflectiveTest
 class AnalysisClientTest {
-  Future test_transformer() async {
+  /*Future test_transformer() async {
     var missExpectedFile = false;
     final runner = new SecurityTransformerRunner();
     final sourcesDir = 'test/dart_files/sources';
@@ -48,7 +48,7 @@ class AnalysisClientTest {
     if (missExpectedFile) {
       print('Alert: Some expected files were created.');
     }
-  }
+  }*/
 
   Future test_transformer2() async {
     final secCompiler = new SecurityCompiler();

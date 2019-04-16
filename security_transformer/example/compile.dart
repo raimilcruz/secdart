@@ -1,4 +1,5 @@
 import 'package:security_transformer/security_transformer.dart';
+import 'package:security_transformer/security_compiler.dart';
 
 void main() {
   //create an instance of the security compiler
