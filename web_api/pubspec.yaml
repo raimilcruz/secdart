@@ -3,12 +3,12 @@ description: A REST Web Api for the security analysis
 version: 0.0.1
 
 environment:
-  sdk: '>=2.0.0-dev.48.0 <3.0.0'
+  sdk: '>=2.1.0 <3.0.0'
 
 dependencies:
   analyzer: '>= 0.27.1 <1.0.0'
   logging: '>=0.11.1 <0.12.0'
-  rpc: '>=0.5.0 <0.6.0'
+  aqueduct: ^3.0.0
   secdart_analyzer:
     path: ../sec_analyzer
   security_transformer:
@@ -17,6 +17,6 @@ dependencies:
   safe_config: any
 
 dev_dependencies:
-  test_reflective_loader: "^0.1.3"
-  test: ^0.12.0
+  aqueduct_test:
+  test: ^1.2.0
   http: any

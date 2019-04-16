@@ -5,90 +5,56 @@
 library web_api;
 
 import 'dart:async';
+import 'dart:io';
+import 'package:aqueduct/aqueduct.dart';
+import 'package:web_api/controller/analyzer_controller.dart';
+import 'package:web_api/controller/compile_controller.dart';
+import 'package:web_api/helper/log_helpers.dart';
+import 'package:web_api/service/analyzer_service.dart';
 
-import 'package:rpc/rpc.dart';
-import 'package:analyzer/analyzer.dart' show AnalysisError;
+class WebApi extends ApplicationChannel {
+  ManagedContext context;
+  IAnalyzerService secAnalyzer;
+  ICompilerService secCompiler;
 
-import 'package:secdart_analyzer/analyzer.dart';
-import 'package:security_transformer/security_compiler.dart';
-import 'package:web_api/src/application_configuration.dart';
+  @override
+  Future prepare() async {
+    secAnalyzer = new AnalyzerService();
+    secCompiler = new CompilerService();
 
-/**
- * A simple REST API for the security analysis. This is not intented to use
- * for other project, except for the SecDart Pad.
- */
-@ApiClass(name: 'secdartapi', version: 'v1')
-class SecDartApi {
-  var config = new ApplicationConfiguration("config.yaml");
-  SecDartApi();
+    Controller.includeErrorDetailsInServerErrorResponses = true;
 
-  @ApiMethod(path: 'hello')
-  StringWrapper hello() {
-    return new StringWrapper()..result = 'Hello. It is working!';
+    _registerLogHandlers();
   }
 
-  @ApiMethod(path: 'analyze', method: 'POST')
-  SecAnalysisResult analyze(SecAnalysisInput input) {
-    SecAnalyzer secAnalyzer = new SecAnalyzer();
-    var errors = secAnalyzer.analyze(input.source, input.useInterval).errors;
+  @override
+  Controller get entryPoint {
+    final router = Router();
 
-    SecAnalysisResult result = new SecAnalysisResult();
+    router.route("/secdartapi").link(() => AnalyzerController(secAnalyzer));
 
-    var issues = errors.map(_secIssueFromAnalysisError).toList();
-    result.issues = issues;
+    router
+        .route("/secdartapi/analyze")
+        .link(() => AnalyzerController(secAnalyzer));
 
-    return result;
+    router
+        .route("/secdartapi/compile")
+        .link(() => CompilerController(secCompiler));
+
+    return router;
   }
 
-  @ApiMethod(path: 'compile', method: 'POST')
-  Future<SecCompileResult> compile(SecAnalysisInput input) async {
-    final secCompiler = new SecurityCompiler();
-    var compiled = secCompiler.compile(input.source, format: true);
-    return new SecCompileResult()..compiled = compiled;
+  void _registerLogHandlers() {
+    //logger.level = Level.ALL;
+    logger.onRecord.listen((LogRecord rec) {
+      FileLogger fLog = new FileLogger("app_logs.txt");
+      fLog.call(rec);
+    });
+    if (stdout.hasTerminal) {
+      logger.onRecord.listen((LogRecord record) {
+        TerminalLogger tLog = new TerminalLogger();
+        tLog.call(record);
+      });
+    }
   }
-
-  //helper method
-  SecIssue _secIssueFromAnalysisError(AnalysisError error) {
-    var issue = new SecIssue();
-    issue.message = error.message;
-    issue.kind = "secerror";
-    issue.charLength = error.length;
-    issue.charStart = error.offset;
-
-    //TODO: compute line and column.
-    issue.column = 0;
-    issue.line = 0;
-    return issue;
-  }
-}
-
-class StringWrapper {
-  String result;
-  StringWrapper();
-}
-
-class SecAnalysisResult {
-  List<SecIssue> issues;
-  SecAnalysisResult();
-}
-
-class SecCompileResult {
-  String compiled;
-}
-
-class SecIssue {
-  String kind;
-  String message;
-  int line;
-  int charStart;
-  int charLength;
-  int column;
-}
-
-class SecAnalysisInput {
-  @ApiProperty(required: true)
-  String source;
-
-  @ApiProperty(defaultValue: false)
-  bool useInterval;
 }

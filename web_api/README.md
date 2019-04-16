@@ -1,13 +1,18 @@
-# Security annotations for Dart
+# REST Api to analyze and compile SecDart programs
  
-SecDart is an ongoing implementation of gradual security typing in Dart.
-
 This package provides a simple REST API to interact with the security
 analysis.
 
 #Usage
-Use the discovery to know how to use this api:
+
+Endpoint:
+
+1. Analyze: https://your_app_server/secdartapi/analyze
+2. Compile: https://your_app_server/secdartapi/compile
+
+
+# Run locally
 
 ```
-https://your_app_server/discovery/v1/apis/secdartapi/v1/rest
+aqueduct serve
 ```
